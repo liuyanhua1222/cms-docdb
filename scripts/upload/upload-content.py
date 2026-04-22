@@ -39,7 +39,9 @@ def build_headers() -> dict:
 
 
 def call_api(content: str, file_name: str,
-             file_suffix: str = None, folder_name: str = None) -> dict:
+             file_suffix: str = None, folder_name: str = None,
+             update_file_id: int = None, version_name: str = None,
+             version_remark: str = None) -> dict:
     """调用一键上传接口，返回原始 JSON 响应"""
     headers = build_headers()
 
@@ -51,6 +53,12 @@ def call_api(content: str, file_name: str,
         body["fileSuffix"] = file_suffix
     if folder_name:
         body["folderName"] = folder_name
+    if update_file_id is not None:
+        body["updateFileId"] = update_file_id
+    if version_name:
+        body["versionName"] = version_name
+    if version_remark:
+        body["versionRemark"] = version_remark
 
     req = urllib.request.Request(
         API_URL,
@@ -106,14 +114,20 @@ def main():
     parser.add_argument("content", type=str, help="文件内容")
     parser.add_argument("file_name", type=str, help="文件名（建议带扩展名）")
     parser.add_argument("--file-suffix", type=str, help="文件后缀（md/html/txt/json）")
-    parser.add_argument("--folder-name", type=str, help="逻辑目录路径，支持多级")
+    parser.add_argument("--folder-name", type=str, help="逻辑目录路径，支持多级（仅新建模式有效）")
+    parser.add_argument("--update-file-id", type=int, help="版本更新模式：要更新的目标文件 ID，传入后切换为版本更新模式")
+    parser.add_argument("--version-name", type=str, help="版本名称，如 V2.0（版本更新模式专用）")
+    parser.add_argument("--version-remark", type=str, help="版本说明（版本更新模式专用）")
     args = parser.parse_args()
 
     result = call_api(
         content=args.content,
         file_name=args.file_name,
         file_suffix=args.file_suffix,
-        folder_name=args.folder_name
+        folder_name=args.folder_name,
+        update_file_id=args.update_file_id,
+        version_name=args.version_name,
+        version_remark=args.version_remark,
     )
 
     processed_result = process_result(result)

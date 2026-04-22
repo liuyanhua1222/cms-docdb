@@ -1,0 +1,21 @@
+# Python 编译缓存
+__pycache__/
+*.py[cod]
+*.pyo
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# 环境变量 / 密钥文件（存放 XG_BIZ_API_KEY 等）
+.env
+.env.*
+*.key
+
+# macOS 系统文件
+.DS_Store
+
+# IDE 个人配置
+.vscode/
+.idea/

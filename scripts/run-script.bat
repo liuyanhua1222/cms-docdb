@@ -2,8 +2,8 @@
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
-:: 定义可能的 Python 路径列表
-set "pythonPaths="%USERPROFILE%\.easyclaw\python-3.12\python.exe";"%USERPROFILE%\AppData\Local\Programs\Python\Python312\python.exe";"%ProgramFiles%\Python312\python.exe";python;python3"
+:: 定义可能的 Python 路径列表（含 OpenClaw / EasyClaw 捆绑路径；其余环境依赖 PATH）
+set "pythonPaths="%USERPROFILE%\.openclaw\python-3.12\python.exe";"%USERPROFILE%\.easyclaw\python-3.12\python.exe";"%USERPROFILE%\AppData\Local\Programs\Python\Python312\python.exe";"%ProgramFiles%\Python312\python.exe";python;python3"
 
 :: 查找可用的 Python
 set "python="

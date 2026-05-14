@@ -28,8 +28,19 @@ param(
     [string[]]$Arguments
 )
 
-# 定义可能的 Python 路径列表
+# OpenClaw / exec：Windows 控制台默认代码页易导致中文与 PowerShell 报错乱码
+try {
+    chcp 65001 | Out-Null
+} catch {}
+try {
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+    [Console]::InputEncoding = [System.Text.Encoding]::UTF8
+    $OutputEncoding = [System.Text.Encoding]::UTF8
+} catch {}
+
+# 定义可能的 Python 路径列表（含 OpenClaw / EasyClaw 捆绑路径；其余环境依赖 PATH 中的 python/python3）
 $pythonPaths = @(
+    "$env:USERPROFILE/.openclaw/python-3.12/python.exe",
     "$env:USERPROFILE/.easyclaw/python-3.12/python.exe",
     "$env:USERPROFILE/AppData/Local/Programs/Python/Python312/python.exe",
     "$env:ProgramFiles/Python312/python.exe",

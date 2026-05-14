@@ -1,26 +1,42 @@
 ---
-name: cms-docdb
-description: 为 AI Agent 提供企业知识库的完整操作能力：浏览空间与目录结构、搜索文件并读取内容、归档纯文本或物理文件、对已有文件保存新版本（禁止覆盖以保留溯源历史）、删除文件、重命名/移动文件及版本定稿
+name: cms-docdb-knowledge-base
+description: 公司内部知识库—目录浏览与搜索，读全文或下载/预览；上传与归档；已存在文件用新版本与定稿更新（禁止覆盖），删除须确认；Open API 仅允许通过本仓库脚本执行。"
 skillcode: cms-docdb
 github: https://github.com/liuyanhua1222/cms-docdb
 dependencies:
   - cms-auth-skills
+metadata:
+  openclaw:
+    requires:
+      bins:
+        - python3
+        - python
 ---
 
-# cms-docdb — 索引
+# cms-docdb-knowledge-base — 索引
 
-本文件提供能力边界、路由规则与使用约束。详细说明见 `references/`，实际执行见 `scripts/`。
+OpenClaw 技能 **`name`** 为 `cms-docdb-knowledge-base`（含 `knowledge-base` 便于检索）；仓库目录名可仍为 **`cms-docdb`**。稳定内部标识见 **`skillcode: cms-docdb`**。
 
-**当前版本**: 1.0.1
+本文件提供能力边界与路由规则。详细说明见 `references/`，实际执行见 `scripts/`。
+
+**当前版本**: 1.1.2
 
 **接口版本**: 所有业务接口统一使用 `/open-api/*` 前缀，鉴权类型全部为 `appKey`。
 
 **能力概览（5 块能力）**：
 - `browse`：发现可用空间、获取个人空间 ID、浏览目录结构、查看最近上传
 - `query`：搜索文件，找到文件后获取内容、下载链接或预览链接
-- `upload`：新建文件——上传纯文本或物理文件到知识库（仅用于新建）
+- `upload`：新建文件——上传纯文本或物理文件到 **康哲/玄关/德镁知识库**（内部应用侧；仅用于新建）
 - `delete`：删除指定文件（高风险，需用户确认）
 - `manage`：重命名/移动文件；更新已有文件内容（版本管理）；查看历史版本；版本定稿
+
+## 适用范围与歧义排除（技能门控，强制）
+
+- **本 skill 唯一指向**：通过 **appKey** 访问内部知识库应用所对接的 **document-database** 开放接口（路径形态 **`/open-api/document-database/*`**，OpenClaw **`name`：`cms-docdb-knowledge-base`**；**`skillcode` / 技术代号**：**cms-docdb** / **document-database**）。**对用户与内部沟通常用说法**：**「康哲知识库」「玄关知识库」「德镁知识库」**及 **「公司在线知识库」**（同一类内部知识库应用的不同称呼/环境）；**跨技能冷启动**时避免单独用泛称「知识库」作为唯一依据，以免与钉钉等冲突。
+- **明确不使用本 skill 的典型场景**（应改走对应产品能力或追问用户）：**钉钉知识库/钉盘**、**企业微信微盘**、**飞书知识库/云文档**、**语雀**、**Notion**、**Confluence**、**SharePoint**、**石墨** 等；在**冷启动、且**用户仅说「打开/搜一下知识库」**且**无任何内部信号（品牌名、**公司在线知识库**、业务路径/政策名、`cms-docdb` 工作区、`cms-auth-skills`、appKey 等）时，**不得默认进入本 skill**；应先追问是否指本内部库。若用户已明确在聊「公司在线知识库」或上文已用本 skill 操作同一库，则**不要**重复追问品牌名。
+- **OpenClaw 路由建议**：技能列表匹配时，优先用 **`cms-docdb-knowledge-base`、`康哲知识库`、`玄关知识库`、`德镁知识库`、`公司在线知识库`、`cms-docdb`、`document-database`、`/open-api/document-database`** 等专有词加权；单凭「知识库」三字在**冷启动**时不足以唯一路由到本 skill。
+- **两层门控（勿把「对用户的说法」写死）**：① **跨技能 / 冷启动**（尚未确定是不是钉钉等）：仍须用品牌名、`公司在线知识库`、工作区已启用本 skill、接口域名/路径、`cms-auth-skills` 等**排他信号**避免误绑。② **会话内 / 已绑定本 skill 之后**：用户常说「**公司在线知识库**」「**查询/阅读知识库中的 xxx**」或带 **业务目录/政策名**（如「产品资料-慷彼申」「2026年业务政策」），**一律视为本系统**，**不得**再机械要求用户复述「康哲/玄关/德镁」；直接按 `browse` / `query` / `read`→`query` 路由执行脚本。
+- **典型有效问法（内部真实话术）**：如「打开公司在线知识库」「请查询知识库中某政策标题并总结」「请阅读知识库中某文件夹内的文件」「能读产品资料-慷彼申里的内容吗」等，均在本 skill 能力范围内（具体模块依动作是浏览、搜索还是读全文而定）。
 
 统一规范：
 - 鉴权依赖：`cms-auth-skills/SKILL.md`
@@ -63,6 +79,7 @@ dependencies:
 2. **先读说明再调用**：在执行前，必须加载对应模块说明
 3. **脚本必须执行**：所有接口调用必须通过脚本执行，不允许跳过
 4. **不猜测**：若意图不明确，必须追问澄清
+5. **歧义门控**：仅在**冷启动**且话术**可能**指钉钉/飞书等外部库、又**缺少**内部信号（品牌名、`公司在线知识库`、业务路径、`cms-docdb` 上下文等）时，须先按「适用范围与歧义排除」澄清；**会话已绑定本 skill 或已出现上述内部信号**时，泛称「知识库」**允许**直接走模块路由，不得再强制用户复述「康哲/玄关/德镁」
 
 宪章（必须遵守）：
 1. **只读索引**：`SKILL.md` 只描述"能做什么"和"去哪里读"，不写具体接口参数
@@ -71,24 +88,44 @@ dependencies:
 4. **素材优先级**：用户给了文件或 URL，必须先提取内容再确认，确认后才触发生成或写入
 5. **生产约束**：仅允许生产域名与生产协议，不引入任何测试地址
 6. **危险操作**：删除文件等高风险操作应礼貌确认，不直接执行
-7. **脚本语言限制**：所有脚本必须使用 Python 编写
+7. **脚本语言限制**：调用 Open API 的业务脚本必须使用 Python；`run-script.ps1` / `run-script.bat` 为跨 shell 包装，不受此限
 8. **重试策略**：出错时间隔 1 秒、最多重试 3 次，超过后终止并上报
 9. **禁止无限重试**：严禁无限循环重试
 10. **输出规范**：脚本输出优先按 `resultCode`、`resultMsg`、`data` 读取，对用户输出最小必要信息：摘要/必要输入/链接，不回显完整 JSON 响应
 11. **兼容性要求**：为兼容 Windows PowerShell 5.x，所有脚本调用必须通过包装脚本执行，禁止直接使用 `||` 或 `&&` 操作符
+12. **OpenClaw `exec`（Windows）**：网关往往在 **PowerShell 5.x** 下执行你拼出来的命令。以下视为**错误示范**（与技能无关，是 shell 语法不匹配）：使用 bash 的 `||`、`&&`、`2>/dev/null`、`/dev/null`；在 PowerShell 里套多层引号去跑**多行** `python -c "..."`（易触发「只应将 ScriptBlock 指定为 Command 参数值」类报错）。**正确做法**：优先用本仓库 **`scripts/run-script.ps1`**（已 `chcp 65001` 并设置控制台 UTF-8，且统一 `PYTHONUTF8`）；或**单行**调用已安装的 Python 与脚本路径，勿经多行 `-c` 嵌套。
+
+### OpenClaw / Windows 下推荐 `exec` 命令形态（复制时替换路径）
+
+**首选（推荐）**：
+
+```text
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<cms-docdb 根目录>/scripts/run-script.ps1" "browse/browse.py" "<parentId 或参数>"
+```
+
+**次选（单行、无包装脚本时）**：先 `chcp 65001`，再直接调 Python 与脚本，整条命令保持一行，避免在 `exec` 里拼接多行字符串。
+
+```text
+chcp 65001 > $null; & "<python.exe 完整路径>" "<cms-docdb>/scripts/browse/browse.py" "<参数>"
+```
+
+**禁止**：在 Windows `exec` 中假设默认 shell 为 bash；用 `python` 与 `python3` 混用且未验证实际存在的是哪一个（Windows 常见仅有 `python`）。
 
 ## 触发配置
 
 ### 意图触发词
 
+下表为**常见**说法，**非穷举**。**跨技能冷启动**时优先用品牌名、`公司在线知识库` 等排他词；**本 skill 已启用或对话已指向内部库**时，「查询/阅读知识库中的 xxx」「打开公司在线知识库」「产品资料-慷彼申」等**泛称与业务路径**均有效，**不要求**用户每次都说全「康哲/玄关/德镁」。
+
 | 模块 | 触发词模式 |
 |-----|-----------|
-| `browse` | "打开知识库"、"浏览文件夹"、"查看目录"、"知识库里有什么"、"目录结构"、"空间列表"、"项目列表" |
-| `query` | "搜索xxx"、"查询xxx"、"查找xxx"、"检索xxx"、"帮我找xxx"、"搜索一下xxx" |
-| `read` | "读取xxx"、"阅读xxx"、"查看xxx内容"、"打开文件"、"总结文件"、"提取信息" |
-| `upload` | "上传到知识库"、"保存到知识库"、"归档文件"、"新建文件" |
+| `browse` | "打开公司在线知识库"、"打开康哲/玄关/德镁知识库"、"浏览文件夹"、"查看目录"、"知识库里有什么"、"目录结构"、"空间列表"、"项目列表" |
+| `query` | "查询知识库中的…"、"搜索知识库里的…"、"搜索xxx"、"查询xxx"、"查找xxx"、"检索xxx"、"帮我找xxx"、"搜索一下xxx"、"读取xxx"、"阅读xxx"、"查看xxx内容"、"打开文件"、"总结文件"、"提取信息" |
+| `upload` | "上传到康哲/玄关/德镁知识库"、"保存到康哲/玄关/德镁知识库"、"上传到知识库"、"保存到知识库"、"归档文件"、"新建文件" |
 | `delete` | "删除文件"、"移除文件"、"删掉xxx" |
 | `manage` | "重命名xxx"、"移动文件"、"更新内容"、"版本管理"、"历史版本"、"定稿" |
+
+**意图标签与模块目录（强制）**：`intent-matcher.py` 输出的 `data.intent` 中，`browse`、`query`、`upload`、`delete`、`manage` 与同名 `references/<module>/`、`scripts/<module>/` 一致。`read` 仅为意图分类标签（匹配「读取/总结文件」等话术），**不存在** `references/read/`；一旦 `intent` 为 `read`，路由与加载必须与 **`query`** 相同，使用 `references/query/` 与 `scripts/query/`。
 
 ### 参数提取规则
 
@@ -152,9 +189,9 @@ dependencies:
 
 | 用户意图 | 模块 | 能力摘要 | 模块说明 | 脚本 |
 |---|---|---|---|---|
-| "打开知识库"、"浏览一下xxx文件夹"、"帮我看看知识库里有什么"、"查看某个目录的内容"、"目录结构" | `browse` | 发现空间、浏览目录结构、查看最近上传 | `./references/browse/README.md` | `./scripts/browse/browse.py` |
-| "搜索xxx"、"查询xxx"、"查找xxx"、"看看这个文件的内容"、"帮我读取xxx文件"、"帮我总结一下xxx文件" | `query` | 搜索文件并读取内容、下载链接或预览链接 | `./references/query/README.md` | `./scripts/query/search.py` |
-| "帮我把这个存到知识库"、"上传xxx到知识库"、"把这份文档归档"、"帮我保存这个文件" | `upload` | 新建文件到知识库（仅用于新建，已存在则路由到 manage 走版本更新） | `./references/upload/README.md` | `./scripts/upload/upload-content.py` |
+| "打开公司在线知识库"、"打开康哲/玄关/德镁知识库"、"浏览一下xxx文件夹"、"知识库里有什么"、"查看某个目录的内容"、"目录结构" | `browse` | 发现空间、浏览目录结构、查看最近上传 | `./references/browse/README.md` | `./scripts/browse/browse.py` |
+| "查询知识库中的…"、"搜索知识库里的…"、"搜索xxx"、"查询xxx"、"查找xxx"、"看看这个文件的内容"、"帮我读取xxx文件"、"帮我总结一下xxx文件" | `query` | 搜索文件并读取内容、下载链接或预览链接 | `./references/query/README.md` | `./scripts/query/search.py` |
+| "存到康哲/玄关/德镁知识库"、"上传到知识库"、"上传xxx到知识库"、"把这份文档归档"、"帮我保存这个文件" | `upload` | 新建文件到内部知识库（仅用于新建，已存在则路由到 manage 走版本更新） | `./references/upload/README.md` | `./scripts/upload/upload-content.py` |
 | "帮我把xxx删了"、"删除xxx文件"、"把xxx文件移除" | `delete` | 删除指定文件（高风险，需确认） | `./references/delete/README.md` | `./scripts/delete/delete-file.py` |
 | "帮我把xxx重命名"、"把xxx改名为yyy"、"把这个文件移到xxx文件夹"、"更新一下知识库里的xxx"、"把最新内容存进去"、"这个文档有更新，存一下"、"查看xxx文件的历史版本"、"把这个版本定稿" | `manage` | 重命名/移动文件；更新已有文件内容（版本管理）；查看历史版本；版本定稿 | `./references/manage/README.md` | 见 `./scripts/manage/README.md`（按意图选择对应脚本） |
 

@@ -19,6 +19,41 @@ import urllib.parse
 import urllib.error
 import ssl
 
+# 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
+if sys.stderr.encoding != 'utf-8':
+    sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
+
+
+class CustomRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """自定义重定向处理器，显式支持 307/308 重定向并保留请求方法和请求体"""
+    
+    def http_error_301(self, req, fp, code, msg, headers):
+        return self.redirect_request(req, fp, code, msg, headers)
+    
+    def http_error_302(self, req, fp, code, msg, headers):
+        return self.redirect_request(req, fp, code, msg, headers)
+    
+    def http_error_303(self, req, fp, code, msg, headers):
+        return self.redirect_request(req, fp, code, msg, headers)
+    
+    def http_error_307(self, req, fp, code, msg, headers):
+        # 307 临时重定向，保留原始请求方法和请求体
+        return self.redirect_request(req, fp, code, msg, headers)
+    
+    def http_error_308(self, req, fp, code, msg, headers):
+        # 308 永久重定向，保留原始请求方法和请求体
+        return self.redirect_request(req, fp, code, msg, headers)
+
+
+def build_opener(ctx):
+    """构建支持 307/308 重定向的自定义 opener"""
+    handlers = [CustomRedirectHandler()]
+    if ctx:
+        handlers.append(urllib.request.HTTPSHandler(context=ctx))
+    return urllib.request.build_opener(*handlers)
+
 # 接口完整 URL（与 openapi/browse/browse.md 中声明的一致）
 API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getChildFiles"
 AUTH_MODE = "appKey"
@@ -64,11 +99,14 @@ def call_api(parent_id: int, type: int = None, order: int = None,
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
 
+    opener = build_opener(ctx)
+
     for attempt in range(3):
         try:
-            with urllib.request.urlopen(req, context=ctx, timeout=60) as resp:
+            with opener.open(req, timeout=60) as resp:
                 return json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
+            # 307/308 重定向已由 CustomRedirectHandler 处理，不会到达这里
             if attempt < 2:
                 import time
                 time.sleep(1)

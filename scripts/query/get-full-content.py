@@ -19,6 +19,40 @@ import urllib.parse
 import urllib.error
 import ssl
 
+# 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
+if sys.stderr.encoding != 'utf-8':
+    sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
+
+
+class CustomRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """自定义重定向处理器，显式支持 307/308 重定向并保留请求方法和请求体"""
+    
+    def http_error_301(self, req, fp, code, msg, headers):
+        return self.redirect_request(req, fp, code, msg, headers)
+    
+    def http_error_302(self, req, fp, code, msg, headers):
+        return self.redirect_request(req, fp, code, msg, headers)
+    
+    def http_error_303(self, req, fp, code, msg, headers):
+        return self.redirect_request(req, fp, code, msg, headers)
+    
+    def http_error_307(self, req, fp, code, msg, headers):
+        return self.redirect_request(req, fp, code, msg, headers)
+    
+    def http_error_308(self, req, fp, code, msg, headers):
+        return self.redirect_request(req, fp, code, msg, headers)
+
+
+def build_opener(ctx):
+    """构建支持 307/308 重定向的自定义 opener"""
+    handlers = [CustomRedirectHandler()]
+    if ctx:
+        handlers.append(urllib.request.HTTPSHandler(context=ctx))
+    return urllib.request.build_opener(*handlers)
+
+
 # 接口完整 URL（与 openapi/query/get-full-content.md 中声明的一致）
 API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getFullFileContent"
 AUTH_MODE = "appKey"

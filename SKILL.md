@@ -75,6 +75,7 @@ dependencies:
 8. **重试策略**：出错时间隔 1 秒、最多重试 3 次，超过后终止并上报
 9. **禁止无限重试**：严禁无限循环重试
 10. **输出规范**：脚本输出优先按 `resultCode`、`resultMsg`、`data` 读取，对用户输出最小必要信息：摘要/必要输入/链接，不回显完整 JSON 响应
+11. **兼容性要求**：为兼容 Windows PowerShell 5.x，所有脚本调用必须通过包装脚本执行，禁止直接使用 `||` 或 `&&` 操作符
 
 模块路由与能力索引：
 
@@ -98,6 +99,8 @@ cms-docdb/
 │   ├── delete/README.md
 │   └── manage/README.md
 └── scripts/
+    ├── run-script.ps1        # PowerShell 兼容包装脚本
+    ├── run-script.bat        # Windows 批处理兼容包装脚本
     ├── browse/
     │   ├── README.md
     │   ├── browse.py

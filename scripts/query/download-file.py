@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+"""
+query / downloadFile 脚本
+
+用途：下载文件到本地（先获取下载链接，再下载文件）
+
+使用方式：
+  python3 scripts/query/download-file.py <file_id> [--output /path/to/save.pdf]
+
+环境变量：
+  XG_BIZ_API_KEY / XG_APP_KEY — appKey（由 cms-auth-skills 预先准备）
+"""
+
+import sys
+import os
+import json
+import urllib.request
+import urllib.parse
+import urllib.error
+import ssl
+import tempfile
+
+# 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
+if sys.stderr.encoding != 'utf-8':
+    sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
+
+
+# 接口完整 URL
+API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getDownloadInfo"
+AUTH_MODE = "appKey"
+
+
+def build_headers() -> dict:
+    """根据鉴权模式构造请求头"""
+    headers = {"Content-Type": "application/json"}
+
+    if AUTH_MODE == "appKey":
+        app_key = os.environ.get("XG_BIZ_API_KEY") or os.environ.get("XG_APP_KEY")
+        if not app_key:
+            print("错误: 请设置环境变量 XG_BIZ_API_KEY 或 XG_APP_KEY", file=sys.stderr)
+            sys.exit(1)
+        headers["appKey"] = app_key
+
+    return headers
+
+
+def get_download_url(file_id: int) -> dict:
+    """获取文件下载链接"""
+    headers = build_headers()
+    params = [("fileId", str(file_id)), ("forceDownload", "true")]
+    url = f"{API_URL}?{urllib.parse.urlencode(params)}"
+
+    req = urllib.request.Request(url, headers=headers, method="GET")
+
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req, context=ctx, timeout=60) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        except Exception as e:
+            if attempt < 2:
+                import time
+                time.sleep(1)
+            else:
+                print(f"错误: 获取下载链接失败 - {e}", file=sys.stderr)
+                sys.exit(1)
+
+
+def download_file(download_url: str, output_path: str) -> str:
+    """从 URL 下载文件到本地"""
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+
+    try:
+        req = urllib.request.Request(download_url, method="GET")
+        with urllib.request.urlopen(req, context=ctx, timeout=120) as resp:
+            content = resp.read()
+            
+            with open(output_path, 'wb') as f:
+                f.write(content)
+            
+            return output_path
+    except Exception as e:
+        print(f"错误: 下载文件失败 - {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="下载文件到本地")
+    parser.add_argument("file_id", type=int, help="文件 ID")
+    parser.add_argument("--output", type=str, help="输出文件路径（可选，默认保存到临时目录）")
+    args = parser.parse_args()
+
+    # 1. 获取下载链接
+    result = get_download_url(args.file_id)
+    
+    if result.get('resultCode') != 1:
+        print(json.dumps({
+            'resultCode': result.get('resultCode'),
+            'resultMsg': result.get('resultMsg', '获取下载链接失败'),
+            'data': None
+        }, ensure_ascii=False))
+        sys.exit(1)
+    
+    data = result.get('data', {})
+    download_url = data.get('downloadUrl') or data.get('url')
+    file_name = data.get('fileName', f'file_{args.file_id}')
+    
+    if not download_url:
+        print(json.dumps({
+            'resultCode': 0,
+            'resultMsg': '未获取到下载链接',
+            'data': None
+        }, ensure_ascii=False))
+        sys.exit(1)
+    
+    # 2. 确定输出路径
+    if args.output:
+        output_path = args.output
+    else:
+        # 使用临时目录
+        temp_dir = tempfile.gettempdir()
+        output_path = os.path.join(temp_dir, file_name)
+    
+    # 3. 下载文件
+    saved_path = download_file(download_url, output_path)
+    
+    # 4. 返回结果
+    print(json.dumps({
+        'resultCode': 1,
+        'resultMsg': None,
+        'data': {
+            'fileId': args.file_id,
+            'fileName': file_name,
+            'localPath': saved_path,
+            'fileSize': os.path.getsize(saved_path)
+        }
+    }, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()

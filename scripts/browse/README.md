@@ -1,5 +1,11 @@
 # 脚本清单 — browse
 
+## 鉴权前置条件
+
+- **鉴权模式**：`appKey`
+- **环境变量**：`XG_BIZ_API_KEY` 或 `XG_APP_KEY`
+- **获取方式**：通过 `cms-auth-skills` 获取并设置环境变量
+
 ## 共享依赖
 
 无
@@ -15,7 +21,7 @@
 | `browse.py` | `GET /open-api/document-database/file/getChildFiles` | 浏览指定目录下的直接子项 |
 | `get-recent-files.py` | `POST /open-api/document-database/project/personal/getRecentFiles` | 获取当前用户最近上传的文件列表 |
 
-## 使用方式
+## 运行方式
 
 ```bash
 export XG_BIZ_API_KEY="your-app-key"
@@ -37,9 +43,13 @@ python3 scripts/browse/browse.py <parent_id> [--type 1|2] [--order 1-6]
 python3 scripts/browse/get-recent-files.py [--limit 10] [--search-key "关键词"]
 ```
 
-## 输出说明
+## 返回说明
 
-所有脚本的输出均为 **JSON 格式**。
+所有脚本的输出均为 **JSON 格式**，包含以下字段：
+
+- `resultCode`: 1 表示成功，非 1 表示失败
+- `resultMsg`: 错误信息（成功时为 null）
+- `data`: 业务数据（具体结构见各脚本文档）
 
 ## 规范
 

@@ -24,7 +24,7 @@ export XG_APP_KEY="your-app-key"
 | `get-last-version.py` | `GET /open-api/document-database/file/getLastVersion` | 获取文件最新版本信息 |
 | `finalize-version.py` | `POST /open-api/document-database/file/finalizeVersion` | 将指定版本标记为定稿 |
 
-## 使用方式
+## 运行方式
 
 ```bash
 # === 重命名/移动 ===

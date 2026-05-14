@@ -1,5 +1,11 @@
 # 脚本清单 — query
 
+## 鉴权前置条件
+
+- **鉴权模式**：`appKey`
+- **环境变量**：`XG_BIZ_API_KEY` 或 `XG_APP_KEY`
+- **获取方式**：通过 `cms-auth-skills` 获取并设置环境变量
+
 ## 共享依赖
 
 无
@@ -14,7 +20,7 @@
 | `get-file-content.py` | `GET /open-api/document-database/file/getFileContent` | 分页获取文件文本内容 |
 | `batch-get-content.py` | `POST /open-api/document-database/ai/batchGetContent` | 批量获取多个文件全文，建议≤10个 |
 
-## 使用方式
+## 运行方式
 
 ```bash
 export XG_BIZ_API_KEY="your-app-key"
@@ -37,9 +43,13 @@ python3 scripts/query/get-file-content.py <file_id> [--page-number 1]
 python3 scripts/query/batch-get-content.py '[{"fileId":123},{"fileId":456}]'
 ```
 
-## 输出说明
+## 返回说明
 
-所有脚本的输出均为 **JSON 格式**。
+所有脚本的输出均为 **JSON 格式**，包含以下字段：
+
+- `resultCode`: 1 表示成功，非 1 表示失败
+- `resultMsg`: 错误信息（成功时为 null）
+- `data`: 业务数据（具体结构见各脚本文档）
 
 ## 规范
 

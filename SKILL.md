@@ -1,6 +1,6 @@
 ---
-name: cms-docdb-knowledge-base
-description: 公司内部知识库—目录浏览与搜索，读全文或下载/预览；上传与归档；已存在文件用新版本与定稿更新（禁止覆盖），删除须确认；Open API 仅允许通过本仓库脚本执行。"
+name: cms-docdb
+description: 公司内部知识库—目录浏览与搜索，读全文或下载/预览；上传与归档；已存在文件用新版本与定稿更新（禁止覆盖），删除须确认；Open API 仅允许通过本仓库脚本执行。
 skillcode: cms-docdb
 github: https://github.com/liuyanhua1222/cms-docdb
 dependencies:
@@ -13,13 +13,13 @@ metadata:
         - python
 ---
 
-# cms-docdb-knowledge-base — 索引
+# cms-docdb — 索引
 
-OpenClaw 技能 **`name`** 为 `cms-docdb-knowledge-base`（含 `knowledge-base` 便于检索）；仓库目录名可仍为 **`cms-docdb`**。稳定内部标识见 **`skillcode: cms-docdb`**。
+OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`** 保持一致。本技能用于访问公司内部知识库（康哲/玄关/德镁知识库）。
 
 本文件提供能力边界与路由规则。详细说明见 `references/`，实际执行见 `scripts/`。
 
-**当前版本**: 1.1.2
+**当前版本**: 1.0.2
 
 **接口版本**: 所有业务接口统一使用 `/open-api/*` 前缀，鉴权类型全部为 `appKey`。
 
@@ -32,15 +32,16 @@ OpenClaw 技能 **`name`** 为 `cms-docdb-knowledge-base`（含 `knowledge-base`
 
 ## 适用范围与歧义排除（技能门控，强制）
 
-- **本 skill 唯一指向**：通过 **appKey** 访问内部知识库应用所对接的 **document-database** 开放接口（路径形态 **`/open-api/document-database/*`**，OpenClaw **`name`：`cms-docdb-knowledge-base`**；**`skillcode` / 技术代号**：**cms-docdb** / **document-database**）。**对用户与内部沟通常用说法**：**「康哲知识库」「玄关知识库」「德镁知识库」**及 **「公司在线知识库」**（同一类内部知识库应用的不同称呼/环境）；**跨技能冷启动**时避免单独用泛称「知识库」作为唯一依据，以免与钉钉等冲突。
+- **本 skill 唯一指向**：通过 **appKey** 访问内部知识库应用所对接的 **document-database** 开放接口（路径形态 **`/open-api/document-database/*`**，OpenClaw **`name`：`cms-docdb`**；**`skillcode` / 技术代号**：**cms-docdb** / **document-database**）。**对用户与内部沟通常用说法**：**「康哲知识库」「玄关知识库」「德镁知识库」**及 **「公司在线知识库」**（同一类内部知识库应用的不同称呼/环境）；**跨技能冷启动**时避免单独用泛称「知识库」作为唯一依据，以免与钉钉等冲突。
 - **明确不使用本 skill 的典型场景**（应改走对应产品能力或追问用户）：**钉钉知识库/钉盘**、**企业微信微盘**、**飞书知识库/云文档**、**语雀**、**Notion**、**Confluence**、**SharePoint**、**石墨** 等；在**冷启动、且**用户仅说「打开/搜一下知识库」**且**无任何内部信号（品牌名、**公司在线知识库**、业务路径/政策名、`cms-docdb` 工作区、`cms-auth-skills`、appKey 等）时，**不得默认进入本 skill**；应先追问是否指本内部库。若用户已明确在聊「公司在线知识库」或上文已用本 skill 操作同一库，则**不要**重复追问品牌名。
-- **OpenClaw 路由建议**：技能列表匹配时，优先用 **`cms-docdb-knowledge-base`、`康哲知识库`、`玄关知识库`、`德镁知识库`、`公司在线知识库`、`cms-docdb`、`document-database`、`/open-api/document-database`** 等专有词加权；单凭「知识库」三字在**冷启动**时不足以唯一路由到本 skill。
+- **OpenClaw 路由建议**：技能列表匹配时，优先用 **`cms-docdb`、`康哲知识库`、`玄关知识库`、`德镁知识库`、`公司在线知识库`、`document-database`、`/open-api/document-database`** 等专有词加权；单凭「知识库」三字在**冷启动**时不足以唯一路由到本 skill。
 - **两层门控（勿把「对用户的说法」写死）**：① **跨技能 / 冷启动**（尚未确定是不是钉钉等）：仍须用品牌名、`公司在线知识库`、工作区已启用本 skill、接口域名/路径、`cms-auth-skills` 等**排他信号**避免误绑。② **会话内 / 已绑定本 skill 之后**：用户常说「**公司在线知识库**」「**查询/阅读知识库中的 xxx**」或带 **业务目录/政策名**（如「产品资料-慷彼申」「2026年业务政策」），**一律视为本系统**，**不得**再机械要求用户复述「康哲/玄关/德镁」；直接按 `browse` / `query` / `read`→`query` 路由执行脚本。
 - **典型有效问法（内部真实话术）**：如「打开公司在线知识库」「请查询知识库中某政策标题并总结」「请阅读知识库中某文件夹内的文件」「能读产品资料-慷彼申里的内容吗」等，均在本 skill 能力范围内（具体模块依动作是浏览、搜索还是读全文而定）。
 
 统一规范：
 - 鉴权依赖：`cms-auth-skills/SKILL.md`
-- 运行日志：`.cms-log/`
+- 运行日志：`.cms-log/log/cms-docdb/`
+- 运行时状态：`.cms-log/state/cms-docdb/`
 
 授权依赖：
 - 需要鉴权时先读取 `cms-auth-skills/SKILL.md`

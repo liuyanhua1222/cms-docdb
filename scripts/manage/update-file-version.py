@@ -113,6 +113,7 @@ def main() -> None:
     parser.add_argument("file_id", type=int, help="要更新的文件 ID")
     parser.add_argument("project_id", type=int, help="文件所在空间 ID")
     parser.add_argument("resource_id", type=int, help="新上传的物理资源 ID")
+    parser.add_argument("--name", type=str, help="文件名（可选，不传则保持原文件名）")
     parser.add_argument("--version-status", type=int, default=3,
                         help="版本行为：1=覆盖草稿，2=强制新建，3=新建并立即定稿（默认 3）")
     parser.add_argument("--version-name", type=str, help="版本名称，如 V2.0")
@@ -127,6 +128,8 @@ def main() -> None:
         "resourceId": args.resource_id,
         "versionStatus": args.version_status,
     }
+    if args.name:
+        payload["name"] = args.name
     if args.version_name:
         payload["versionName"] = args.version_name
     if args.version_remark:

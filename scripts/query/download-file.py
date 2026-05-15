@@ -19,6 +19,7 @@ import urllib.parse
 import urllib.error
 import ssl
 import tempfile
+import time
 
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
@@ -57,6 +58,9 @@ def build_opener(ctx):
 # 接口完整 URL
 API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getDownloadInfo"
 AUTH_MODE = "appKey"
+CHUNK_SIZE = 5 * 1024 * 1024
+MAX_RETRIES = 3
+RETRY_BACKOFF_SECONDS = (1, 2, 4)
 
 
 def build_headers() -> dict:
@@ -108,18 +112,22 @@ def download_file(download_url: str, output_path: str) -> str:
 
     opener = build_opener(ctx)
 
-    try:
-        req = urllib.request.Request(download_url, method="GET")
-        with opener.open(req, timeout=120) as resp:
-            content = resp.read()
-            
-            with open(output_path, 'wb') as f:
-                f.write(content)
-            
+    for attempt in range(MAX_RETRIES):
+        try:
+            req = urllib.request.Request(download_url, method="GET")
+            with opener.open(req, timeout=120) as resp, open(output_path, 'wb') as f:
+                while True:
+                    chunk = resp.read(CHUNK_SIZE)
+                    if not chunk:
+                        break
+                    f.write(chunk)
             return output_path
-    except Exception as e:
-        print(f"错误: 下载文件失败 - {e}", file=sys.stderr)
-        sys.exit(1)
+        except Exception as e:
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_BACKOFF_SECONDS[attempt])
+            else:
+                print(f"错误: 下载文件失败 - {e}", file=sys.stderr)
+                sys.exit(1)
 
 
 def main():

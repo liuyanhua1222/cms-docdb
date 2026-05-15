@@ -45,7 +45,7 @@
 | 获取下载/预览凭据 | fileId | forceDownload, versionNumber |
 | 下载文件到本地 | fileId | output |
 | 分页读取文件内容 | fileId | pageNumber |
-| 批量获取文件全文 | files（fileId 列表） | — |
+| 批量获取文件全文 | files（fileId 列表） | maxChars, maxCharsPerFile |
 
 ## 参数详细说明
 
@@ -86,6 +86,8 @@
 | `file_id` | Long | 是 | 文件 ID | 有效文件 ID | - |
 | `--output` | String | 否 | 本地保存路径 | 有效本地路径；不传则保存到系统临时目录 | - |
 
+下载采用 5MB 分块写入，下载阶段最多重试 3 次，退避间隔为 1 秒、2 秒、4 秒。
+
 ### get-file-content.py — 分页读取文件内容
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
@@ -98,6 +100,8 @@
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
 | `files` | JSON String | 是 | 文件 ID 列表 | JSON 数组格式，如 `'[{"fileId":123},{"fileId":456}]'`，建议单次≤10个 | - |
+| `--max-chars` | Integer | 否 | 内容字段总字符上限 | 默认 `0`，表示不限制；面向 LLM 消费时建议按上下文预算显式设置 | - |
+| `--max-chars-per-file` | Integer | 否 | 单个内容字段字符上限 | 默认 `0`，表示不限制；面向 LLM 消费时建议按上下文预算显式设置 | - |
 
 ## 动作列表
 
@@ -133,7 +137,7 @@
 ### 6. 批量获取文件全文
 - **脚本**: `batch-get-content.py`
 - **用途**: 批量获取多个文件的全文内容，减少往返次数，提升 RAG 效率
-- **注意**: 建议单次不超过 10 个文件
+- **注意**: 建议单次不超过 10 个文件；默认不截断内容。若结果将直接进入 LLM 上下文，应显式设置 `--max-chars` 和 `--max-chars-per-file`
 - **输出**: 返回每个文件的 `{ fileId, content, status, message }`
 
 ## 输出说明
@@ -182,5 +186,5 @@ python scripts/query/get-download-info.py <file_id>
 python scripts/query/get-download-info.py <file_id> --force-download
 python scripts/query/download-file.py <file_id> [--output /path/to/save.pdf]
 python scripts/query/get-file-content.py <file_id> [--page-number 1]
-python scripts/query/batch-get-content.py '[{"fileId":123},{"fileId":456}]'
+python scripts/query/batch-get-content.py '[{"fileId":123},{"fileId":456}]' [--max-chars 60000] [--max-chars-per-file 20000]
 ```

@@ -29,7 +29,7 @@
 | `scripts/upload/upload-content.py` | `POST /open-api/document-database/file/uploadContent` | 一键保存纯文本到个人知识库或指定项目空间 |
 | `scripts/upload/save-file-by-path.py` | `POST /open-api/document-database/file/saveFileByPath` | 按逻辑路径保存物理文件到项目空间 |
 | `scripts/upload/save-file-by-parent-id.py` | `POST /open-api/document-database/file/saveFileByParentId` | 已知父目录 ID 时保存物理文件 |
-| `scripts/upload/upload-whole-file.py` | `POST /open-api/cwork-file/uploadWholeFile` | 小文件整传（≤20MB），返回 resourceId |
+| `scripts/upload/upload-whole-file.py` | `POST /open-api/cwork-file/uploadWholeFile` | 小文件整传（建议 20MB 以下），返回 resourceId |
 | `scripts/upload/check-slice.py` | `GET /open-api/document-database/file/getSliceIdByMd5V2` | 大文件分片预检，支持秒传判定 |
 | `scripts/upload/register-slice.py` | `POST /open-api/document-database/file/uploadFileSliceV2` | 注册分片元信息，换取 sliceId |
 | `scripts/upload/merge-resource.py` | `POST /open-api/document-database/file/saveResource` | 合并分片生成最终 resourceId |
@@ -68,7 +68,9 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `file_path` | String | 是 | 本地文件路径 | 有效文件路径，文件大小≤20MB | - |
+| `file_path` | String | 是 | 本地文件路径 | 有效文件路径，建议≤20MB | - |
+
+文件体采用 5MB 分块发送，避免一次性读入内存。大文件优先建议使用分片流程，但脚本不做 20MB 硬限制。
 
 ### save-file-by-parent-id.py — 按父 ID 保存
 
@@ -140,7 +142,7 @@
 
 ### 2. 物理文件整传
 - **脚本**: `upload-whole-file.py`
-- **用途**: 小文件（≤20MB）整体上传，返回 resourceId
+- **用途**: 小文件（建议 20MB 以下）整体上传，返回 resourceId；脚本会分块发送文件体以降低内存峰值
 - **输出**: 返回 resourceId（用于后续绑定到知识库）
 
 ### 3. 按父 ID 保存到项目目录
@@ -194,8 +196,8 @@
 ### 物理文件上传（PDF/DOCX 等）
 
 1. 鉴权预检
-2. 小文件（≤20MB）：调用 `upload-whole-file.py` → 获得 resourceId
-3. 大文件（>20MB）：`check-slice.py` → `register-slice.py` → `merge-resource.py` → 获得 resourceId
+2. 小文件整传（建议 20MB 以下）：调用 `upload-whole-file.py` → 获得 resourceId
+3. 大文件或整传失败：`check-slice.py` → `register-slice.py` → `merge-resource.py` → 获得 resourceId
 4. 调用 `save-file-by-path.py` 或 `save-file-by-parent-id.py` 绑定到知识库
 5. 返回 fileId
 

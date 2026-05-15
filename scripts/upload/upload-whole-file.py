@@ -37,6 +37,10 @@ MAX_REDIRECTS = 5
 RETRY_BACKOFF_SECONDS = (1, 2, 4)
 
 
+class RetryableHttpError(Exception):
+    """HTTP 状态码表示临时失败，可安全重试。"""
+
+
 def build_app_key() -> str:
     """获取 appKey"""
     app_key = os.environ.get("XG_BIZ_API_KEY") or os.environ.get("XG_APP_KEY")
@@ -60,6 +64,20 @@ def resolve_redirect(location: str, scheme: str, host: str, path: str):
     if parsed.query:
         next_path = f"{next_path}?{parsed.query}"
     return parsed.scheme or scheme, parsed.netloc or host, next_path
+
+
+def parse_response_body(status: int, body: bytes) -> dict:
+    text = body.decode("utf-8", errors="replace")
+    if status == 429 or status >= 500:
+        raise RetryableHttpError(f"HTTP {status} - {text[:500]}")
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return {
+            "resultCode": 0,
+            "resultMsg": f"HTTP {status} 返回非 JSON 响应: {text[:500]}",
+            "data": None
+        }
 
 
 def send_upload_request(scheme: str, host: str, path: str, app_key: str,
@@ -128,12 +146,25 @@ def call_api(file_path: str) -> dict:
                         scheme, host, path = resolve_redirect(location, scheme, host, path)
                         continue
 
-                    result = json.loads(resp.read().decode("utf-8"))
+                    result = parse_response_body(resp.status, resp.read())
                     resp.close()
                     return result
-                except Exception:
+                except RetryableHttpError:
                     resp.close()
                     raise
+                except Exception as e:
+                    resp.close()
+                    return {
+                        "resultCode": 0,
+                        "resultMsg": str(e),
+                        "data": None
+                    }
+        except RetryableHttpError as e:
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_BACKOFF_SECONDS[attempt])
+            else:
+                print(f"错误: {e}", file=sys.stderr)
+                sys.exit(1)
         except Exception as e:
             if attempt < MAX_RETRIES - 1:
                 time.sleep(RETRY_BACKOFF_SECONDS[attempt])

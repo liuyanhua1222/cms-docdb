@@ -81,9 +81,11 @@ def call_api(file_id: int) -> dict:
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
 
+    opener = build_opener(ctx)
+
     for attempt in range(MAX_RETRIES):
         try:
-            with urllib.request.urlopen(req, context=ctx, timeout=TIMEOUT) as resp:
+            with opener.open(req, timeout=TIMEOUT) as resp:
                 return json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             if attempt < MAX_RETRIES - 1:

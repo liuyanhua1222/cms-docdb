@@ -85,9 +85,11 @@ def call_api(file_id: int, page_number: int = 1) -> dict:
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
 
+    opener = build_opener(ctx)
+
     for attempt in range(3):
         try:
-            with urllib.request.urlopen(req, context=ctx, timeout=60) as resp:
+            with opener.open(req, timeout=60) as resp:
                 return json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             if attempt < 2:

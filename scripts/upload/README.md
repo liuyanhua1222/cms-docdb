@@ -25,6 +25,8 @@
 
 ## 运行方式
 
+> **提示**：系统会自动检测 Python 命令，优先使用 `python3`，如不存在则使用 `python`
+
 ```bash
 export XG_BIZ_API_KEY="your-app-key"
 # 或
@@ -32,36 +34,36 @@ export XG_APP_KEY="your-app-key"
 
 # === 纯文本上传（AI 内容入库首选）===
 # 必填：内容、文件名
-python3 scripts/upload/upload-content.py "内容" "文件名.md" [--file-suffix md] [--folder-name "AI生成/周报"]
+python scripts/upload/upload-content.py "内容" "文件名.md" [--file-suffix md] [--folder-name "AI生成/周报"]
 
 # === 物理文件上传 ===
 # 小文件（≤20MB）
 # 必填：file_path
-python3 scripts/upload/upload-whole-file.py <file_path>
+python scripts/upload/upload-whole-file.py <file_path>
 #   → 获得 resourceId
 
 # 大文件（>20MB）
 # 必填：md5
-python3 scripts/upload/check-slice.py <md5> [--size <size>] [--suffix <suffix>]
+python scripts/upload/check-slice.py <md5> [--size <size>] [--suffix <suffix>]
 #   → 秒传命中用 sliceId；未命中需 PUT 上传
 # 必填：full_path、md5、size、storage_type
-python3 scripts/upload/register-slice.py <full_path> <md5> <size> MINIO
+python scripts/upload/register-slice.py <full_path> <md5> <size> MINIO
 # 必填：文件名、slice_ids
-python3 scripts/upload/merge-resource.py "文件名.pdf" "sliceId1,sliceId2,..." [--suffix pdf] [--size <size>]
+python scripts/upload/merge-resource.py "文件名.pdf" "sliceId1,sliceId2,..." [--suffix pdf] [--size <size>]
 #   → 获得 resourceId
 
 # === 绑定到知识库 ===
 # 已知父目录 ID（推荐，跳过路径解析）
 # 必填：project_id、parent_id、resource_id、文件名
-python3 scripts/upload/save-file-by-parent-id.py <project_id> <parent_id> <resource_id> "文件名.pdf" [--suffix pdf]
+python scripts/upload/save-file-by-parent-id.py <project_id> <parent_id> <resource_id> "文件名.pdf" [--suffix pdf]
 
 # 按逻辑路径（路径不存在自动创建）
 # 必填：project_id、文件名、resource_id
-python3 scripts/upload/save-file-by-path.py <project_id> "文件名.pdf" <resource_id> [--path "目录"] [--suffix pdf]
+python scripts/upload/save-file-by-path.py <project_id> "文件名.pdf" <resource_id> [--path "目录"] [--suffix pdf]
 
 # === 获取下载链接 ===
 # 必填：resource_id
-python3 scripts/upload/get-file-download-info.py <resource_id>
+python scripts/upload/get-file-download-info.py <resource_id>
 ```
 
 ## 返回说明

@@ -23,31 +23,33 @@
 
 ## 运行方式
 
+> **提示**：系统会自动检测 Python 命令，优先使用 `python3`，如不存在则使用 `python`
+
 ```bash
 export XG_BIZ_API_KEY="your-app-key"
 # 或
 export XG_APP_KEY="your-app-key"
 
 # 搜索文件（project-id 必填）
-python3 scripts/query/search.py "关键词" --project-id <project_id>
+python scripts/query/search.py "关键词" --project-id <project_id>
 
 # 获取文件全文（AI 摘要/RAG）
-python3 scripts/query/get-full-content.py <file_id>
+python scripts/query/get-full-content.py <file_id>
 
 # 获取预览链接（用户自己查看）
-python3 scripts/query/get-download-info.py <file_id>
+python scripts/query/get-download-info.py <file_id>
 
 # 获取下载链接
-python3 scripts/query/get-download-info.py <file_id> --force-download
+python scripts/query/get-download-info.py <file_id> --force-download
 
 # 下载文件到本地（推荐用于 AI 分析场景）
-python3 scripts/query/download-file.py <file_id> [--output /path/to/save.pdf]
+python scripts/query/download-file.py <file_id> [--output /path/to/save.pdf]
 
 # 分页获取文件内容
-python3 scripts/query/get-file-content.py <file_id> [--page-number 1]
+python scripts/query/get-file-content.py <file_id> [--page-number 1]
 
 # 批量获取文件全文（RAG 场景）
-python3 scripts/query/batch-get-content.py '[{"fileId":123},{"fileId":456}]'
+python scripts/query/batch-get-content.py '[{"fileId":123},{"fileId":456}]'
 ```
 
 ## 返回说明
@@ -80,7 +82,7 @@ python3 scripts/query/batch-get-content.py '[{"fileId":123},{"fileId":456}]'
   "data": {
     "downloadUrl": "https://...",
     "fileName": "文件名.pdf",
-    "openWith": 2,  // 2=PDF预览
+    "openWith": 2,
     "lazyLoad": false
   }
 }

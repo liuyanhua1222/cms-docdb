@@ -26,28 +26,30 @@ export XG_APP_KEY="your-app-key"
 
 ## 运行方式
 
+> **提示**：系统会自动检测 Python 命令，优先使用 `python3`，如不存在则使用 `python`
+
 ```bash
 # === 重命名/移动 ===
-python3 scripts/manage/update-file-property.py <file_id> --new-name "新文件名.pdf"
-python3 scripts/manage/update-file-property.py <file_id> --target-parent-id <parent_id>
-python3 scripts/manage/update-file-property.py <file_id> --new-name "同名文件.pdf" --auto-rename
+python scripts/manage/update-file-property.py <file_id> --new-name "新文件名.pdf"
+python scripts/manage/update-file-property.py <file_id> --target-parent-id <parent_id>
+python scripts/manage/update-file-property.py <file_id> --new-name "同名文件.pdf" --auto-rename
 
 # === 物理文件版本更新 ===
 # versionStatus: 1=覆盖草稿, 2=强制新建, 3=新建并立即定稿（推荐）
-python3 scripts/manage/update-file-version.py <file_id> <project_id> <resource_id> \
+python scripts/manage/update-file-version.py <file_id> <project_id> <resource_id> \
   --version-status 3 --version-name "V2.0" --version-remark "修订内容"
 
 # === 查看版本历史 ===
-python3 scripts/manage/get-version-list.py <file_id>
+python scripts/manage/get-version-list.py <file_id>
 
 # === 获取最新版本 ===
-python3 scripts/manage/get-last-version.py <file_id>
+python scripts/manage/get-last-version.py <file_id>
 
 # === 版本定稿 ===
 # 定稿最新版本
-python3 scripts/manage/finalize-version.py <file_id>
+python scripts/manage/finalize-version.py <file_id>
 # 定稿指定版本号
-python3 scripts/manage/finalize-version.py <file_id> --version-number 3
+python scripts/manage/finalize-version.py <file_id> --version-number 3
 ```
 
 ## 返回说明

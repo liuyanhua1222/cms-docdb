@@ -23,24 +23,26 @@
 
 ## 运行方式
 
+> **提示**：系统会自动检测 Python 命令，优先使用 `python3`，如不存在则使用 `python`
+
 ```bash
 export XG_BIZ_API_KEY="your-app-key"
 # 或
 export XG_APP_KEY="your-app-key"
 
 # 发现可用空间
-python3 scripts/browse/get-project-list.py
-python3 scripts/browse/get-personal-project-id.py
-python3 scripts/browse/get-uploadable-list.py
+python scripts/browse/get-project-list.py
+python scripts/browse/get-personal-project-id.py
+python scripts/browse/get-uploadable-list.py
 
 # 浏览项目根目录
-python3 scripts/browse/get-level1-folders.py <project_id>
+python scripts/browse/get-level1-folders.py <project_id>
 
 # 浏览指定目录（parentId = 0 为绝对根目录）
-python3 scripts/browse/browse.py <parent_id> [--type 1|2] [--order 1-6]
+python scripts/browse/browse.py <parent_id> [--type 1|2] [--order 1-6]
 
 # 最近上传文件
-python3 scripts/browse/get-recent-files.py [--limit 10] [--search-key "关键词"]
+python scripts/browse/get-recent-files.py [--limit 10] [--search-key "关键词"]
 ```
 
 ## 返回说明

@@ -18,6 +18,8 @@
 
 ## 运行方式
 
+> **提示**：系统会自动检测 Python 命令，优先使用 `python3`，如不存在则使用 `python`
+
 ```bash
 # 先优先读取 cms-auth-skills/SKILL.md 获取 appKey；如未安装先安装
 export XG_BIZ_API_KEY="your-app-key"
@@ -25,10 +27,10 @@ export XG_BIZ_API_KEY="your-app-key"
 export XG_APP_KEY="your-app-key"
 
 # 删除文件（默认逻辑删除，移入回收站）
-python3 scripts/delete/delete-file.py <file_id>
+python scripts/delete/delete-file.py <file_id>
 
 # 物理彻底删除（不可恢复）
-python3 scripts/delete/delete-file.py <file_id> --physical
+python scripts/delete/delete-file.py <file_id> --physical
 ```
 
 ## ⚠️ 高风险操作

@@ -26,9 +26,9 @@
 
 ### 1. 纯文本上传（AI 内容入库首选）
 - **脚本**: `upload-content.py`
-- **用途**: 一键保存纯文本/Markdown/HTML 内容到个人知识库或指定项目空间
+- **用途**: 一键保存纯文本/Markdown/HTML 内容到个人知识库或指定知识库项目空间
 - **注意**: 仅支持纯文本，不支持二进制文件；不传 fileSuffix 时默认为 md
-- **空间路由**: 不传 projectId 时保存到个人知识库，传入 projectId 时保存到指定项目空间（需确保用户有访问权限）
+- **空间路由**: 不传 projectId 时保存到个人知识库，传入 projectId 时保存到指定知识库项目空间（需确保用户有访问权限）
 - **新建模式响应**: 返回 `{ projectId, projectName, folderId, folderName, fileId, fileName, downloadUrl }`
 - **版本更新模式响应**: 传入 `--update-file-id` 时，仅返回 `{ fileId, fileName }`
 

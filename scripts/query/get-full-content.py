@@ -72,11 +72,17 @@ def build_headers() -> dict:
     return headers
 
 
-def call_api(file_id: int) -> dict:
+def call_api(file_id: int, relation_id: str = None, file_type: str = None) -> dict:
     """调用全局提纯文本接口，返回原始 JSON 响应"""
     headers = build_headers()
 
-    url = f"{API_URL}?fileId={file_id}"
+    params = [("fileId", str(file_id))]
+    if relation_id:
+        params.append(("relationId", relation_id))
+    if file_type:
+        params.append(("fileType", file_type))
+
+    url = f"{API_URL}?{urllib.parse.urlencode(params)}"
 
     req = urllib.request.Request(url, headers=headers, method="GET")
 
@@ -126,6 +132,8 @@ def main():
     parser = argparse.ArgumentParser(description="获取文件全文内容（Markdown 格式）")
     parser.add_argument("file_id", type=int, nargs='?', help="文件 ID（位置参数）")
     parser.add_argument("--file-id", type=int, dest="file_id_opt", help="文件 ID（命名参数）")
+    parser.add_argument("--relation-id", type=str, help="业务关联 ID（可选）")
+    parser.add_argument("--file-type", type=str, help="业务类型（可选，如 doc/file/work_report 等）")
     args = parser.parse_args()
     
     file_id = args.file_id or args.file_id_opt
@@ -133,7 +141,7 @@ def main():
         print("错误: 请提供文件 ID", file=sys.stderr)
         sys.exit(1)
 
-    result = call_api(file_id)
+    result = call_api(file_id, relation_id=args.relation_id, file_type=args.file_type)
 
     processed_result = process_result(result)
     print(json.dumps(processed_result, ensure_ascii=False))

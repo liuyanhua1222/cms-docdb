@@ -74,7 +74,7 @@ def build_headers() -> dict:
 
 def call_api(name_key: str, project_id: int = None, root_file_id: int = None,
              start_time: int = None, end_time: int = None,
-             is_file_storage: bool = None,
+             is_file_storage: bool = None, permission_query: str = None,
              exclude_file_types: str = None, exclude_folder_names: str = None) -> dict:
     """调用文件搜索接口，返回原始 JSON 响应"""
     headers = build_headers()
@@ -91,6 +91,8 @@ def call_api(name_key: str, project_id: int = None, root_file_id: int = None,
         params.append(("endTime", str(end_time)))
     if is_file_storage is not None:
         params.append(("isFileStorage", "true" if is_file_storage else "false"))
+    if permission_query:
+        params.append(("permissionQuery", permission_query))
     if exclude_file_types:
         params.append(("excludeFileTypes", exclude_file_types))
     if exclude_folder_names:
@@ -153,6 +155,7 @@ def main():
     parser.add_argument("--start-time", type=int, help="开始时间戳（毫秒，可选）")
     parser.add_argument("--end-time", type=int, help="结束时间戳（毫秒，可选）")
     parser.add_argument("--is-file-storage", action="store_true", help="文件存储范围（可选）")
+    parser.add_argument("--permission-query", type=str, help="权限查询条件（可选）")
     parser.add_argument("--exclude-file-types", type=str, help="排除的文件类型，逗号分隔（可选）")
     parser.add_argument("--exclude-folder-names", type=str, help="排除的文件夹名称，逗号分隔（可选）")
     args = parser.parse_args()
@@ -164,6 +167,7 @@ def main():
         start_time=args.start_time,
         end_time=args.end_time,
         is_file_storage=args.is_file_storage,
+        permission_query=args.permission_query,
         exclude_file_types=args.exclude_file_types,
         exclude_folder_names=args.exclude_folder_names
     )

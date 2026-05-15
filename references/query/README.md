@@ -14,8 +14,8 @@
 
 | 动作 | 必填输入 | 可选输入 |
 |---|---|---|
-| 搜索文件 | nameKey（关键词） | projectId, rootFileId, startTime, endTime, excludeFileTypes |
-| 获取文件全文 | fileId | — |
+| 搜索文件 | nameKey（关键词）, projectId | rootFileId, startTime, endTime, excludeFileTypes, excludeFolderNames |
+| 获取文件全文 | fileId | relationId, fileType |
 | 获取下载/预览凭据 | fileId | forceDownload, versionNumber |
 | 分页读取文件内容 | fileId | pageNumber |
 | 批量获取文件全文 | files（fileId 列表） | — |

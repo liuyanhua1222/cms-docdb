@@ -14,7 +14,7 @@
 
 | 动作 | 必填输入 | 可选输入 |
 |---|---|---|
-| 纯文本上传 | content, fileName | fileSuffix, folderName, projectId |
+| 纯文本上传 | content, fileName | fileSuffix, folderName, projectId, updateFileId, versionName, versionRemark |
 | 物理文件整传 | 本地文件路径 | — |
 | 按父 ID 保存 | projectId, parentId, resourceId, name, fileType | suffix, size, isSensitive |
 | 按路径保存 | projectId, resourceId, name, fileType | path, suffix, size, isSensitive |

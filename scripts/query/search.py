@@ -143,15 +143,18 @@ def process_result(result):
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="搜索文件或目录")
-    parser.add_argument("name_key", type=str, help="搜索关键词")
-    parser.add_argument("--project-id", type=int, help="项目/空间 ID")
-    parser.add_argument("--root-file-id", type=int, help="指定根目录 ID")
-    parser.add_argument("--start-time", type=int, help="开始时间戳（毫秒）")
-    parser.add_argument("--end-time", type=int, help="结束时间戳（毫秒）")
-    parser.add_argument("--is-file-storage", action="store_true", help="文件存储范围")
-    parser.add_argument("--exclude-file-types", type=str, help="排除的文件类型，逗号分隔")
-    parser.add_argument("--exclude-folder-names", type=str, help="排除的文件夹名称，逗号分隔")
+    parser = argparse.ArgumentParser(
+        description="搜索文件或目录",
+        epilog="注意: --project-id 是必填参数，用于限定搜索范围，避免返回无关结果"
+    )
+    parser.add_argument("name_key", type=str, help="搜索关键词（必填）")
+    parser.add_argument("--project-id", type=int, required=True, help="项目/空间 ID（必填，用于限定搜索范围）")
+    parser.add_argument("--root-file-id", type=int, help="指定根目录 ID（可选）")
+    parser.add_argument("--start-time", type=int, help="开始时间戳（毫秒，可选）")
+    parser.add_argument("--end-time", type=int, help="结束时间戳（毫秒，可选）")
+    parser.add_argument("--is-file-storage", action="store_true", help="文件存储范围（可选）")
+    parser.add_argument("--exclude-file-types", type=str, help="排除的文件类型，逗号分隔（可选）")
+    parser.add_argument("--exclude-folder-names", type=str, help="排除的文件夹名称，逗号分隔（可选）")
     args = parser.parse_args()
 
     result = call_api(

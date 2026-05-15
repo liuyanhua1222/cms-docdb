@@ -49,7 +49,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 
 输入完整性规则（强制）：
 1. 浏览目录必须提供 parentId（根目录传 0）或 projectId
-2. 搜索文件必须提供关键词
+2. 搜索文件必须提供关键词 + projectId（限定搜索范围，避免返回无关结果）
 3. 上传文件必须提供文件名和内容（纯文本）或 resourceId（物理文件）
 4. 删除/重命名/移动文件必须提供 fileId
 5. 版本更新必须提供目标文件的 fileId（纯文本）或文件 id + projectId + resourceId（物理文件）

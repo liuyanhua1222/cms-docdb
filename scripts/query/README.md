@@ -28,8 +28,8 @@ export XG_BIZ_API_KEY="your-app-key"
 # 或
 export XG_APP_KEY="your-app-key"
 
-# 搜索文件
-python3 scripts/query/search.py "关键词" [--project-id 123]
+# 搜索文件（project-id 必填）
+python3 scripts/query/search.py "关键词" --project-id <project_id>
 
 # 获取文件全文（AI 摘要/RAG）
 python3 scripts/query/get-full-content.py <file_id>

@@ -1,11 +1,11 @@
 ---
-name: 官方企业知识库skill
+name: cms-docdb
 description: 公司内部知识库—目录浏览与搜索，读全文或下载/预览；上传与归档；已存在文件用新版本与定稿更新（禁止覆盖），删除须确认；Open API 仅允许通过本仓库脚本执行。
-skillcode: cms-docdb
-github: https://github.com/liuyanhua1222/cms-docdb
-dependencies:
-  - cms-auth-skills
 metadata:
+  skillcode: cms-docdb
+  github: https://github.com/liuyanhua1222/cms-docdb
+  dependencies:
+    - cms-auth-skills
   openclaw:
     requires:
       bins:
@@ -63,7 +63,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 建议工作流（简版）：
 1. 先读取 `SKILL.md`，确认能力边界和限制
 2. 根据用户意图定位模块，读取对应 `references/<module>/README.md`
-3. 确认具体动作后，读取 `scripts/<module>/README.md` 了解脚本入参
+3. 确认具体动作后，在 `references/<module>/README.md` 中查看脚本清单、入参与运行方式
 4. **保存/上传前必须执行存在性检查**：通过 `search.py` 或 `browse.py` 确认目标文件是否已存在。已存在则切换为版本更新流程（manage 模块），不存在才新建（upload 模块）
 5. 补齐用户必需输入
 6. 执行对应脚本
@@ -176,7 +176,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 | "查询知识库中的…"、"搜索知识库里的…"、"搜索xxx"、"查询xxx"、"查找xxx"、"看看这个文件的内容"、"帮我读取xxx文件"、"帮我总结一下xxx文件" | `query` | 搜索文件并读取内容、下载链接或预览链接 | `./references/query/README.md` | `./scripts/query/search.py` |
 | "存到康哲/玄关/德镁知识库"、"上传到知识库"、"上传xxx到知识库"、"把这份文档归档"、"帮我保存这个文件" | `upload` | 新建文件到内部知识库（仅用于新建，已存在则路由到 manage 走版本更新） | `./references/upload/README.md` | `./scripts/upload/upload-content.py` |
 | "帮我把xxx删了"、"删除xxx文件"、"把xxx文件移除" | `delete` | 删除指定文件（高风险，需确认） | `./references/delete/README.md` | `./scripts/delete/delete-file.py` |
-| "帮我把xxx重命名"、"把xxx改名为yyy"、"把这个文件移到xxx文件夹"、"更新一下知识库里的xxx"、"把最新内容存进去"、"这个文档有更新，存一下"、"查看xxx文件的历史版本"、"把这个版本定稿" | `manage` | 重命名/移动文件；更新已有文件内容（版本管理）；查看历史版本；版本定稿 | `./references/manage/README.md` | 见 `./scripts/manage/README.md`（按意图选择对应脚本） |
+| "帮我把xxx重命名"、"把xxx改名为yyy"、"把这个文件移到xxx文件夹"、"更新一下知识库里的xxx"、"把最新内容存进去"、"这个文档有更新，存一下"、"查看xxx文件的历史版本"、"把这个版本定稿" | `manage` | 重命名/移动文件；更新已有文件内容（版本管理）；查看历史版本；版本定稿 | `./references/manage/README.md` | 见 `./references/manage/README.md`（按意图选择对应脚本） |
 
 能力树：
 
@@ -191,7 +191,6 @@ cms-docdb/
 │   └── manage/README.md
 └── scripts/
     ├── browse/
-    │   ├── README.md
     │   ├── browse.py
     │   ├── get-level1-folders.py
     │   ├── get-personal-project-id.py
@@ -199,14 +198,13 @@ cms-docdb/
     │   ├── get-recent-files.py
     │   └── get-uploadable-list.py
     ├── query/
-    │   ├── README.md
     │   ├── search.py
     │   ├── get-full-content.py
     │   ├── get-download-info.py
+    │   ├── download-file.py
     │   ├── get-file-content.py
     │   └── batch-get-content.py
     ├── upload/
-    │   ├── README.md
     │   ├── upload-content.py
     │   ├── save-file-by-path.py
     │   ├── save-file-by-parent-id.py
@@ -216,10 +214,8 @@ cms-docdb/
     │   ├── merge-resource.py
     │   └── get-file-download-info.py
     ├── delete/
-    │   ├── README.md
     │   └── delete-file.py
     └── manage/
-        ├── README.md
         ├── update-file-property.py
         ├── update-file-version.py
         ├── get-version-list.py

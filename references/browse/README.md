@@ -1,5 +1,17 @@
 # browse — 模块说明
 
+## 目录
+
+- 适用场景
+- 鉴权模式
+- 脚本清单
+- 输入要求
+- 参数详细说明
+- 动作列表
+- 输出说明
+- 标准流程
+- 运行方式速查
+
 ## 适用场景
 
 - 用户说"帮我看看知识库里有什么"、"列出我的空间"
@@ -10,6 +22,19 @@
 ## 鉴权模式
 
 所有动作统一使用 `appKey` 鉴权，通过 `cms-auth-skills` 获取。
+
+## 脚本清单
+
+| 脚本 | 对应接口 | 用途 |
+|---|---|---|
+| `scripts/browse/get-project-list.py` | `GET /open-api/document-database/project/list` | 获取有权限访问的所有空间列表 |
+| `scripts/browse/get-personal-project-id.py` | `GET /open-api/document-database/project/personal/getProjectId` | 获取当前用户的个人知识库空间 ID |
+| `scripts/browse/get-uploadable-list.py` | `GET /open-api/document-database/project/uploadableList` | 获取有上传/编辑权限的空间列表 |
+| `scripts/browse/get-level1-folders.py` | `GET /open-api/document-database/file/getLevel1Folders` | 拉取项目空间根目录下的所有内容 |
+| `scripts/browse/browse.py` | `GET /open-api/document-database/file/getChildFiles` | 浏览指定目录下的直接子项 |
+| `scripts/browse/get-recent-files.py` | `POST /open-api/document-database/project/personal/getRecentFiles` | 获取当前用户最近上传的文件列表 |
+
+运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。系统会自动检测 Python 命令，优先使用 `python3`，如不存在则使用 `python`。
 
 ## 输入要求
 
@@ -145,3 +170,14 @@
 - "浏览一下根目录"
 - "查看 AI 研发中心这个空间"
 - "我想保存文件，先看看有哪些空间可以写"
+
+## 运行方式速查
+
+```bash
+python scripts/browse/get-project-list.py
+python scripts/browse/get-personal-project-id.py
+python scripts/browse/get-uploadable-list.py
+python scripts/browse/get-level1-folders.py <project_id> [--order 1|2|5|6] [--permission-query <query>]
+python scripts/browse/browse.py <parent_id> [--type 1|2] [--order 1|2|3|4|5|6] [--exclude-file-types "work_report,huiji"] [--exclude-folder-names "临时文件"]
+python scripts/browse/get-recent-files.py [--limit 10] [--search-key "关键词"]
+```

@@ -1,5 +1,18 @@
 # manage — 模块说明
 
+## 目录
+
+- 适用场景
+- 鉴权模式
+- 脚本清单
+- 输入要求
+- 参数详细说明
+- 动作列表
+- 输出说明
+- 版本更新决策流程
+- 冲突处理
+- 运行方式速查
+
 ## 适用场景
 
 - 用户说"帮我把 xxx 文件重命名"、"把这个文件改个名字"
@@ -10,6 +23,18 @@
 ## 鉴权模式
 
 所有动作统一使用 `appKey` 鉴权，通过 `cms-auth-skills` 获取。
+
+## 脚本清单
+
+| 脚本 | 对应接口 | 用途 |
+|---|---|---|
+| `scripts/manage/update-file-property.py` | `POST /open-api/document-database/file/updateFileProperty` | 更新文件属性（重命名/移动） |
+| `scripts/manage/update-file-version.py` | `POST /open-api/document-database/file/updateFileVersion` | 物理文件版本更新（绑定新资源产生新版本） |
+| `scripts/manage/get-version-list.py` | `GET /open-api/document-database/file/getVersionList` | 获取文件完整版本历史列表 |
+| `scripts/manage/get-last-version.py` | `GET /open-api/document-database/file/getLastVersion` | 获取文件最新版本信息 |
+| `scripts/manage/finalize-version.py` | `POST /open-api/document-database/file/finalizeVersion` | 将指定版本标记为定稿 |
+
+纯文本内容的版本更新使用 `scripts/upload/upload-content.py --update-file-id`。运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。系统会自动检测 Python 命令，优先使用 `python3`，如不存在则使用 `python`。
 
 ## 输入要求
 
@@ -161,3 +186,17 @@
 - "这个文件改了，保留旧的，存成新版本"
 - "查看这个文件有几个版本"
 - "把最新版本定稿"
+
+## 运行方式速查
+
+```bash
+python scripts/manage/update-file-property.py <file_id> --new-name "新文件名.pdf"
+python scripts/manage/update-file-property.py <file_id> --target-parent-id <parent_id>
+python scripts/manage/update-file-property.py <file_id> --new-name "同名文件.pdf" --auto-rename
+python scripts/manage/update-file-property.py <file_id> --target-parent-id <parent_id> --cover
+python scripts/manage/update-file-version.py <file_id> <project_id> <resource_id> [--name "新文件名.pdf"] --version-status 3 --version-name "V2.0" --version-remark "修订内容"
+python scripts/manage/get-version-list.py <file_id>
+python scripts/manage/get-last-version.py <file_id>
+python scripts/manage/finalize-version.py <file_id>
+python scripts/manage/finalize-version.py <file_id> --version-number 3
+```

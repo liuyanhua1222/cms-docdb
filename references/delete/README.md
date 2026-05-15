@@ -9,11 +9,19 @@
 
 所有动作统一使用 `appKey` 鉴权，通过 `cms-auth-skills` 获取。
 
+## 脚本清单
+
+| 脚本 | 对应接口 | 用途 |
+|---|---|---|
+| `scripts/delete/delete-file.py` | `POST /open-api/document-database/file/deleteFile` | 删除指定文件，输出 JSON 结果 |
+
+运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。系统会自动检测 Python 命令，优先使用 `python3`，如不存在则使用 `python`。
+
 ## 输入要求
 
 | 动作 | 必填输入 | 可选输入 |
 |---|---|---|
-| 删除文件 | fileId | isPhysical |
+| 删除文件 | fileId | physical |
 
 ## 参数详细说明
 
@@ -22,7 +30,7 @@
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
 | `file_id` | Long | 是 | 文件 ID | 有效文件 ID | - |
-| `--is-physical` | Boolean | 否 | 物理彻底删除（不可恢复） | 无值标志，存在即为 true | - |
+| `--physical` | Boolean | 否 | 物理彻底删除（不可恢复） | 无值标志，存在即为 true | - |
 
 ## 动作列表
 
@@ -44,7 +52,7 @@
 | 模式 | 参数 | 说明 |
 |---|---|---|
 | 逻辑删除（默认） | 不传 isPhysical | 文件移入回收站，可从回收站恢复 |
-| 物理彻底删除 | isPhysical=true | 从回收站彻底抹除，**不可恢复** |
+| 物理彻底删除 | `--physical` | 从回收站彻底抹除，**不可恢复** |
 
 ## 危险操作确认流程
 
@@ -58,3 +66,10 @@
 - "帮我把这份文档删了"
 - "删除周报 xxx"
 - "彻底删除这个文件"
+
+## 运行方式速查
+
+```bash
+python scripts/delete/delete-file.py <file_id>
+python scripts/delete/delete-file.py <file_id> --physical
+```

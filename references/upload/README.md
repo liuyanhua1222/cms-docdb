@@ -1,5 +1,17 @@
 # upload — 模块说明
 
+## 目录
+
+- 适用场景
+- 鉴权模式
+- 脚本清单
+- 输入要求
+- 参数详细说明
+- 动作列表
+- 输出说明
+- 标准流程
+- 运行方式速查
+
 ## 适用场景
 
 - 用户说"帮我把这个文档存到知识库"、"上传 xxx 到知识库"、"把这份报告归档"
@@ -9,6 +21,21 @@
 ## 鉴权模式
 
 所有动作统一使用 `appKey` 鉴权，通过 `cms-auth-skills` 获取。
+
+## 脚本清单
+
+| 脚本 | 对应接口 | 用途 |
+|---|---|---|
+| `scripts/upload/upload-content.py` | `POST /open-api/document-database/file/uploadContent` | 一键保存纯文本到个人知识库或指定项目空间 |
+| `scripts/upload/save-file-by-path.py` | `POST /open-api/document-database/file/saveFileByPath` | 按逻辑路径保存物理文件到项目空间 |
+| `scripts/upload/save-file-by-parent-id.py` | `POST /open-api/document-database/file/saveFileByParentId` | 已知父目录 ID 时保存物理文件 |
+| `scripts/upload/upload-whole-file.py` | `POST /open-api/cwork-file/uploadWholeFile` | 小文件整传（≤20MB），返回 resourceId |
+| `scripts/upload/check-slice.py` | `GET /open-api/document-database/file/getSliceIdByMd5V2` | 大文件分片预检，支持秒传判定 |
+| `scripts/upload/register-slice.py` | `POST /open-api/document-database/file/uploadFileSliceV2` | 注册分片元信息，换取 sliceId |
+| `scripts/upload/merge-resource.py` | `POST /open-api/document-database/file/saveResource` | 合并分片生成最终 resourceId |
+| `scripts/upload/get-file-download-info.py` | `GET /open-api/cwork-file/getDownloadInfo` | 根据 resourceId 获取下载 URL（有效期 1 小时） |
+
+运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。系统会自动检测 Python 命令，优先使用 `python3`，如不存在则使用 `python`。
 
 ## 输入要求
 
@@ -178,3 +205,17 @@
 - "上传这份 PDF 到 AI 生成文件夹"
 - "把这份 Markdown 文档归档"
 - "帮我保存这个文件"
+
+## 运行方式速查
+
+```bash
+python scripts/upload/upload-content.py "内容" "文件名.md" [--file-suffix md] [--folder-name "AI生成/周报"] [--project-id <project_id>]
+python scripts/upload/upload-content.py "新内容" "文件名.md" --update-file-id <file_id> [--version-name "V2.0"] [--version-remark "修订说明"]
+python scripts/upload/upload-whole-file.py <file_path>
+python scripts/upload/check-slice.py <md5> [--size <size>] [--suffix <suffix>]
+python scripts/upload/register-slice.py <full_path> <md5> <size> MINIO
+python scripts/upload/merge-resource.py "文件名.pdf" "sliceId1,sliceId2,..." [--suffix pdf] [--size <size>]
+python scripts/upload/save-file-by-parent-id.py <project_id> <parent_id> <resource_id> "文件名.pdf" [--suffix pdf]
+python scripts/upload/save-file-by-path.py <project_id> "文件名.pdf" <resource_id> [--path "目录"] [--suffix pdf]
+python scripts/upload/get-file-download-info.py <resource_id>
+```

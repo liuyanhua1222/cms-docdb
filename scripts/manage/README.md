@@ -37,7 +37,7 @@ python scripts/manage/update-file-property.py <file_id> --new-name "同名文件
 # === 物理文件版本更新 ===
 # versionStatus: 1=覆盖草稿, 2=强制新建, 3=新建并立即定稿（推荐）
 python scripts/manage/update-file-version.py <file_id> <project_id> <resource_id> \
-  --version-status 3 --version-name "V2.0" --version-remark "修订内容"
+  [--name "新文件名.pdf"] --version-status 3 --version-name "V2.0" --version-remark "修订内容"
 
 # === 查看版本历史 ===
 python scripts/manage/get-version-list.py <file_id>

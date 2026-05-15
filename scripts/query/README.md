@@ -34,7 +34,7 @@ export XG_APP_KEY="your-app-key"
 python scripts/query/search.py "关键词" --project-id <project_id>
 
 # 获取文件全文（AI 摘要/RAG）
-python scripts/query/get-full-content.py <file_id>
+python scripts/query/get-full-content.py <file_id> [--relation-id <relation_id>] [--file-type <file_type>]
 
 # 获取预览链接（用户自己查看）
 python scripts/query/get-download-info.py <file_id>

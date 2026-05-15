@@ -89,28 +89,11 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 4. **素材优先级**：用户给了文件或 URL，必须先提取内容再确认，确认后才触发生成或写入
 5. **生产约束**：仅允许生产域名与生产协议，不引入任何测试地址
 6. **危险操作**：删除文件等高风险操作应礼貌确认，不直接执行
-7. **脚本语言限制**：调用 Open API 的业务脚本必须使用 Python；`run-script.ps1` / `run-script.bat` 为跨 shell 包装，不受此限
+7. **脚本语言限制**：调用 Open API 的业务脚本必须使用 Python
 8. **重试策略**：出错时间隔 1 秒、最多重试 3 次，超过后终止并上报
 9. **禁止无限重试**：严禁无限循环重试
 10. **输出规范**：脚本输出优先按 `resultCode`、`resultMsg`、`data` 读取，对用户输出最小必要信息：摘要/必要输入/链接，不回显完整 JSON 响应
-11. **兼容性要求**：为兼容 Windows PowerShell 5.x，所有脚本调用必须通过包装脚本执行，禁止直接使用 `||` 或 `&&` 操作符
-12. **OpenClaw `exec`（Windows）**：网关往往在 **PowerShell 5.x** 下执行你拼出来的命令。以下视为**错误示范**（与技能无关，是 shell 语法不匹配）：使用 bash 的 `||`、`&&`、`2>/dev/null`、`/dev/null`；在 PowerShell 里套多层引号去跑**多行** `python -c "..."`（易触发「只应将 ScriptBlock 指定为 Command 参数值」类报错）。**正确做法**：优先用本仓库 **`scripts/run-script.ps1`**（已 `chcp 65001` 并设置控制台 UTF-8，且统一 `PYTHONUTF8`）；或**单行**调用已安装的 Python 与脚本路径，勿经多行 `-c` 嵌套。
-
-### OpenClaw / Windows 下推荐 `exec` 命令形态（复制时替换路径）
-
-**首选（推荐）**：
-
-```text
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<cms-docdb 根目录>/scripts/run-script.ps1" "browse/browse.py" "<parentId 或参数>"
-```
-
-**次选（单行、无包装脚本时）**：先 `chcp 65001`，再直接调 Python 与脚本，整条命令保持一行，避免在 `exec` 里拼接多行字符串。
-
-```text
-chcp 65001 > $null; & "<python.exe 完整路径>" "<cms-docdb>/scripts/browse/browse.py" "<参数>"
-```
-
-**禁止**：在 Windows `exec` 中假设默认 shell 为 bash；用 `python` 与 `python3` 混用且未验证实际存在的是哪一个（Windows 常见仅有 `python`）。
+11. **直接执行**：所有脚本必须可直接通过 Python 执行，不依赖包装脚本
 
 ## 触发配置
 
@@ -208,11 +191,6 @@ cms-docdb/
 │   ├── delete/README.md
 │   └── manage/README.md
 └── scripts/
-    ├── run-script.ps1        # PowerShell 兼容包装脚本
-    ├── run-script.bat        # Windows 批处理兼容包装脚本
-    ├── intent-matcher.py     # 意图识别和关键词提取
-    ├── context-manager.py    # 上下文管理和状态维护
-    ├── parameter-extractor.py # 参数提取和缺失提示生成
     ├── browse/
     │   ├── README.md
     │   ├── browse.py

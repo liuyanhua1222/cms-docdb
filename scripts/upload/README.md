@@ -31,28 +31,36 @@ export XG_BIZ_API_KEY="your-app-key"
 export XG_APP_KEY="your-app-key"
 
 # === 纯文本上传（AI 内容入库首选）===
+# 必填：内容、文件名
 python3 scripts/upload/upload-content.py "内容" "文件名.md" [--file-suffix md] [--folder-name "AI生成/周报"]
 
 # === 物理文件上传 ===
 # 小文件（≤20MB）
+# 必填：file_path
 python3 scripts/upload/upload-whole-file.py <file_path>
 #   → 获得 resourceId
 
 # 大文件（>20MB）
-python3 scripts/upload/check-slice.py <md5> --size <size> --suffix <suffix>
+# 必填：md5
+python3 scripts/upload/check-slice.py <md5> [--size <size>] [--suffix <suffix>]
 #   → 秒传命中用 sliceId；未命中需 PUT 上传
+# 必填：full_path、md5、size、storage_type
 python3 scripts/upload/register-slice.py <full_path> <md5> <size> MINIO
-python3 scripts/upload/merge-resource.py "文件名.pdf" "sliceId1,sliceId2,..." --suffix pdf --size <size>
+# 必填：文件名、slice_ids
+python3 scripts/upload/merge-resource.py "文件名.pdf" "sliceId1,sliceId2,..." [--suffix pdf] [--size <size>]
 #   → 获得 resourceId
 
 # === 绑定到知识库 ===
 # 已知父目录 ID（推荐，跳过路径解析）
-python3 scripts/upload/save-file-by-parent-id.py <project_id> <parent_id> <resource_id> "文件名.pdf" --suffix pdf
+# 必填：project_id、parent_id、resource_id、文件名
+python3 scripts/upload/save-file-by-parent-id.py <project_id> <parent_id> <resource_id> "文件名.pdf" [--suffix pdf]
 
 # 按逻辑路径（路径不存在自动创建）
-python3 scripts/upload/save-file-by-path.py <project_id> "文件名.pdf" <resource_id> --path "目录" --suffix pdf
+# 必填：project_id、文件名、resource_id
+python3 scripts/upload/save-file-by-path.py <project_id> "文件名.pdf" <resource_id> [--path "目录"] [--suffix pdf]
 
 # === 获取下载链接 ===
+# 必填：resource_id
 python3 scripts/upload/get-file-download-info.py <resource_id>
 ```
 

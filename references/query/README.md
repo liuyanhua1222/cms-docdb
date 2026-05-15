@@ -20,6 +20,51 @@
 | 分页读取文件内容 | fileId | pageNumber |
 | 批量获取文件全文 | files（fileId 列表） | — |
 
+## 参数详细说明
+
+### search.py — 搜索文件
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `name_key` | String | 是 | 搜索关键词，支持模糊匹配 | 任意字符串，中文需 URL 编码（UTF-8） | - |
+| `--project-id` | Long | 是 | 项目/空间 ID，限定搜索范围 | 有效项目 ID（可通过 get-project-list.py 获取） | - |
+| `--root-file-id` | Long | 否 | 指定根目录 ID，在此目录下搜索 | 有效文件 ID（文件夹类型） | 需在 project-id 对应的项目内 |
+| `--start-time` | Long | 否 | 创建时间-开始时间戳（毫秒） | Unix 时间戳（毫秒），如 1704067200000 | 通常与 --end-time 配对使用 |
+| `--end-time` | Long | 否 | 创建时间-结束时间戳（毫秒） | Unix 时间戳（毫秒），如 1704153600000 | 通常与 --start-time 配对使用 |
+| `--is-file-storage` | Boolean | 否 | 是否搜索文件存储区 | true/false（默认 false） | - |
+| `--permission-query` | String | 否 | 权限查询条件 | 权限标识字符串 | - |
+| `--exclude-file-types` | String | 否 | 排除的文件业务分类 | 枚举：`work_report`（工作汇报）、`work_plan`（工作计划）、`huiji`（会议纪要）、`ai-report`（AI报告）等，多个用逗号分隔 | - |
+| `--exclude-folder-names` | String | 否 | 排除的文件夹名称 | 任意文件夹名称，多个用逗号分隔，如 `临时文件,测试文件夹` | - |
+
+### get-full-content.py — 获取文件全文
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `file_id` | Long | 是 | 文件 ID | 有效文件 ID（可通过 search.py 获取） | - |
+| `--relation-id` | String | 否 | 业务关联 ID | 业务系统中的关联标识 | - |
+| `--file-type` | String | 否 | 业务类型 | 枚举：`doc`（文档）、`file`（物理文件）、`work_report`（工作汇报）等 | - |
+
+### get-download-info.py — 获取下载/预览凭据
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `file_id` | Long | 是 | 文件 ID | 有效文件 ID | - |
+| `--force-download` | Boolean | 否 | 强制获取下载链接（而非预览链接） | 无值标志，存在即为 true | - |
+| `--version-number` | Integer | 否 | 指定版本号 | 有效版本号（可通过 get-version-list.py 获取） | - |
+
+### get-file-content.py — 分页读取文件内容
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `file_id` | Long | 是 | 文件 ID | 有效文件 ID（文档类型，非物理文件） | - |
+| `--page-number` | Integer | 否 | 页码 | ≥1（默认 1） | - |
+
+### batch-get-content.py — 批量获取文件全文
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `files` | JSON String | 是 | 文件 ID 列表 | JSON 数组格式，如 `'[{"fileId":123},{"fileId":456}]'`，建议单次≤10个 | - |
+
 ## 动作列表
 
 ### 1. 搜索文件

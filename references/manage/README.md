@@ -22,6 +22,62 @@
 | 获取最新版本 | fileId | — |
 | 版本定稿 | fileId | versionNumber |
 
+## 参数详细说明
+
+### update-file-property.py — 重命名/移动文件
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `file_id` | Long | 是 | 文件 ID | 有效文件 ID | - |
+| `--new-name` | String | 否 | 新文件名 | 任意文件名，建议带扩展名 | 与 --target-parent-id 至少传一个 |
+| `--target-parent-id` | Long | 否 | 目标父目录 ID | 有效文件夹 ID | 与 --new-name 至少传一个 |
+| `--cover` | Boolean | 否 | 同名冲突时覆盖 | 无值标志，存在即为 true | 与 --auto-rename 互斥 |
+| `--auto-rename` | Boolean | 否 | 同名冲突时自动重命名 | 无值标志，存在即为 true，自动追加数字后缀如 `(1)` | 与 --cover 互斥 |
+
+### upload-content.py — 纯文本版本更新
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `content` | String | 是 | 新的文件内容 | 任意文本内容 | - |
+| `file_name` | String | 是 | 文件名 | 建议带扩展名 | - |
+| `--update-file-id` | Long | 是 | 目标文件 ID | 有效文件 ID（触发版本更新模式） | - |
+| `--file-suffix` | String | 否 | 文件后缀 | 枚举：`md`、`html`、`txt`、`json` | - |
+| `--version-name` | String | 否 | 版本名称 | 如 `V2.0` | - |
+| `--version-remark` | String | 否 | 版本说明 | 任意文本 | - |
+
+### update-file-version.py — 物理文件版本更新
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `file_id` | Long | 是 | 要更新的文件 ID | 有效文件 ID | - |
+| `project_id` | Long | 是 | 文件所在空间 ID | 有效项目 ID | - |
+| `resource_id` | Long | 是 | 新上传的物理资源 ID | 通过 upload-whole-file.py 或 merge-resource.py 获取 | - |
+| `--name` | String | 否 | 文件名 | 不传则保持原文件名 | - |
+| `--version-status` | Integer | 否 | 版本行为 | 枚举：`1`（覆盖草稿）、`2`（强制新建）、`3`（新建并立即定稿，默认） | - |
+| `--version-name` | String | 否 | 版本名称 | 如 `V2.0` | - |
+| `--version-remark` | String | 否 | 版本说明 | 任意文本 | - |
+| `--suffix` | String | 否 | 文件后缀 | 如 `pdf`、`docx` | - |
+| `--size` | Long | 否 | 文件大小（字节） | 文件实际大小 | - |
+
+### get-version-list.py — 查看版本历史
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `file_id` | Long | 是 | 文件 ID | 有效文件 ID | - |
+
+### get-last-version.py — 获取最新版本信息
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `file_id` | Long | 是 | 文件 ID | 有效文件 ID | - |
+
+### finalize-version.py — 版本定稿
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `file_id` | Long | 是 | 文件 ID | 有效文件 ID | - |
+| `--version-number` | Integer | 否 | 指定版本号 | 有效版本号（可通过 get-version-list.py 获取） | 不传则定稿最新版本 |
+
 ## 动作列表
 
 ### 1. 重命名/移动文件

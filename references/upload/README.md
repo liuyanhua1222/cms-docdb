@@ -22,6 +22,85 @@
 | 注册分片 | filePath, md5, size, storageType | — |
 | 合并分片 | name, sliceIds | suffix, size |
 
+## 参数详细说明
+
+### upload-content.py — 纯文本上传
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `content` | String | 是 | 文件内容 | 任意文本内容（Markdown/HTML/纯文本） | - |
+| `file_name` | String | 是 | 文件名 | 建议带扩展名，如 `总结.md`、`报告.html` | - |
+| `--file-suffix` | String | 否 | 文件后缀 | 枚举：`md`（默认）、`html`、`txt`、`json` | - |
+| `--folder-name` | String | 否 | 逻辑目录路径 | 支持多级，如 `AI生成/周报`，仅新建模式有效 | 不能与 --update-file-id 同时使用 |
+| `--project-id` | Long | 否 | 目标项目空间 ID | 有效项目 ID（可通过 get-project-list.py 获取） | 不传则保存到个人知识库 |
+| `--update-file-id` | Long | 否 | 版本更新模式的目标文件 ID | 有效文件 ID | 传入后切换为版本更新模式，不能与 --folder-name 同时使用 |
+| `--version-name` | String | 否 | 版本名称 | 如 `V2.0` | 仅版本更新模式有效（需传 --update-file-id） |
+| `--version-remark` | String | 否 | 版本说明 | 任意文本 | 仅版本更新模式有效（需传 --update-file-id） |
+
+### upload-whole-file.py — 物理文件整传
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `file_path` | String | 是 | 本地文件路径 | 有效文件路径，文件大小≤20MB | - |
+
+### save-file-by-parent-id.py — 按父 ID 保存
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `project_id` | Long | 是 | 项目/空间 ID | 有效项目 ID | - |
+| `parent_id` | Long | 是 | 父目录 ID | 有效文件夹 ID（根目录传项目根目录 ID） | 需在 project_id 对应的项目内 |
+| `resource_id` | Long | 是 | 物理资源 ID | 通过 upload-whole-file.py 或 merge-resource.py 获取 | - |
+| `name` | String | 是 | 文件名 | 建议带扩展名，如 `报告.pdf` | - |
+| `--file-type` | String | 否 | 文件业务类型 | 枚举：`file`（默认，物理文件）、`doc`（文档） | - |
+| `--suffix` | String | 否 | 文件后缀 | 如 `pdf`、`docx`、`xlsx` | - |
+| `--size` | Long | 否 | 文件大小（字节） | 文件实际大小 | - |
+| `--is-sensitive` | Boolean | 否 | 是否敏感文件 | true/false | - |
+
+### save-file-by-path.py — 按路径保存
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `project_id` | Long | 是 | 项目/空间 ID | 有效项目 ID | - |
+| `name` | String | 是 | 文件名 | 建议带扩展名 | - |
+| `resource_id` | Long | 是 | 物理资源 ID | 通过 upload-whole-file.py 或 merge-resource.py 获取 | - |
+| `--path` | String | 否 | 逻辑目录路径 | 如 `AI生成/周报`，不存在自动创建 | - |
+| `--file-type` | String | 否 | 文件业务类型 | 枚举：`file`（默认）、`doc` | - |
+| `--suffix` | String | 否 | 文件后缀 | 如 `pdf`、`docx` | - |
+| `--size` | Long | 否 | 文件大小（字节） | 文件实际大小 | - |
+| `--is-sensitive` | Boolean | 否 | 是否敏感文件 | true/false | - |
+
+### check-slice.py — 大文件分片预检
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `md5` | String | 是 | 文件 MD5 值 | 32位十六进制字符串 | - |
+| `--size` | Long | 否 | 文件大小（字节） | 文件实际大小 | - |
+| `--suffix` | String | 否 | 文件后缀 | 如 `pdf`、`mp4` | - |
+
+### register-slice.py — 注册分片
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `full_path` | String | 是 | 分片临时文件路径 | 有效文件路径 | - |
+| `md5` | String | 是 | 分片 MD5 值 | 32位十六进制字符串 | - |
+| `size` | Long | 是 | 分片大小（字节） | 分片实际大小 | - |
+| `storage_type` | String | 是 | 存储类型 | 枚举：`MINIO`（固定值） | - |
+
+### merge-resource.py — 合并分片
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `name` | String | 是 | 文件名 | 建议带扩展名 | - |
+| `slice_ids` | String | 是 | 分片 ID 列表 | 通过 register-slice.py 获取，多个用逗号分隔，如 `sliceId1,sliceId2` | - |
+| `--suffix` | String | 否 | 文件后缀 | 如 `pdf` | - |
+| `--size` | Long | 否 | 文件总大小（字节） | 所有分片大小之和 | - |
+
+### get-file-download-info.py — 获取资源下载链接
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `resource_id` | Long | 是 | 物理资源 ID | 通过 upload-whole-file.py 或 merge-resource.py 获取 | - |
+
 ## 动作列表
 
 ### 1. 纯文本上传（AI 内容入库首选）

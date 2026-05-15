@@ -122,11 +122,16 @@ def process_result(result):
     return result
 
 def main():
-    if len(sys.argv) < 2:
+    import argparse
+    parser = argparse.ArgumentParser(description="获取文件全文内容（Markdown 格式）")
+    parser.add_argument("file_id", type=int, nargs='?', help="文件 ID（位置参数）")
+    parser.add_argument("--file-id", type=int, dest="file_id_opt", help="文件 ID（命名参数）")
+    args = parser.parse_args()
+    
+    file_id = args.file_id or args.file_id_opt
+    if file_id is None:
         print("错误: 请提供文件 ID", file=sys.stderr)
         sys.exit(1)
-
-    file_id = int(sys.argv[1])
 
     result = call_api(file_id)
 

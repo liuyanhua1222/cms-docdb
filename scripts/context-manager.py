@@ -80,15 +80,31 @@ def get_context(user_id="default"):
     return load_context(user_id)
 
 def main():
-    if len(sys.argv) < 2:
+    import argparse
+    parser = argparse.ArgumentParser(description="上下文管理和状态维护")
+    parser.add_argument("cmd", type=str, nargs='?', help="命令：get/update/set_folder/set_file/set_project/clear")
+    parser.add_argument("--cmd", type=str, dest="cmd_opt", help="命令（命名参数）")
+    parser.add_argument("--user-id", type=str, default="default", help="用户 ID（可选）")
+    parser.add_argument("--user-input", type=str, help="用户输入（update 命令）")
+    parser.add_argument("--action", type=str, help="动作（update 命令）")
+    parser.add_argument("--result", type=str, default="", help="结果（update 命令）")
+    parser.add_argument("--folder-id", type=str, help="文件夹 ID（set_folder 命令）")
+    parser.add_argument("--folder-name", type=str, help="文件夹名称（set_folder 命令）")
+    parser.add_argument("--file-id", type=str, help="文件 ID（set_file 命令）")
+    parser.add_argument("--file-name", type=str, help="文件名称（set_file 命令）")
+    parser.add_argument("--project-id", type=str, help="项目 ID（set_project 命令）")
+    parser.add_argument("--project-name", type=str, help="项目名称（set_project 命令）")
+    args = parser.parse_args()
+    
+    cmd = args.cmd or args.cmd_opt
+    if cmd is None:
         print(json.dumps({
             "resultCode": -1, 
             "resultMsg": "缺少命令参数"
         }, ensure_ascii=False))
         sys.exit(1)
     
-    cmd = sys.argv[1]
-    user_id = sys.argv[2] if len(sys.argv) > 2 else "default"
+    user_id = args.user_id
     result = {"resultCode": 0, "resultMsg": "success", "data": {}}
     
     try:
@@ -96,41 +112,32 @@ def main():
             result["data"] = get_context(user_id)
         
         elif cmd == "update":
-            if len(sys.argv) >= 5:
-                user_input = sys.argv[3]
-                action = sys.argv[4]
-                result_data = sys.argv[5] if len(sys.argv) > 5 else ""
-                context = update_context(user_input, action, result_data, user_id)
+            if args.user_input and args.action:
+                context = update_context(args.user_input, args.action, args.result, user_id)
                 result["data"] = context
             else:
-                result = {"resultCode": -1, "resultMsg": "参数不足：需要 user_input, action, result"}
+                result = {"resultCode": -1, "resultMsg": "参数不足：需要 --user-input, --action, --result"}
         
         elif cmd == "set_folder":
-            if len(sys.argv) >= 4:
-                folder_id = sys.argv[3]
-                folder_name = sys.argv[4] if len(sys.argv) > 4 else None
-                context = set_current_folder(folder_id, folder_name, user_id)
+            if args.folder_id:
+                context = set_current_folder(args.folder_id, args.folder_name, user_id)
                 result["data"] = context
             else:
-                result = {"resultCode": -1, "resultMsg": "参数不足：需要 folder_id [folder_name]"}
+                result = {"resultCode": -1, "resultMsg": "参数不足：需要 --folder-id [--folder-name]"}
         
         elif cmd == "set_file":
-            if len(sys.argv) >= 4:
-                file_id = sys.argv[3]
-                file_name = sys.argv[4] if len(sys.argv) > 4 else None
-                context = set_last_file(file_id, file_name, user_id)
+            if args.file_id:
+                context = set_last_file(args.file_id, args.file_name, user_id)
                 result["data"] = context
             else:
-                result = {"resultCode": -1, "resultMsg": "参数不足：需要 file_id [file_name]"}
+                result = {"resultCode": -1, "resultMsg": "参数不足：需要 --file-id [--file-name]"}
         
         elif cmd == "set_project":
-            if len(sys.argv) >= 4:
-                project_id = sys.argv[3]
-                project_name = sys.argv[4] if len(sys.argv) > 4 else None
-                context = set_current_project(project_id, project_name, user_id)
+            if args.project_id:
+                context = set_current_project(args.project_id, args.project_name, user_id)
                 result["data"] = context
             else:
-                result = {"resultCode": -1, "resultMsg": "参数不足：需要 project_id [project_name]"}
+                result = {"resultCode": -1, "resultMsg": "参数不足：需要 --project-id [--project-name]"}
         
         elif cmd == "clear":
             context = clear_context(user_id)

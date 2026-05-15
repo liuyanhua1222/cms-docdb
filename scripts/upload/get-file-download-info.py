@@ -108,11 +108,16 @@ def call_api(resource_id: int) -> dict:
 
 
 def main():
-    if len(sys.argv) < 2:
+    import argparse
+    parser = argparse.ArgumentParser(description="获取文件下载信息（临时下载 URL）")
+    parser.add_argument("resource_id", type=int, nargs='?', help="资源 ID（位置参数）")
+    parser.add_argument("--resource-id", type=int, dest="resource_id_opt", help="资源 ID（命名参数）")
+    args = parser.parse_args()
+    
+    resource_id = args.resource_id or args.resource_id_opt
+    if resource_id is None:
         print("错误: 请提供 resourceId", file=sys.stderr)
         sys.exit(1)
-
-    resource_id = int(sys.argv[1])
 
     result = call_api(resource_id)
 

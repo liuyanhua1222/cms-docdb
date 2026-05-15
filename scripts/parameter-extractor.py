@@ -107,7 +107,15 @@ def generate_missing_params_hint(params):
     return "\n".join(hints) if hints else None
 
 def main():
-    if len(sys.argv) < 2:
+    import argparse
+    parser = argparse.ArgumentParser(description="参数提取和缺失提示生成")
+    parser.add_argument("user_input", type=str, nargs='?', help="用户输入（位置参数）")
+    parser.add_argument("--user-input", type=str, dest="user_input_opt", help="用户输入（命名参数）")
+    parser.add_argument("--context", type=str, help="上下文 JSON（可选）")
+    args = parser.parse_args()
+    
+    user_input = args.user_input or args.user_input_opt
+    if user_input is None:
         print(json.dumps({
             "resultCode": -1, 
             "resultMsg": "缺少输入参数",
@@ -115,12 +123,10 @@ def main():
         }, ensure_ascii=False))
         sys.exit(1)
     
-    user_input = sys.argv[1]
     context = None
-    
-    if len(sys.argv) > 2:
+    if args.context:
         try:
-            context = json.loads(sys.argv[2])
+            context = json.loads(args.context)
         except:
             pass
     

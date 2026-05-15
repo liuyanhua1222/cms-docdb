@@ -142,11 +142,16 @@ def process_result(result):
     return result
 
 def main():
-    if len(sys.argv) < 2:
+    import argparse
+    parser = argparse.ArgumentParser(description="上传完整文件到知识库")
+    parser.add_argument("file_path", type=str, nargs='?', help="文件路径（位置参数）")
+    parser.add_argument("--file-path", type=str, dest="file_path_opt", help="文件路径（命名参数）")
+    args = parser.parse_args()
+    
+    file_path = args.file_path or args.file_path_opt
+    if file_path is None:
         print("错误: 请提供文件路径", file=sys.stderr)
         sys.exit(1)
-
-    file_path = sys.argv[1]
 
     if not os.path.isfile(file_path):
         print(f"错误: 文件不存在: {file_path}", file=sys.stderr)

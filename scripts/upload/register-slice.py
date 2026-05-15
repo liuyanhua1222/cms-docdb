@@ -131,14 +131,26 @@ def process_result(result):
     return result
 
 def main():
-    if len(sys.argv) < 5:
+    import argparse
+    parser = argparse.ArgumentParser(description="注册文件分片")
+    parser.add_argument("file_path", type=str, nargs='?', help="文件完整路径（位置参数）")
+    parser.add_argument("md5", type=str, nargs='?', help="文件 MD5（位置参数）")
+    parser.add_argument("size", type=int, nargs='?', help="文件大小（位置参数）")
+    parser.add_argument("storage_type", type=str, nargs='?', help="存储类型（位置参数）")
+    parser.add_argument("--file-path", type=str, dest="file_path_opt", help="文件完整路径（命名参数）")
+    parser.add_argument("--md5", type=str, dest="md5_opt", help="文件 MD5（命名参数）")
+    parser.add_argument("--size", type=int, dest="size_opt", help="文件大小（命名参数）")
+    parser.add_argument("--storage-type", type=str, dest="storage_type_opt", help="存储类型（命名参数）")
+    args = parser.parse_args()
+    
+    file_path = args.file_path or args.file_path_opt
+    md5 = args.md5 or args.md5_opt
+    size = args.size or args.size_opt
+    storage_type = args.storage_type or args.storage_type_opt
+    
+    if None in [file_path, md5, size, storage_type]:
         print("用法: python3 scripts/upload/register-slice.py <full_path> <md5> <size> <storage_type>", file=sys.stderr)
         sys.exit(1)
-
-    file_path = sys.argv[1]
-    md5 = sys.argv[2]
-    size = int(sys.argv[3])
-    storage_type = sys.argv[4]
 
     result = call_api(file_path, md5, size, storage_type)
 

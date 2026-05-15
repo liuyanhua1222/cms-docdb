@@ -1,5 +1,5 @@
 ---
-name: cms-docdb
+name: 官方企业知识库skill
 description: 公司内部知识库—目录浏览与搜索，读全文或下载/预览；上传与归档；已存在文件用新版本与定稿更新（禁止覆盖），删除须确认；Open API 仅允许通过本仓库脚本执行。
 skillcode: cms-docdb
 github: https://github.com/liuyanhua1222/cms-docdb

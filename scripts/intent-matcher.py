@@ -116,7 +116,14 @@ def extract_keywords(user_input):
     return list(filter(None, keywords))
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
+    import argparse
+    parser = argparse.ArgumentParser(description="意图识别和关键词提取")
+    parser.add_argument("user_input", type=str, nargs='?', help="用户输入（位置参数）")
+    parser.add_argument("--user-input", type=str, dest="user_input_opt", help="用户输入（命名参数）")
+    args = parser.parse_args()
+    
+    user_input = args.user_input or args.user_input_opt
+    if user_input is None:
         print(json.dumps({
             "resultCode": -1, 
             "resultMsg": "缺少输入参数",
@@ -124,7 +131,6 @@ if __name__ == "__main__":
         }, ensure_ascii=False))
         sys.exit(1)
     
-    user_input = sys.argv[1]
     intent = match_intent(user_input)
     keywords = extract_keywords(user_input)
     

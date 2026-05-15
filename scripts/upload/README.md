@@ -14,7 +14,7 @@
 
 | 脚本 | 对应接口 | 用途 |
 |---|---|---|
-| `upload-content.py` | `POST /open-api/document-database/file/uploadContent` | 一键保存纯文本到个人知识库 |
+| `upload-content.py` | `POST /open-api/document-database/file/uploadContent` | 一键保存纯文本到个人知识库或指定项目空间 |
 | `save-file-by-path.py` | `POST /open-api/document-database/file/saveFileByPath` | 按逻辑路径保存物理文件到项目空间 |
 | `save-file-by-parent-id.py` | `POST /open-api/document-database/file/saveFileByParentId` | 已知父目录 ID 时保存物理文件 |
 | `upload-whole-file.py` | `POST /open-api/cwork-file/uploadWholeFile` | 小文件整传（≤20MB），返回 resourceId |
@@ -34,7 +34,8 @@ export XG_APP_KEY="your-app-key"
 
 # === 纯文本上传（AI 内容入库首选）===
 # 必填：内容、文件名
-python scripts/upload/upload-content.py "内容" "文件名.md" [--file-suffix md] [--folder-name "AI生成/周报"]
+# 可选：--project-id（指定项目空间，不传则保存到个人知识库）
+python scripts/upload/upload-content.py "内容" "文件名.md" [--file-suffix md] [--folder-name "AI生成/周报"] [--project-id <project_id>]
 
 # === 物理文件上传 ===
 # 小文件（≤20MB）

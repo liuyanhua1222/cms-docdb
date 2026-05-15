@@ -14,7 +14,7 @@
 
 | 动作 | 必填输入 | 可选输入 |
 |---|---|---|
-| 纯文本上传 | content, fileName | fileSuffix, folderName |
+| 纯文本上传 | content, fileName | fileSuffix, folderName, projectId |
 | 物理文件整传 | 本地文件路径 | — |
 | 按父 ID 保存 | projectId, parentId, resourceId, name, fileType | suffix, size, isSensitive |
 | 按路径保存 | projectId, resourceId, name, fileType | path, suffix, size, isSensitive |
@@ -26,8 +26,9 @@
 
 ### 1. 纯文本上传（AI 内容入库首选）
 - **脚本**: `upload-content.py`
-- **用途**: 一键保存纯文本/Markdown/HTML 内容到个人知识库，无需关心 projectId
+- **用途**: 一键保存纯文本/Markdown/HTML 内容到个人知识库或指定项目空间
 - **注意**: 仅支持纯文本，不支持二进制文件；不传 fileSuffix 时默认为 md
+- **空间路由**: 不传 projectId 时保存到个人知识库，传入 projectId 时保存到指定项目空间（需确保用户有访问权限）
 - **新建模式响应**: 返回 `{ projectId, projectName, folderId, folderName, fileId, fileName, downloadUrl }`
 - **版本更新模式响应**: 传入 `--update-file-id` 时，仅返回 `{ fileId, fileName }`
 
@@ -80,8 +81,9 @@
 1. 鉴权预检（通过 `cms-auth-skills` 获取 appKey）
 2. 确认文件名（建议带扩展名）和内容
 3. 调用 `upload-content.py`
-4. 自动归档至个人空间"和AI的对话"目录（或指定目录）
-5. 返回 fileId
+   - 不传 `--project-id`：自动归档至个人空间"和AI的对话"目录（或指定目录）
+   - 传入 `--project-id`：保存到指定项目空间（需确保用户有访问权限）
+4. 返回 fileId
 
 ### 物理文件上传（PDF/DOCX 等）
 

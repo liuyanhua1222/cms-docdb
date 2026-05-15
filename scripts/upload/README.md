@@ -37,6 +37,9 @@ export XG_APP_KEY="your-app-key"
 # 可选：--project-id（指定项目空间，不传则保存到个人知识库）
 python scripts/upload/upload-content.py "内容" "文件名.md" [--file-suffix md] [--folder-name "AI生成/周报"] [--project-id <project_id>]
 
+# 版本更新模式（更新已有文件的内容）
+python scripts/upload/upload-content.py "新内容" "文件名.md" --update-file-id <file_id> [--version-name "V2.0"] [--version-remark "修订说明"]
+
 # === 物理文件上传 ===
 # 小文件（≤20MB）
 # 必填：file_path

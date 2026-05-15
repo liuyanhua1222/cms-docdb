@@ -36,10 +36,10 @@ python scripts/browse/get-personal-project-id.py
 python scripts/browse/get-uploadable-list.py
 
 # 浏览项目根目录
-python scripts/browse/get-level1-folders.py <project_id>
+python scripts/browse/get-level1-folders.py <project_id> [--order 1|2|5|6] [--permission-query <query>]
 
 # 浏览指定目录（parentId = 0 为绝对根目录）
-python scripts/browse/browse.py <parent_id> [--type 1|2] [--order 1-6]
+python scripts/browse/browse.py <parent_id> [--type 1|2] [--order 1-6] [--exclude-file-types "work_report,huiji"] [--exclude-folder-names "临时文件"]
 
 # 最近上传文件
 python scripts/browse/get-recent-files.py [--limit 10] [--search-key "关键词"]

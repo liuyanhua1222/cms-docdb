@@ -33,6 +33,7 @@ export XG_APP_KEY="your-app-key"
 python scripts/manage/update-file-property.py <file_id> --new-name "新文件名.pdf"
 python scripts/manage/update-file-property.py <file_id> --target-parent-id <parent_id>
 python scripts/manage/update-file-property.py <file_id> --new-name "同名文件.pdf" --auto-rename
+python scripts/manage/update-file-property.py <file_id> --target-parent-id <parent_id> --cover
 
 # === 物理文件版本更新 ===
 # versionStatus: 1=覆盖草稿, 2=强制新建, 3=新建并立即定稿（推荐）

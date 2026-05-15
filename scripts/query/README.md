@@ -31,7 +31,7 @@ export XG_BIZ_API_KEY="your-app-key"
 export XG_APP_KEY="your-app-key"
 
 # 搜索文件（project-id 必填）
-python scripts/query/search.py "关键词" --project-id <project_id>
+python scripts/query/search.py "关键词" --project-id <project_id> [--root-file-id <root_id>] [--start-time <ts>] [--end-time <ts>] [--exclude-file-types "work_report,huiji"]
 
 # 获取文件全文（AI 摘要/RAG）
 python scripts/query/get-full-content.py <file_id> [--relation-id <relation_id>] [--file-type <file_type>]

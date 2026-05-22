@@ -1,165 +1,71 @@
 #!/usr/bin/env python3
 """
-manage / updateFileProperty 脚本
+manage / updateFileProperty — 已废弃，请改用 update-file-name.py / move-file.py
 
-用途：更新文件属性（重命名/移动）
-
-使用方式：
-  python3 scripts/manage/update-file-property.py <file_id> [--new-name "新文件名"] [--target-parent-id 123]
-
-环境变量：
-  XG_BIZ_API_KEY / XG_APP_KEY — appKey（由 cms-auth-skills 预先准备）
+本脚本保留用于兼容旧命令行：自动转发到新接口（先 move 再 rename）。
 """
 
 import sys
 import os
 import json
-import urllib.request
-import urllib.error
-import ssl
+import argparse
+import subprocess
 
-# 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
 if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
-
-class CustomRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """自定义重定向处理器，显式支持 307/308 重定向并保留请求方法和请求体"""
-    
-    def http_error_301(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_302(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_303(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_307(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_308(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def build_opener(ctx):
-    """构建支持 307/308 重定向的自定义 opener"""
-    handlers = [CustomRedirectHandler()]
-    if ctx:
-        handlers.append(urllib.request.HTTPSHandler(context=ctx))
-    return urllib.request.build_opener(*handlers)
+def run_script(script_name: str, args: list) -> dict:
+    cmd = [sys.executable, os.path.join(SCRIPT_DIR, script_name)] + args
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode != 0:
+        print(proc.stderr or proc.stdout, file=sys.stderr)
+        sys.exit(proc.returncode)
+    return json.loads(proc.stdout)
 
-
-# 接口完整 URL（与 openapi/manage/update-file-property.md 中声明的一致）
-API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/updateFileProperty"
-AUTH_MODE = "appKey"
-
-
-def build_headers() -> dict:
-    """根据鉴权模式构造请求头"""
-    headers = {"Content-Type": "application/json"}
-
-    if AUTH_MODE == "appKey":
-        app_key = os.environ.get("XG_BIZ_API_KEY") or os.environ.get("XG_APP_KEY")
-        if not app_key:
-            print("错误: 请设置环境变量 XG_BIZ_API_KEY 或 XG_APP_KEY", file=sys.stderr)
-            sys.exit(1)
-        headers["appKey"] = app_key
-
-    return headers
-
-
-def call_api(file_id: int, new_name: str = None, target_parent_id: int = None,
-             cover: bool = None, auto_rename: bool = None) -> dict:
-    """调用更新文件属性接口，返回原始 JSON 响应"""
-    headers = build_headers()
-
-    body = {"fileId": file_id}
-    if new_name is not None:
-        body["newName"] = new_name
-    if target_parent_id is not None:
-        body["targetParentId"] = target_parent_id
-    if cover is not None:
-        body["cover"] = cover
-    if auto_rename is not None:
-        body["autoRename"] = auto_rename
-
-    req = urllib.request.Request(
-        API_URL,
-        data=json.dumps(body).encode("utf-8"),
-        headers=headers,
-        method="POST"
-    )
-
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
-
-    opener = build_opener(ctx)
-
-    for attempt in range(3):
-        try:
-            with opener.open(req, timeout=60) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                print(f"错误: HTTP {e.code} - {e.reason}", file=sys.stderr)
-                sys.exit(1)
-        except Exception as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                print(f"错误: {e}", file=sys.stderr)
-                sys.exit(1)
-
-
-def process_result(result):
-    """处理 API 响应结果，优先按 resultCode、resultMsg、data 读取"""
-    if isinstance(result, dict):
-        # 优先读取 resultCode、resultMsg、data
-        result_code = result.get('resultCode')
-        result_msg = result.get('resultMsg')
-        data = result.get('data')
-        
-        # 构建标准化输出
-        processed = {
-            'resultCode': result_code,
-            'resultMsg': result_msg,
-            'data': data
-        }
-        return processed
-    return result
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="更新文件属性（重命名/移动）")
-    parser.add_argument("file_id", type=int, help="文件 ID")
-    parser.add_argument("--new-name", type=str, help="新文件名")
-    parser.add_argument("--target-parent-id", type=int, help="目标父目录 ID")
-    parser.add_argument("--cover", action="store_true", help="同名冲突时覆盖")
-    parser.add_argument("--auto-rename", action="store_true", help="同名冲突时自动追加数字后缀")
+    parser = argparse.ArgumentParser(
+        description="[已废弃] 转发到 update-file-name / move-file")
+    parser.add_argument("file_id", type=int)
+    parser.add_argument("--new-name", type=str)
+    parser.add_argument("--target-parent-id", type=int)
+    parser.add_argument("--cover", action="store_true")
+    parser.add_argument("--auto-rename", action="store_true")
     args = parser.parse_args()
 
+    print("警告: update-file-property 已废弃，正在转发到 updateFileName/moveFile", file=sys.stderr)
+
     if not args.new_name and not args.target_parent_id:
-        print("错误: 必须提供 --new-name 或 --target-parent-id 之一", file=sys.stderr)
+        print("错误: 必须提供 --new-name 或 --target-parent-id", file=sys.stderr)
         sys.exit(1)
 
-    result = call_api(
-        file_id=args.file_id,
-        new_name=args.new_name,
-        target_parent_id=args.target_parent_id,
-        cover=args.cover if args.cover else None,
-        auto_rename=args.auto_rename if args.auto_rename else None
-    )
+    move_strategy = "1" if args.cover else ("0" if args.auto_rename else "2")
+    rename_strategy = "0" if args.auto_rename else "1"
+    last = None
 
-    processed_result = process_result(result)
-    print(json.dumps(processed_result, ensure_ascii=False))
+    if args.target_parent_id is not None:
+        move_args = [
+            str(args.file_id),
+            "--target-parent-id", str(args.target_parent_id),
+            "--name-conflict-strategy", move_strategy,
+        ]
+        if args.new_name:
+            move_args.extend(["--new-name", args.new_name])
+        last = run_script("move-file.py", move_args)
+    elif args.new_name:
+        rename_args = [
+            str(args.file_id),
+            "--new-name", args.new_name,
+            "--name-conflict-strategy", rename_strategy,
+        ]
+        last = run_script("update-file-name.py", rename_args)
+
+    print(json.dumps(last, ensure_ascii=False))
 
 
 if __name__ == "__main__":

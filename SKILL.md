@@ -19,7 +19,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 
 本文件提供能力边界与路由规则。详细说明见 `references/`，实际执行见 `scripts/`。
 
-**当前版本**: 1.0.6
+**当前版本**: 1.0.7
 
 **接口版本**: 所有业务接口统一使用 `/open-api/*` 前缀，鉴权类型全部为 `appKey`。
 
@@ -216,6 +216,8 @@ cms-docdb/
     ├── delete/
     │   └── delete-file.py
     └── manage/
+        ├── update-file-name.py
+        ├── move-file.py
         ├── update-file-property.py
         ├── update-file-version.py
         ├── get-version-list.py

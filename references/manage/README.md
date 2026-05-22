@@ -28,7 +28,9 @@
 
 | 脚本 | 对应接口 | 用途 |
 |---|---|---|
-| `scripts/manage/update-file-property.py` | `POST /open-api/document-database/file/updateFileProperty` | 更新文件属性（重命名/移动） |
+| `scripts/manage/update-file-name.py` | `POST .../updateFileName` | 同目录改名（同步 Open API） |
+| `scripts/manage/move-file.py` | `POST .../moveFile` | 移动文件或文件夹；可选移动后改名 |
+| `scripts/manage/update-file-property.py` | `POST .../updateFileProperty` | **已废弃**；兼容旧命令行，转发到上述两脚本 |
 | `scripts/manage/update-file-version.py` | `POST /open-api/document-database/file/updateFileVersion` | 物理文件版本更新（绑定新资源产生新版本） |
 | `scripts/manage/get-version-list.py` | `GET /open-api/document-database/file/getVersionList` | 获取文件完整版本历史列表 |
 | `scripts/manage/get-last-version.py` | `GET /open-api/document-database/file/getLastVersion` | 获取文件最新版本信息 |
@@ -40,7 +42,8 @@
 
 | 动作 | 必填输入 | 可选输入 |
 |---|---|---|
-| 重命名/移动文件 | fileId | newName, targetParentId, cover, autoRename |
+| 同目录改名 | fileId, newName | projectId, nameConflictStrategy, rootFileId |
+| 移动节点 | fileId, targetParentId | newName, projectId, nameConflictStrategy, rootFileId |
 | 纯文本版本更新 | updateFileId, content, fileName | fileSuffix, versionName, versionRemark |
 | 物理文件版本更新 | id, projectId, resourceId | versionStatus, versionName, versionRemark, suffix, size |
 | 查看版本历史 | fileId | — |
@@ -49,112 +52,68 @@
 
 ## 参数详细说明
 
-### update-file-property.py — 重命名/移动文件
+### update-file-name.py — 同目录改名
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `file_id` | Long | 是 | 文件 ID | 有效文件 ID | - |
-| `--new-name` | String | 否 | 新文件名 | 任意文件名，建议带扩展名 | 与 --target-parent-id 至少传一个 |
-| `--target-parent-id` | Long | 否 | 目标父目录 ID | 有效文件夹 ID | 与 --new-name 至少传一个 |
-| `--cover` | Boolean | 否 | 同名冲突时覆盖 | 无值标志，存在即为 true | 与 --auto-rename 互斥 |
-| `--auto-rename` | Boolean | 否 | 同名冲突时自动重命名 | 无值标志，存在即为 true，自动追加数字后缀如 `(1)` | 与 --cover 互斥 |
+| `file_id` | Long | 是 | 文件或文件夹 ID | 有效 ID | - |
+| `--new-name` | String | 是 | 新名称 | 建议带扩展名 | - |
+| `--project-id` | Long | 否 | 空间 ID | 有效 projectId | - |
+| `--name-conflict-strategy` | Integer | 否 | 同名策略 | `0`=自动重命名，`1`=失败（默认） | - |
+| `--root-file-id` | Long | 否 | 映射根 | 与同步 state 根一致 | 用于响应 `relativePath` |
 
-### upload-content.py — 纯文本版本更新
-
-| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
-|------|------|------|------|---------------|----------|
-| `content` | String | 是 | 新的文件内容 | 任意文本内容 | - |
-| `file_name` | String | 是 | 文件名 | 建议带扩展名 | - |
-| `--update-file-id` | Long | 是 | 目标文件 ID | 有效文件 ID（触发版本更新模式） | - |
-| `--file-suffix` | String | 否 | 文件后缀 | 枚举：`md`、`html`、`txt`、`json` | - |
-| `--version-name` | String | 否 | 版本名称 | 如 `V2.0` | - |
-| `--version-remark` | String | 否 | 版本说明 | 任意文本 | - |
-
-### update-file-version.py — 物理文件版本更新
+### move-file.py — 移动节点
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `file_id` | Long | 是 | 要更新的文件 ID | 有效文件 ID | - |
-| `project_id` | Long | 是 | 文件所在空间 ID | 有效项目 ID | - |
-| `resource_id` | Long | 是 | 新上传的物理资源 ID | 通过 upload-whole-file.py 或 merge-resource.py 获取 | - |
-| `--name` | String | 否 | 文件名 | 不传则保持原文件名 | - |
-| `--version-status` | Integer | 否 | 版本行为 | 枚举：`1`（覆盖草稿）、`2`（强制新建）、`3`（新建并立即定稿，默认） | - |
-| `--version-name` | String | 否 | 版本名称 | 如 `V2.0` | - |
-| `--version-remark` | String | 否 | 版本说明 | 任意文本 | - |
-| `--suffix` | String | 否 | 文件后缀 | 如 `pdf`、`docx` | - |
-| `--size` | Long | 否 | 文件大小（字节） | 文件实际大小 | - |
+| `file_id` | Long | 是 | 被移动节点 ID | 有效 ID | - |
+| `--target-parent-id` | Long | 是 | 目标父目录 ID | 有效文件夹 ID | - |
+| `--new-name` | String | 否 | 移动后名称 | 省略则保留原名 | 单次调用内完成 move+rename |
+| `--project-id` | Long | 否 | 目标空间 ID | - | - |
+| `--name-conflict-strategy` | Integer | 否 | 同名策略 | `0`/`1`/`2`（默认）/`3` | 默认 `2`=失败 |
+| `--root-file-id` | Long | 否 | 映射根 | - | 用于响应 `relativePath` |
 
-### get-version-list.py — 查看版本历史
+### update-file-property.py — [已废弃] 兼容转发
 
-| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
-|------|------|------|------|---------------|----------|
-| `file_id` | Long | 是 | 文件 ID | 有效文件 ID | - |
+| 参数 | 说明 |
+|------|------|
+| `--new-name` / `--target-parent-id` | 转发到 `update-file-name.py` 或 `move-file.py` |
+| `--cover` | 映射为 move 的 `nameConflictStrategy=1`（覆盖） |
+| `--auto-rename` | rename 用 `0`，move 用 `0`；否则 rename 默认 `1`、move 默认 `2` |
 
-### get-last-version.py — 获取最新版本信息
-
-| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
-|------|------|------|------|---------------|----------|
-| `file_id` | Long | 是 | 文件 ID | 有效文件 ID | - |
-
-### finalize-version.py — 版本定稿
-
-| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
-|------|------|------|------|---------------|----------|
-| `file_id` | Long | 是 | 文件 ID | 有效文件 ID | - |
-| `--version-number` | Integer | 否 | 指定版本号 | 有效版本号（可通过 get-version-list.py 获取） | 不传则定稿最新版本 |
+直接调用 Open API 时 **勿再使用** `updateFileProperty`（返回 400）。
 
 ## 动作列表
 
-### 1. 重命名/移动文件
-- **脚本**: `update-file-property.py`
-- **用途**: 更新文件属性，支持重命名和跨目录移动
-- **输出**: 返回 Boolean，表示操作是否成功
+### 1. 同目录改名
+- **脚本**: `update-file-name.py`
+- **用途**: 仅改名称，不换父目录
+- **输出**: 富响应 `data`（fileId、type、name、parentId、updateTime 等）
 
-### 2. 纯文本版本更新
-- **脚本**: `upload-content.py`（位于 scripts/upload/，通过 updateFileId 参数触发版本更新模式）
-- **用途**: 将新的纯文本内容保存为已有文件的新版本，适合 AI 生成内容的迭代更新
-- **注意**: 传入 updateFileId 时自动切换为版本更新模式，folderName 参数无效
-- **输出**: 返回 `{ fileId, fileName }`（精简结果，不含 projectId/folderId/downloadUrl）
+### 2. 移动节点
+- **脚本**: `move-file.py`
+- **用途**: 换父目录；可选 `--new-name` 在移动后改名
+- **输出**: 富响应；`idChanged=true` 时关注 `idMappings`
 
-### 3. 物理文件版本更新
+### 3. 纯文本版本更新
+- **脚本**: `upload-content.py`（位于 scripts/upload/）
+- **用途**: 将新的纯文本内容保存为已有文件的新版本
+- **输出**: 返回 `{ fileId, fileName }`
+
+### 4. 物理文件版本更新
 - **脚本**: `update-file-version.py`
-- **用途**: 将新上传的物理文件资源绑定到已有文件，产生新版本记录
-- **versionStatus 说明**: 1=覆盖当前草稿，2=强制新建版本，3=新建并立即定稿（推荐默认）
+- **用途**: 将新上传的物理文件资源绑定到已有文件
 - **输出**: 返回文件 ID
 
-### 4. 查看版本历史
-- **脚本**: `get-version-list.py`
-- **用途**: 获取指定文件的完整版本历史列表
-- **输出**: 返回版本列表，每个版本包含 versionNumber、versionName、status、remark、creator、createTime、lastVersion
-
-### 5. 获取最新版本信息
-- **脚本**: `get-last-version.py`
-- **用途**: 快速获取文件当前最新版本的详细信息
-- **输出**: 返回单个版本对象
-
-### 6. 版本定稿
-- **脚本**: `finalize-version.py`
-- **用途**: 将文件的某个版本标记为正式定稿状态（status 从 1 变为 2）
-- **注意**: 不传 versionNumber 则定稿最新版本；定稿后再次更新会自动创建新版本
-- **输出**: 返回 Boolean，表示操作是否成功
+### 5–7. 版本历史 / 最新版本 / 定稿
+- 见原 `get-version-list.py`、`get-last-version.py`、`finalize-version.py`
 
 ## 输出说明
 
-所有脚本输出统一为 JSON 格式，包含：
-- `resultCode`: 1 表示成功，非 1 表示失败
-- `resultMsg`: 错误信息（成功时为 null）
-- `data`: 业务数据
-
-版本对象字段：
-- `id`: 版本记录 ID
-- `fileId`: 文件 ID
-- `versionNumber`: 版本号（从 1 开始递增）
-- `versionName`: 版本名称（如 V2.0）
-- `status`: 1=未定稿（草稿），2=已定稿
-- `remark`: 版本说明
-- `creator`: 创建人姓名
-- `createTime`: 创建时间戳
-- `lastVersion`: 是否为最新版本
+重命名/移动脚本输出统一为 JSON：
+- `resultCode`: 1 表示成功
+- `resultMsg`: 错误信息
+- `data`: 富 VO（非 Boolean）
 
 ## 版本更新决策流程（强制）
 
@@ -170,33 +129,27 @@
 
 ## 冲突处理（重命名/移动）
 
-同名冲突时有三种策略：
-
-| 策略 | 参数 | 说明 |
+| 场景 | 脚本 | 参数 |
 |---|---|---|
-| 静默覆盖 | cover=true | 直接覆盖已有文件 |
-| 自动重命名 | autoRename=true | 自动追加数字后缀，如 `文件名(1).pdf` |
-| 报错 | 二者都不传 | 后端报错，Agent 需处理 |
+| 改名冲突自动后缀 | `update-file-name.py` | `--name-conflict-strategy 0` |
+| 改名冲突失败 | `update-file-name.py` | 默认 `1` |
+| 移动冲突覆盖 | `move-file.py` | `--name-conflict-strategy 1` |
+| 移动冲突失败 | `move-file.py` | 默认 `2` |
 
-## 用户话术示例
-
-- "帮我把这份文档改个名"
-- "把这个文件移到 AI 生成文件夹"
-- "更新一下知识库里的那个报告"
-- "这个文件改了，保留旧的，存成新版本"
-- "查看这个文件有几个版本"
-- "把最新版本定稿"
+> 现网自动重命名后缀为 `_1` 等形式，与文档 `(1)` 表述可能不一致。
 
 ## 运行方式速查
 
 ```bash
-python scripts/manage/update-file-property.py <file_id> --new-name "新文件名.pdf"
-python scripts/manage/update-file-property.py <file_id> --target-parent-id <parent_id>
-python scripts/manage/update-file-property.py <file_id> --new-name "同名文件.pdf" --auto-rename
-python scripts/manage/update-file-property.py <file_id> --target-parent-id <parent_id> --cover
-python scripts/manage/update-file-version.py <file_id> <project_id> <resource_id> [--name "新文件名.pdf"] --version-status 3 --version-name "V2.0" --version-remark "修订内容"
-python scripts/manage/get-version-list.py <file_id>
-python scripts/manage/get-last-version.py <file_id>
-python scripts/manage/finalize-version.py <file_id>
-python scripts/manage/finalize-version.py <file_id> --version-number 3
+# 推荐：新接口
+python3 scripts/manage/update-file-name.py <file_id> --new-name "B.md" [--project-id <pid>]
+python3 scripts/manage/move-file.py <file_id> --target-parent-id <parent_id> [--new-name "X.md"]
+
+# 兼容：旧命令（stderr 警告后转发）
+python3 scripts/manage/update-file-property.py <file_id> --new-name "新文件名.pdf"
+python3 scripts/manage/update-file-property.py <file_id> --target-parent-id <parent_id> --cover
+
+python3 scripts/manage/update-file-version.py <file_id> <project_id> <resource_id> --version-status 3
+python3 scripts/manage/get-version-list.py <file_id>
+python3 scripts/manage/finalize-version.py <file_id>
 ```

@@ -83,8 +83,7 @@
 分享给：{targetName}
 权限：{grantedPermissions}
 有效期：长期有效
-分享链接：{shareUrl}
-分享链接（可点击）：[打开链接]({shareUrl})
+分享链接：[打开链接]({shareUrl})（如无法点击，请复制该链接在浏览器打开：{shareUrl}）
 
 仅已授权成员可直接访问；未授权成员打开链接后，可在页面上申请权限。
 

@@ -73,7 +73,7 @@
 
 ### B. 分享完成后的反馈（推荐）
 
-分享成功后建议输出（面向用户的“结果卡片”文本）：
+分享成功后建议输出（面向用户的“结果卡片”文本）。其中“分享链接”建议通过 `get-share-url.py` 生成后直接回显，方便用户复制：
 
 ```text
 已完成分享 ✅
@@ -82,15 +82,15 @@
 分享给：{targetName}
 权限：分享 + 在线预览 + 查看
 有效期：长期有效
+分享链接：{shareUrl}
 
 下一步：
-- 生成分享短链：可让我获取短链（用于复制转发）
 - 查看分享记录：可让我查询当前分享列表
 ```
 
 ### C. 生成短链与分享记录的建议编排
 
-- 生成短链：分享成功后可继续调用 `get-share-url.py` 输出短链
+- 生成短链：分享成功后建议立即调用 `get-share-url.py` 获取 `{shareUrl}`，并在分享反馈中回显供复制
 - 分享记录：分享成功后可继续调用 `get-file-shares.py` 回显“分享给谁/权限/有效期”
 
 ## 权限枚举（permissions）常用值
@@ -110,9 +110,9 @@
 
 > 说明：底层权限较细，面向普通用户建议只暴露“权限包”。本模块的默认权限包为：**分享 + 在线预览 + 查看**。
 
-- **仅查看** = `read + preview`
-- **可下载** = `read + preview + download`
-- **可编辑** = `read + preview + download + upload`
+- **仅查看** = `read + preview + fileshare`
+- **可下载** = `read + preview + download + fileshare`
+- **可编辑** = `read + preview + download + upload + fileshare`
 - **管理员** = `admin`（表示全权限）
 
 默认权限包（按我们已确认的需求）：

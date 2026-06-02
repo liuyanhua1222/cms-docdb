@@ -19,7 +19,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 
 本文件提供能力边界与路由规则。详细说明见 `references/`，实际执行见 `scripts/`。
 
-**当前版本**: 1.0.8
+**当前版本**: 1.0.9
 
 **接口版本**: 所有业务接口统一使用 `/open-api/*` 前缀，鉴权类型全部为 `appKey`。
 
@@ -179,7 +179,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 | "存到康哲/玄关/德镁知识库"、"上传到知识库"、"上传xxx到知识库"、"把这份文档归档"、"帮我保存这个文件" | `upload` | 新建文件到内部知识库（仅用于新建，已存在则路由到 manage 走版本更新） | `./references/upload/README.md` | `./scripts/upload/upload-content.py` |
 | "帮我把xxx删了"、"删除xxx文件"、"把xxx文件移除" | `delete` | 删除指定文件（高风险，需确认） | `./references/delete/README.md` | `./scripts/delete/delete-file.py` |
 | "帮我把xxx重命名"、"把xxx改名为yyy"、"把这个文件移到xxx文件夹"、"更新一下知识库里的xxx"、"把最新内容存进去"、"这个文档有更新，存一下"、"查看xxx文件的历史版本"、"把这个版本定稿" | `manage` | 重命名/移动文件；更新已有文件内容（版本管理）；查看历史版本；版本定稿 | `./references/manage/README.md` | 见 `./references/manage/README.md`（按意图选择对应脚本） |
-| "把这个文件分享给张三"、"授权给李四预览"、"给王五开查看权限"、"协同分享这个文件夹" | `share` | 授权分享（按员工 empId），并可在分享前查询调用方可分享的权限上限 | `./references/share/README.md` | `./scripts/share/add-file-share.py` 等（见模块说明） |
+| "把这个文件分享给张三"、"授权给李四预览"、"给王五开查看权限"、"协同分享这个文件夹" | `share` | 授权分享（按员工 empId），并可在分享前查询调用方可分享的权限上限 | `./references/share/README.md` | `./scripts/share/upsert-file-share-grants.py` 等（见模块说明） |
 
 能力树：
 
@@ -230,9 +230,7 @@ cms-docdb/
     └── share/
         ├── search-emp-by-name.py
         ├── get-my-share-permissions.py
-        ├── add-file-share.py
-        ├── upsert-file-share-grant.py
-        ├── update-file-share.py
+        ├── upsert-file-share-grants.py
         ├── get-file-shares.py
         └── get-share-url.py
 ```

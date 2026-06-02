@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-share / addFileShare 脚本
+share / upsertFileShareGrants 脚本
 
-用途：将知识库文件/文件夹授权分享给指定员工 empId
+用途：将知识库文件/文件夹授权分享给指定员工 empId（存在则更新，不存在则新增，不删除他人授权）
 
 默认行为（当用户未说明时）：
   - permissions 默认：fileshare（分享） + preview（在线预览） + read（查看）
@@ -10,7 +10,7 @@ share / addFileShare 脚本
   - isSendNotice 默认：true（默认发送钉钉分享通知）
 
 使用方式：
-  python3 scripts/share/add-file-share.py <file_id> --emp-id <emp_id> [--permissions "read,preview,download"] [--due-date 20991231] [--name "张三"] [--no-notice]
+  python3 scripts/share/upsert-file-share-grants.py <file_id> --emp-id <emp_id> [--permissions "read,preview,download"] [--due-date 20991231] [--name "张三"] [--no-notice] [--print-share-url] [--source "open_api"]
 
 环境变量：
   XG_BIZ_API_KEY / XG_APP_KEY — appKey（由 cms-auth-skills 预先准备）
@@ -20,6 +20,7 @@ import sys
 import os
 import json
 import urllib.request
+import urllib.parse
 import urllib.error
 import ssl
 
@@ -53,8 +54,9 @@ def build_opener(ctx):
     return urllib.request.build_opener(*handlers)
 
 
-API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/share/addFileShare"
-AUTH_MODE = "appKey"
+BASE = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/share"
+URL_UPSERT = f"{BASE}/upsertFileShareGrants"
+URL_GET_SHARE_URL = f"{BASE}/getShareUrl"
 
 DEFAULT_PERMISSIONS = ["fileshare", "preview", "read"]
 DEFAULT_DUE_DATE = 20991231
@@ -62,33 +64,30 @@ DEFAULT_DUE_DATE = 20991231
 
 def build_headers() -> dict:
     headers = {"Content-Type": "application/json"}
-    if AUTH_MODE == "appKey":
-        app_key = os.environ.get("XG_BIZ_API_KEY") or os.environ.get("XG_APP_KEY")
-        if not app_key:
-            print("错误: 请设置环境变量 XG_BIZ_API_KEY 或 XG_APP_KEY", file=sys.stderr)
-            sys.exit(1)
-        headers["appKey"] = app_key
+    app_key = os.environ.get("XG_BIZ_API_KEY") or os.environ.get("XG_APP_KEY")
+    if not app_key:
+        print("错误: 请设置环境变量 XG_BIZ_API_KEY 或 XG_APP_KEY", file=sys.stderr)
+        sys.exit(1)
+    headers["appKey"] = app_key
     return headers
 
 
-def parse_permissions(raw: str):
-    if not raw:
-        return None
-    parts = [p.strip() for p in raw.split(",")]
-    perms = [p for p in parts if p]
-    return perms or None
-
-
-def call_api(body: dict) -> dict:
+def call_json(method: str, url: str, body: dict = None, params: list = None) -> dict:
     headers = build_headers()
-    data = json.dumps(body, ensure_ascii=False).encode("utf-8")
-    req = urllib.request.Request(API_URL, data=data, headers=headers, method="POST")
+    if params:
+        url = f"{url}?{urllib.parse.urlencode(params)}"
+
+    data = None
+    if body is not None:
+        data = json.dumps(body, ensure_ascii=False).encode("utf-8")
+
+    req = urllib.request.Request(url, data=data, headers=headers, method=method)
 
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
-
     opener = build_opener(ctx)
+
     for attempt in range(3):
         try:
             with opener.open(req, timeout=60) as resp:
@@ -115,6 +114,14 @@ def call_api(body: dict) -> dict:
                 sys.exit(1)
 
 
+def parse_permissions(raw: str):
+    if not raw:
+        return None
+    parts = [p.strip() for p in raw.split(",")]
+    perms = [p for p in parts if p]
+    return perms or None
+
+
 def process_result(result):
     if isinstance(result, dict):
         return {
@@ -128,7 +135,7 @@ def process_result(result):
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description="授权分享文件/文件夹给员工（empId）")
+    parser = argparse.ArgumentParser(description="授权分享文件/文件夹给员工（upsert，存在则更新）")
     parser.add_argument("file_id", type=int, help="文件/文件夹 ID")
     parser.add_argument("--emp-id", type=int, required=True, help="被分享对象的员工 empId（必填）")
     parser.add_argument(
@@ -139,6 +146,8 @@ def main():
     parser.add_argument("--due-date", type=int, help="到期日期（yyyyMMdd）；不传默认 20991231（长期有效）")
     parser.add_argument("--name", type=str, help="被分享人姓名（可选，用于展示/通知）")
     parser.add_argument("--no-notice", action="store_true", help="不发送钉钉分享通知（默认发送）")
+    parser.add_argument("--source", type=str, help="生成短链的 source（可选，配合 --print-share-url）")
+    parser.add_argument("--print-share-url", action="store_true", help="成功后额外输出 shareUrl")
     args = parser.parse_args()
 
     perms = parse_permissions(args.permissions) or DEFAULT_PERMISSIONS
@@ -148,8 +157,8 @@ def main():
     grant = {
         "empId": args.emp_id,
         "permissions": perms,
+        "dueDate": due_date,
     }
-    grant["dueDate"] = due_date
     if args.name:
         grant["name"] = args.name
 
@@ -159,11 +168,19 @@ def main():
         "shareGrants": [grant],
     }
 
-    result = call_api(body)
+    result = call_json("POST", URL_UPSERT, body=body)
     processed = process_result(result)
-    print(json.dumps(processed, ensure_ascii=False))
+
+    if args.print_share_url:
+        params = [("fileId", str(args.file_id))]
+        if args.source:
+            params.append(("source", args.source))
+        url_resp = call_json("GET", URL_GET_SHARE_URL, params=params)
+        out = {"result": processed, "shareUrl": url_resp.get("data") if isinstance(url_resp, dict) else None}
+        print(json.dumps(out, ensure_ascii=False))
+    else:
+        print(json.dumps(processed, ensure_ascii=False))
 
 
 if __name__ == "__main__":
     main()
-

@@ -69,6 +69,19 @@ def extract_parameters(user_input, context=None):
     match = re.search(num_pattern, user_input)
     if match:
         params[match.group(2)] = match.group(1)
+
+    # 5.1 提取员工 ID（empId），用于分享授权
+    emp_id_patterns = [
+        r"(empId|EMPID|员工id|员工ID|员工Id)\s*[：:\s]*\s*(\d+)",
+        r".*分享给\s*(\d+)\s*$",
+        r".*授权给\s*(\d+)\s*$",
+    ]
+    for pattern in emp_id_patterns:
+        match = re.search(pattern, user_input)
+        if match:
+            emp_id = match.group(match.lastindex)
+            params["emp_id"] = int(emp_id)
+            break
     
     # 6. 提取项目相关信息
     project_patterns = [

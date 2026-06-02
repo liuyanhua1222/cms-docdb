@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+"""
+share / addFileShare 脚本
+
+用途：将知识库文件/文件夹授权分享给指定员工 empId
+
+默认行为（当用户未说明时）：
+  - permissions 默认：fileshare（分享） + preview（在线预览） + read（查看）
+  - dueDate 默认：20991231（长期有效）
+  - isSendNotice 默认：true（默认发送钉钉分享通知）
+
+使用方式：
+  python3 scripts/share/add-file-share.py <file_id> --emp-id <emp_id> [--permissions "read,preview,download"] [--due-date 20991231] [--name "张三"] [--no-notice]
+
+环境变量：
+  XG_BIZ_API_KEY / XG_APP_KEY — appKey（由 cms-auth-skills 预先准备）
+"""
+
+import sys
+import os
+import json
+import urllib.request
+import urllib.error
+import ssl
+
+if sys.stdout.encoding != "utf-8":
+    sys.stdout = open(sys.stdout.fileno(), mode="w", encoding="utf-8", buffering=1)
+if sys.stderr.encoding != "utf-8":
+    sys.stderr = open(sys.stderr.fileno(), mode="w", encoding="utf-8", buffering=1)
+
+
+class CustomRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def http_error_301(self, req, fp, code, msg, headers):
+        return self.redirect_request(req, fp, code, msg, headers)
+
+    def http_error_302(self, req, fp, code, msg, headers):
+        return self.redirect_request(req, fp, code, msg, headers)
+
+    def http_error_303(self, req, fp, code, msg, headers):
+        return self.redirect_request(req, fp, code, msg, headers)
+
+    def http_error_307(self, req, fp, code, msg, headers):
+        return self.redirect_request(req, fp, code, msg, headers)
+
+    def http_error_308(self, req, fp, code, msg, headers):
+        return self.redirect_request(req, fp, code, msg, headers)
+
+
+def build_opener(ctx):
+    handlers = [CustomRedirectHandler()]
+    if ctx:
+        handlers.append(urllib.request.HTTPSHandler(context=ctx))
+    return urllib.request.build_opener(*handlers)
+
+
+API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/share/addFileShare"
+AUTH_MODE = "appKey"
+
+DEFAULT_PERMISSIONS = ["fileshare", "preview", "read"]
+DEFAULT_DUE_DATE = 20991231
+
+
+def build_headers() -> dict:
+    headers = {"Content-Type": "application/json"}
+    if AUTH_MODE == "appKey":
+        app_key = os.environ.get("XG_BIZ_API_KEY") or os.environ.get("XG_APP_KEY")
+        if not app_key:
+            print("错误: 请设置环境变量 XG_BIZ_API_KEY 或 XG_APP_KEY", file=sys.stderr)
+            sys.exit(1)
+        headers["appKey"] = app_key
+    return headers
+
+
+def parse_permissions(raw: str):
+    if not raw:
+        return None
+    parts = [p.strip() for p in raw.split(",")]
+    perms = [p for p in parts if p]
+    return perms or None
+
+
+def call_api(body: dict) -> dict:
+    headers = build_headers()
+    data = json.dumps(body, ensure_ascii=False).encode("utf-8")
+    req = urllib.request.Request(API_URL, data=data, headers=headers, method="POST")
+
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+
+    opener = build_opener(ctx)
+    for attempt in range(3):
+        try:
+            with opener.open(req, timeout=60) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            if attempt < 2:
+                import time
+
+                time.sleep(1)
+            else:
+                try:
+                    err_body = e.read().decode("utf-8")
+                    print(f"错误: HTTP {e.code} - {e.reason} - {err_body}", file=sys.stderr)
+                except Exception:
+                    print(f"错误: HTTP {e.code} - {e.reason}", file=sys.stderr)
+                sys.exit(1)
+        except Exception as e:
+            if attempt < 2:
+                import time
+
+                time.sleep(1)
+            else:
+                print(f"错误: {e}", file=sys.stderr)
+                sys.exit(1)
+
+
+def process_result(result):
+    if isinstance(result, dict):
+        return {
+            "resultCode": result.get("resultCode"),
+            "resultMsg": result.get("resultMsg"),
+            "data": result.get("data"),
+        }
+    return result
+
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="授权分享文件/文件夹给员工（empId）")
+    parser.add_argument("file_id", type=int, help="文件/文件夹 ID")
+    parser.add_argument("--emp-id", type=int, required=True, help="被分享对象的员工 empId（必填）")
+    parser.add_argument(
+        "--permissions",
+        type=str,
+        help='权限列表，逗号分隔；不传则默认 "fileshare,preview,read"',
+    )
+    parser.add_argument("--due-date", type=int, help="到期日期（yyyyMMdd）；不传默认 20991231（长期有效）")
+    parser.add_argument("--name", type=str, help="被分享人姓名（可选，用于展示/通知）")
+    parser.add_argument("--no-notice", action="store_true", help="不发送钉钉分享通知（默认发送）")
+    args = parser.parse_args()
+
+    perms = parse_permissions(args.permissions) or DEFAULT_PERMISSIONS
+    due_date = args.due_date if args.due_date is not None else DEFAULT_DUE_DATE
+    is_send_notice = False if args.no_notice else True
+
+    grant = {
+        "empId": args.emp_id,
+        "permissions": perms,
+    }
+    grant["dueDate"] = due_date
+    if args.name:
+        grant["name"] = args.name
+
+    body = {
+        "fileId": args.file_id,
+        "isSendNotice": is_send_notice,
+        "shareGrants": [grant],
+    }
+
+    result = call_api(body)
+    processed = process_result(result)
+    print(json.dumps(processed, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()
+

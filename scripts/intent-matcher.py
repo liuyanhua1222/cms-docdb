@@ -6,6 +6,16 @@ import json
 
 # 意图模式匹配
 INTENT_PATTERNS = {
+    "share": [
+        r".*(分享|授权|协同).*(文件夹|文件|知识库|文档数据库).*给.*",
+        r".*把.*(文件夹|文件).*分享给.*",
+        r".*给.*(开权限|权限).*",
+        r".*(分享).*(短链|短链接|链接|share url|shareUrl).*",
+        r".*(获取|生成).*(短链|短链接|分享链接|链接).*",
+        r".*(查看|查询).*(分享记录|协同分享|协同人员|共享人员|谁有权限|分享列表).*",
+        r".*协同分享.*",
+        r".*分享协作.*",
+    ],
     "browse": [
         r".*公司在线知识库.*",
         r".*打开.*(康哲|玄关|德镁)知识库.*",
@@ -81,7 +91,11 @@ INTENT_PATTERNS = {
 }
 
 # 优先级顺序（确保更具体的意图优先匹配）
-INTENT_PRIORITY = ["read", "query", "upload", "delete", "manage", "browse"]
+# 经验规则：先匹配“显式动作词”（高确定性），再用 read/query/browse 做兜底。
+# - delete/manage/share/upload：用户意图明确，且通常不希望被 read/query 抢占
+# - read/query：覆盖面大，作为兜底更合适
+# - browse：最泛化，最后匹配
+INTENT_PRIORITY = ["delete", "manage", "share", "upload", "read", "query", "browse"]
 
 def match_intent(user_input):
     """匹配用户意图"""

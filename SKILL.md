@@ -231,6 +231,8 @@ cms-docdb/
         ├── search-emp-by-name.py
         ├── get-my-share-permissions.py
         ├── add-file-share.py
+        ├── upsert-file-share-grant.py
+        ├── update-file-share.py
         ├── get-file-shares.py
         └── get-share-url.py
 ```

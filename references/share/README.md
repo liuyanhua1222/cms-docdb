@@ -42,6 +42,19 @@
 | 获取分享记录 | fileId | — |
 | 获取分享短链 | fileId | source |
 
+## 与前端「权限设置 / 分享权限管理」的对应关系（排错必读）
+
+docdb 里有两套**不同的数据表与 UI**，不要混用：
+
+| 产品入口 | 前端位置 | 读接口 | 写接口 | 数据表 |
+|---|---|---|---|---|
+| **分享权限管理** | 文件「邀请协作者」→「分享权限管理」 | `GET /share/getFileShares` | `POST /share/upsertFileShareGrants` 等 | `t_file_share` |
+| **权限设置** | 知识库目录树右键「权限设置」 | `GET /fileGrant/getFileGrantByFileIdV2` | `POST /fileGrant/updateFileGrant`（未对 open-api 开放） | `t_file_grant` |
+
+open-api / skill 的 **`upsertFileShareGrants` 只写 `t_file_share`**，与「分享权限管理」一致，**不会**写入 `t_file_grant`。
+
+`getMySharePermissions` 虽走 `/fileGrant/getPermissionsByFileId`，但仅是分享前**读**权限上限，不是「权限设置」写入。
+
 ## 关键规则（强制）
 
 1. **权限上限约束**：被分享人的 `permissions` **不能超过调用方对该 fileId 的有效权限**。不确定时先跑 `get-my-share-permissions.py`。
@@ -74,7 +87,7 @@
 
 ### B. 分享完成后的反馈（推荐）
 
-分享成功后建议输出（面向用户的“结果卡片”文本）。其中“分享链接”建议通过 `get-share-url.py` 生成后直接回显，方便用户复制：
+分享成功后建议输出（面向用户的“结果卡片”文本）。必须先调用 `get-share-url.py` 拿到 `{shareUrl}`，并在卡片中**回显完整 URL**（不要只写 Markdown 链接文字，否则用户看不到地址）：
 
 ```text
 已完成分享 ✅

@@ -34,6 +34,7 @@
 | `scripts/upload/register-slice.py` | `POST /open-api/document-database/file/uploadFileSliceV2` | 注册分片元信息，换取 sliceId |
 | `scripts/upload/merge-resource.py` | `POST /open-api/document-database/file/saveResource` | 合并分片生成最终 resourceId |
 | `scripts/upload/get-file-download-info.py` | `GET /open-api/cwork-file/getDownloadInfo` | 根据 resourceId 获取下载 URL（有效期 1 小时） |
+| `scripts/upload/create-folder.py` | `POST /open-api/document-database/file/createFolder` | 显式创建空文件夹（`parentId=0` 表示空间根下建一级目录） |
 
 运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。系统会自动检测 Python 命令，优先使用 `python3`，如不存在则使用 `python`。
 
@@ -48,6 +49,7 @@
 | 分片预检 | md5, size, suffix | — |
 | 注册分片 | filePath, md5, size, storageType | — |
 | 合并分片 | name, sliceIds | suffix, size |
+| 创建文件夹 | projectId, parentId, name | cover, autoRename |
 
 ## 参数详细说明
 
@@ -124,6 +126,16 @@
 | `--suffix` | String | 否 | 文件后缀 | 如 `pdf` | - |
 | `--size` | Long | 否 | 文件总大小（字节） | 所有分片大小之和 | - |
 
+### create-folder.py — 创建空文件夹
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `project_id` | Long | 是 | 空间 ID | 有效 projectId | 可通过 get-uploadable-list.py 获取 |
+| `parent_id` | Long | 是 | 父目录 ID | 空间根传 **0** | 需在 project 内 |
+| `name` | String | 是 | 文件夹名 | 勿含 `/`、`\` | - |
+| `--cover` | Boolean | 否 | 同名覆盖 | 默认 false | 与 auto-rename 互斥策略见 API |
+| `--auto-rename` | Boolean | 否 | 同名自动重命名 | 默认 false | - |
+
 ### get-file-download-info.py — 获取资源下载链接
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
@@ -174,6 +186,11 @@
 - **脚本**: `get-file-download-info.py`
 - **用途**: 根据 resourceId 获取下载 URL（有效期 1 小时）
 - **输出**: 返回 downloadUrl
+
+### 9. 创建空文件夹
+- **脚本**: `create-folder.py`
+- **用途**: 同步/归档前预置目录，或在空间根（`parentId=0`）下建一级文件夹
+- **输出**: 返回新建文件夹的 `fileId`（Long）
 
 ## 输出说明
 
@@ -256,4 +273,5 @@ python scripts/upload/merge-resource.py "文件名.pdf" "sliceId1,sliceId2,..." 
 python scripts/upload/save-file-by-parent-id.py <project_id> <parent_id> <resource_id> "文件名.pdf" [--suffix pdf]
 python scripts/upload/save-file-by-path.py <project_id> "文件名.pdf" <resource_id> [--path "目录"] [--suffix pdf]
 python scripts/upload/get-file-download-info.py <resource_id>
+python scripts/upload/create-folder.py <project_id> <parent_id> "文件夹名" [--cover] [--auto-rename]
 ```

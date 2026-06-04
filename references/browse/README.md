@@ -32,7 +32,8 @@
 | `scripts/browse/get-uploadable-list.py` | `GET /open-api/document-database/project/uploadableList` | 获取有上传/编辑权限的空间列表 |
 | `scripts/browse/get-level1-folders.py` | `GET /open-api/document-database/file/getLevel1Folders` | 拉取项目空间根目录下的所有内容 |
 | `scripts/browse/browse.py` | `GET /open-api/document-database/file/getChildFiles` | 浏览指定目录下的直接子项 |
-| `scripts/browse/get-recent-files.py` | `POST /open-api/document-database/project/personal/getRecentFiles` | 获取当前用户最近上传的文件列表 |
+| `scripts/browse/get-recent-files.py` | `POST /open-api/document-database/project/personal/getRecentFiles` | 获取当前用户最近上传的文件列表（个人库捷径） |
+| `scripts/browse/get-my-upload-records.py` | `GET /open-api/document-database/operationLog/getMyUploadRecords` | 分页查询全空间上传/新建记录（默认近90天，无需传 operations） |
 
 运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。系统会自动检测 Python 命令，优先使用 `python3`，如不存在则使用 `python`。
 
@@ -46,6 +47,7 @@
 | 浏览项目根目录 | projectId | order, permissionQuery |
 | 浏览指定目录 | parentId | type, order, excludeFileTypes, excludeFolderNames, returnFileDesc |
 | 获取最近上传文件 | 无 | limit, searchKey |
+| 查询全空间上传记录 | 无 | pageIndex, pageSize, projectId, startTime, endTime |
 
 ## 参数详细说明
 
@@ -97,6 +99,18 @@
 | `--limit` | Integer | 否 | 返回数量限制 | ≥1（默认 10） | - |
 | `--search-key` | String | 否 | 搜索关键词 | 任意字符串 | - |
 
+### get-my-upload-records.py — 全空间上传记录（推荐 Agent 使用）
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `--page-index` | Integer | 否 | 页码 | 从 1 开始，默认 1 | - |
+| `--page-size` | Integer | 否 | 每页条数 | 1–100，默认 20 | - |
+| `--project-id` | Long | 否 | 限定空间 | 有效 projectId | - |
+| `--start-time` | Long | 否 | 开始时间（毫秒） | 时间戳 | 与 endTime 成对使用 |
+| `--end-time` | Long | 否 | 结束时间（毫秒） | 时间戳 | 不传则默认当前时间 |
+
+> 服务端固定查询 `file_upload`、`upload2agent`、`create_file`、`create_folder`，详见 dev-guide **1.15**。
+
 ## 动作列表
 
 ### 1. 获取个人空间 ID
@@ -126,8 +140,13 @@
 
 ### 6. 获取最近上传文件
 - **脚本**: `get-recent-files.py`
-- **用途**: 获取当前用户最近上传的文件列表
+- **用途**: 获取当前用户最近上传的文件列表（个人库）
 - **输出**: 返回文件列表，支持数量限制和关键字搜索
+
+### 7. 查询全空间上传记录
+- **脚本**: `get-my-upload-records.py`
+- **用途**: 小龙虾/Agent 查询「我最近在全空间上传/新建了哪些文件」
+- **输出**: 分页 `pageData`，含 `projectName`、`operation`、`fileName`、`ancestorNames` 等
 
 ## 输出说明
 
@@ -162,7 +181,8 @@
    - 继续下钻 → 递归调用 `browse.py`
 
 3. **快速访问**：
-   - 查看最近上传 → `get-recent-files.py`
+   - 查看最近上传（个人库）→ `get-recent-files.py`
+   - 查看全空间上传记录（含新建文件/文件夹）→ `get-my-upload-records.py`
 
 ## 用户感知与对话输出规范（建议）
 
@@ -203,4 +223,5 @@ python scripts/browse/get-uploadable-list.py
 python scripts/browse/get-level1-folders.py <project_id> [--order 1|2|5|6] [--permission-query <query>]
 python scripts/browse/browse.py <parent_id> [--type 1|2] [--order 1|2|3|4|5|6] [--exclude-file-types "work_report,huiji"] [--exclude-folder-names "临时文件"]
 python scripts/browse/get-recent-files.py [--limit 10] [--search-key "关键词"]
+python scripts/browse/get-my-upload-records.py [--page-index 1] [--page-size 20] [--project-id <id>]
 ```

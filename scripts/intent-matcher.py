@@ -6,8 +6,22 @@ import json
 
 # 意图模式匹配
 INTENT_PATTERNS = {
+    "apply": [
+        r".*申请.*(权限|访问|查看).*",
+        r".*(我的申请|待我处理|待我审批|我已处理).*",
+        r".*审批.*(申请|权限).*",
+        r".*查询.*(审批人|管理员).*",
+        r".*添加.*空间成员.*",
+    ],
+    "grant": [
+        r".*目录授权.*",
+        r".*空间.*目录.*(授权|权限).*",
+        r".*(收回|撤销).*(目录|空间).*(授权|权限).*",
+        r".*upsert.*grant.*",
+    ],
     "share": [
-        r".*(撤销|取消).*(分享|授权|权限).*",
+        r".*(分享给我|分享给我的|我的分享).*",
+        r".*(撤销|取消).*(分享|协同).*",
         r".*(分享|授权|协同).*(文件夹|文件|知识库|文档数据库).*给.*",
         r".*把.*(文件夹|文件).*分享给.*",
         r".*给.*(开权限|权限).*",
@@ -100,7 +114,7 @@ INTENT_PATTERNS = {
 # - delete/manage/share/upload：用户意图明确，且通常不希望被 read/query 抢占
 # - read/query：覆盖面大，作为兜底更合适
 # - browse：最泛化，最后匹配
-INTENT_PRIORITY = ["delete", "manage", "share", "upload", "read", "query", "browse"]
+INTENT_PRIORITY = ["delete", "manage", "apply", "grant", "share", "upload", "read", "query", "browse"]
 
 def match_intent(user_input):
     """匹配用户意图"""

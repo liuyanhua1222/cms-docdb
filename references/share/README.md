@@ -32,6 +32,8 @@
 | `scripts/share/get-file-shares.py` | `GET /open-api/document-database/share/getFileShares` | 获取文件/文件夹的协同分享记录列表（人员/部门等） |
 | `scripts/share/get-share-url.py` | `GET /open-api/document-database/share/getShareUrl` | 生成文件/文件夹的“可转发预览短链”（授权后用于链接分发） |
 | `scripts/share/revoke-file-share-grants.py` | `POST /open-api/document-database/share/revokeFileShareGrants` | 撤销指定员工的协同分享（幂等；不发送钉钉通知） |
+| `scripts/share/list-shared-to-me.py` | `GET /open-api/document-database/share/sharedToMe` | 分享给我的文件列表（分页；`fileName`/`sharerId` 筛选） |
+| `scripts/share/list-my-shares.py` | `GET /open-api/document-database/share/myShares` | 我的分享列表（分页；`fileName` 筛选） |
 
 ## 输入要求
 

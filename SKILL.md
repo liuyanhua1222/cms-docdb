@@ -19,17 +19,19 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 
 本文件提供能力边界与路由规则。详细说明见 `references/`，实际执行见 `scripts/`。
 
-**当前版本**: 1.1.0
+**当前版本**: 1.2.0
 
 **接口版本**: 所有业务接口统一使用 `/open-api/*` 前缀，鉴权类型全部为 `appKey`。
 
-**能力概览（6 块能力）**：
+**能力概览（8 块能力）**：
 - `browse`：发现可用空间、获取个人空间 ID、浏览目录结构、查看最近上传与全空间上传记录
 - `query`：搜索文件，找到文件后获取内容、下载链接或预览链接
 - `upload`：新建文件或文件夹——上传纯文本/物理文件、显式创建目录到 **康哲/玄关/德镁知识库**（内部应用侧；仅用于新建）
 - `delete`：删除指定文件（高风险，需用户确认）
 - `manage`：重命名/移动文件；更新已有文件内容（版本管理）；查看历史版本；版本定稿
-- `share`：将文件/文件夹授权分享给指定员工；可撤销分享（默认发钉钉通知；默认权限：分享+在线预览+查看）
+- `share`：协同分享（`t_file_share`）；分享/撤销；分享列表（分享给我、我的分享）
+- `apply`：权限申请（先查审批人，再 submit）
+- `grant`：目录授权（`t_file_grant`，空间成员；增量 upsert/revoke）
 
 ## 适用范围与歧义排除（技能门控，强制）
 
@@ -108,9 +110,11 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 | `upload` | "上传到康哲/玄关/德镁知识库"、"保存到康哲/玄关/德镁知识库"、"上传到知识库"、"保存到知识库"、"归档文件"、"新建文件"、"创建文件夹"、"新建文件夹"、"建目录" |
 | `delete` | "删除文件"、"移除文件"、"删掉xxx" |
 | `manage` | "重命名xxx"、"移动文件"、"更新内容"、"版本管理"、"历史版本"、"定稿" |
-| `share` | "分享文件给xxx"、"把这个文件分享给xxx"、"授权给xxx看"、"给xxx开权限"、"协同分享"、"分享协作"、"撤销分享"、"取消xxx的分享权限" |
+| `share` | "分享文件给xxx"、"把这个文件分享给xxx"、"授权给xxx看"、"给xxx开权限"、"协同分享"、"分享协作"、"撤销分享"、"取消xxx的分享权限"、"分享给我的"、"我的分享" |
+| `apply` | "申请权限"、"申请访问"、"我的申请"、"待我审批"、"审批申请"、"查询审批人"、"添加空间成员" |
+| `grant` | "目录授权"、"空间目录授权"、"收回目录授权"、"撤销空间授权" |
 
-**意图标签与模块目录（强制）**：`intent-matcher.py` 输出的 `data.intent` 中，`browse`、`query`、`upload`、`delete`、`manage` 与同名 `references/<module>/`、`scripts/<module>/` 一致。`read` 仅为意图分类标签（匹配「读取/总结文件」等话术），**不存在** `references/read/`；一旦 `intent` 为 `read`，路由与加载必须与 **`query`** 相同，使用 `references/query/` 与 `scripts/query/`。
+**意图标签与模块目录（强制）**：`intent-matcher.py` 输出的 `data.intent` 中，`browse`、`query`、`upload`、`delete`、`manage`、`share`、`apply`、`grant` 与同名 `references/<module>/`、`scripts/<module>/` 一致。`read` 仅为意图分类标签（匹配「读取/总结文件」等话术），**不存在** `references/read/`；一旦 `intent` 为 `read`，路由与加载必须与 **`query`** 相同，使用 `references/query/` 与 `scripts/query/`。
 
 ### 参数提取规则
 
@@ -179,7 +183,11 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 | "存到康哲/玄关/德镁知识库"、"上传到知识库"、"上传xxx到知识库"、"把这份文档归档"、"帮我保存这个文件"、"在知识库里建个文件夹" | `upload` | 新建文件/文件夹（已存在文件内容更新走 manage 版本流） | `./references/upload/README.md` | `./scripts/upload/upload-content.py` 等 |
 | "帮我把xxx删了"、"删除xxx文件"、"把xxx文件移除" | `delete` | 删除指定文件（高风险，需确认） | `./references/delete/README.md` | `./scripts/delete/delete-file.py` |
 | "帮我把xxx重命名"、"把xxx改名为yyy"、"把这个文件移到xxx文件夹"、"更新一下知识库里的xxx"、"把最新内容存进去"、"这个文档有更新，存一下"、"查看xxx文件的历史版本"、"把这个版本定稿" | `manage` | 重命名/移动文件；更新已有文件内容（版本管理）；查看历史版本；版本定稿 | `./references/manage/README.md` | 见 `./references/manage/README.md`（按意图选择对应脚本） |
-| "把这个文件分享给张三"、"授权给李四预览"、"给王五开查看权限"、"协同分享这个文件夹"、"取消张三的分享" | `share` | 授权/撤销分享（按员工 empId） | `./references/share/README.md` | `./scripts/share/upsert-file-share-grants.py` 等 |
+| "把这个文件分享给张三"、"授权给李四预览"、"给王五开查看权限"、"协同分享这个文件夹"、"取消张三的分享"、"分享给我的文件"、"我的分享列表" | `share` | 协同分享与分享列表 | `./references/share/README.md` | `./scripts/share/upsert-file-share-grants.py` 等 |
+| "申请这个文件的权限"、"我的申请"、"待我审批的申请"、"同意/拒绝权限申请" | `apply` | 权限申请与审批 | `./references/apply/README.md` | `./scripts/apply/get-approvers.py` 等 |
+| "给空间成员开目录权限"、"目录授权"、"收回某人的目录授权" | `grant` | 目录授权（t_file_grant，须空间成员） | `./references/grant/README.md` | `./scripts/grant/upsert-file-grants.py` 等 |
+
+**增量授权原则（强制）**：目录授权与协同分享均使用 upsert + 定点 revoke；**禁止**调用全量 replace 接口（`updateFileShare`、`updateFileGrantV2`）。
 
 能力树：
 
@@ -192,7 +200,9 @@ cms-docdb/
 │   ├── upload/README.md
 │   ├── delete/README.md
 │   ├── manage/README.md
-│   └── share/README.md
+│   ├── share/README.md
+│   ├── apply/README.md
+│   └── grant/README.md
 └── scripts/
     ├── browse/
     │   ├── browse.py
@@ -229,13 +239,28 @@ cms-docdb/
     │   ├── get-version-list.py
     │   ├── get-last-version.py
     │   └── finalize-version.py
-    └── share/
-        ├── search-emp-by-name.py
-        ├── get-my-share-permissions.py
-        ├── upsert-file-share-grants.py
-        ├── get-file-shares.py
-        ├── get-share-url.py
-        └── revoke-file-share-grants.py
+    ├── share/
+    │   ├── search-emp-by-name.py
+    │   ├── get-my-share-permissions.py
+    │   ├── upsert-file-share-grants.py
+    │   ├── get-file-shares.py
+    │   ├── get-share-url.py
+    │   ├── revoke-file-share-grants.py
+    │   ├── list-shared-to-me.py
+    │   └── list-my-shares.py
+    ├── apply/
+    │   ├── get-approvers.py
+    │   ├── submit-apply.py
+    │   ├── list-my-applies.py
+    │   ├── list-pending-applies.py
+    │   ├── list-processed-applies.py
+    │   └── review-apply.py
+    ├── grant/
+    │   ├── upsert-file-grants.py
+    │   └── revoke-file-grants.py
+    └── admin/
+        ├── add-member.py
+        └── is-project-member.py
 ```
 
-**文档对齐**：Open API 契约以 `dev-guide/02.产品业务AI文档/知识库/`（v2.3+）为准；新增 **1.15 getMyUploadRecords**、**1.9 createFolder**、**6.2.1 revokeFileShareGrants** 均已提供对应脚本。
+**文档对齐**：Open API 契约以 `dev-guide/02.产品业务AI文档/知识库/`（v2.4+）为准；**06** 分享列表、**07** 目录授权、**08** 权限申请均已提供对应脚本。

@@ -34,7 +34,7 @@
 | `scripts/query/get-file-content.py` | `GET /open-api/document-database/file/getFileContent` | 分页获取文件文本内容 |
 | `scripts/query/batch-get-content.py` | `POST /open-api/document-database/ai/batchGetContent` | 批量获取多个文件全文，建议≤10个 |
 
-运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。系统会自动检测 Python 命令，优先使用 `python3`，如不存在则使用 `python`。
+运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
 
 ## 输入要求
 
@@ -180,11 +180,11 @@
 ## 运行方式速查
 
 ```bash
-python scripts/query/search.py "关键词" --project-id <project_id> [--root-file-id <root_id>] [--start-time <ts>] [--end-time <ts>] [--exclude-file-types "work_report,huiji"]
-python scripts/query/get-full-content.py <file_id> [--relation-id <relation_id>] [--file-type <file_type>]
-python scripts/query/get-download-info.py <file_id>
-python scripts/query/get-download-info.py <file_id> --force-download
-python scripts/query/download-file.py <file_id> [--output /path/to/save.pdf]
-python scripts/query/get-file-content.py <file_id> [--page-number 1]
-python scripts/query/batch-get-content.py '[{"fileId":123},{"fileId":456}]' [--max-chars 60000] [--max-chars-per-file 20000]
+python3 scripts/query/search.py "关键词" --project-id <project_id> [--root-file-id <root_id>] [--start-time <ts>] [--end-time <ts>] [--exclude-file-types "work_report,huiji"]
+python3 scripts/query/get-full-content.py <file_id> [--relation-id <relation_id>] [--file-type <file_type>]
+python3 scripts/query/get-download-info.py <file_id>
+python3 scripts/query/get-download-info.py <file_id> --force-download
+python3 scripts/query/download-file.py <file_id> [--output /path/to/save.pdf]
+python3 scripts/query/get-file-content.py <file_id> [--page-number 1]
+python3 scripts/query/batch-get-content.py '[{"fileId":123},{"fileId":456}]' [--max-chars 60000] [--max-chars-per-file 20000]
 ```

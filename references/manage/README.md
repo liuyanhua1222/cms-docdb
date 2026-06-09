@@ -36,7 +36,7 @@
 | `scripts/manage/get-last-version.py` | `GET /open-api/document-database/file/getLastVersion` | 获取文件最新版本信息 |
 | `scripts/manage/finalize-version.py` | `POST /open-api/document-database/file/finalizeVersion` | 将指定版本标记为定稿 |
 
-纯文本内容的版本更新使用 `scripts/upload/upload-content.py --update-file-id`。运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。系统会自动检测 Python 命令，优先使用 `python3`，如不存在则使用 `python`。
+纯文本内容的版本更新使用 `scripts/upload/upload-content.py --update-file-id`。运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
 
 ## 输入要求
 

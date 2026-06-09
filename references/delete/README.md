@@ -15,7 +15,7 @@
 |---|---|---|
 | `scripts/delete/delete-file.py` | `POST /open-api/document-database/file/deleteFile` | 删除指定文件，输出 JSON 结果 |
 
-运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。系统会自动检测 Python 命令，优先使用 `python3`，如不存在则使用 `python`。
+运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
 
 ## 输入要求
 
@@ -70,6 +70,6 @@
 ## 运行方式速查
 
 ```bash
-python scripts/delete/delete-file.py <file_id>
-python scripts/delete/delete-file.py <file_id> --physical
+python3 scripts/delete/delete-file.py <file_id>
+python3 scripts/delete/delete-file.py <file_id> --physical
 ```

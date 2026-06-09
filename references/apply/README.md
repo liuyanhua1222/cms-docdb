@@ -21,6 +21,8 @@
 
 申请列表分页 `pageIndex` 从 **1** 开始。
 
+运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
+
 ## 禁止调用的接口
 
 - 全量 replace：`updateFileShare`、`updateFileGrantV2`

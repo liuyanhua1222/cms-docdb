@@ -5,7 +5,9 @@ upload / createFolder 脚本
 用途：在指定空间/父目录下显式创建空文件夹（同步建目录、预置目录结构）
 
 使用方式：
-  python3 scripts/upload/create-folder.py <project_id> <parent_id> <name> [--cover] [--auto-rename]
+  python3 scripts/upload/create-folder.py <parent_id> <name> [--project-id <id>] [--cover] [--auto-rename]
+
+  parentId != 0 时默认通过 getFileBasicInfo 自动解析 projectId。
 
 环境变量：
   XG_BIZ_API_KEY / XG_APP_KEY — appKey（由 cms-auth-skills 预先准备）
@@ -17,6 +19,9 @@ import json
 import urllib.request
 import urllib.error
 import ssl
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "common"))
+from docdb_open_api import resolve_project_id_for_parent  # noqa: E402
 
 if sys.stdout.encoding != "utf-8":
     sys.stdout = open(sys.stdout.fileno(), mode="w", encoding="utf-8", buffering=1)
@@ -119,14 +124,23 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="创建空文件夹")
-    parser.add_argument("project_id", type=int, help="空间 projectId")
     parser.add_argument("parent_id", type=int, help="父目录 fileId，空间根传 0")
     parser.add_argument("name", type=str, help="文件夹名称（勿含 / 或 \\）")
+    parser.add_argument("--project-id", type=int, default=None, help="空间 ID；parentId!=0 时可省略（自动反查）")
+    parser.add_argument("--no-resolve-project-id", action="store_true", help="不调用 getFileBasicInfo（不推荐）")
     parser.add_argument("--cover", action="store_true", help="同名时覆盖（慎用）")
     parser.add_argument("--auto-rename", action="store_true", help="同名时自动重命名")
     args = parser.parse_args()
 
-    result = call_api(args.project_id, args.parent_id, args.name, args.cover, args.auto_rename)
+    if args.no_resolve_project_id:
+        if args.project_id is None:
+            print("错误: --no-resolve-project-id 模式下必须提供 --project-id", file=sys.stderr)
+            sys.exit(1)
+        project_id = args.project_id
+    else:
+        project_id = resolve_project_id_for_parent(args.parent_id, args.project_id)
+
+    result = call_api(project_id, args.parent_id, args.name, args.cover, args.auto_rename)
     print(json.dumps(process_result(result), ensure_ascii=False))
 
 

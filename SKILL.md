@@ -19,7 +19,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 
 本文件提供能力边界与路由规则。详细说明见 `references/`，实际执行见 `scripts/`。
 
-**当前版本**: 1.2.1
+**当前版本**: 1.2.2
 
 **接口版本**: 所有业务接口统一使用 `/open-api/*` 前缀，鉴权类型全部为 `appKey`。
 
@@ -55,6 +55,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 3. 上传文件必须提供文件名和内容（纯文本）或 resourceId（物理文件）
 4. 删除/重命名/移动文件必须提供 fileId
 5. 版本更新必须提供目标文件的 fileId（纯文本）或文件 id + projectId + resourceId（物理文件）
+6. **saveFileByParentId / createFolder**：`parentId != 0` 时必须先调 `get-file-basic-info.py` 解析 `projectId`（`save-file-by-parent-id.py` / `create-folder.py` 已默认自动反查，勿手填错误 projectId）
 
 版本管理强制规则（最高优先级）：
 - **禁止直接覆盖已有文件内容**：对已存在文件的任何内容更新，必须通过版本管理接口保存为新版本，不得使用覆盖方式。直接覆盖无法溯源，违反本规则。
@@ -76,6 +77,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 2. **脚本可独立执行**：所有 `scripts/` 下的脚本均可脱离 AI Agent 直接在命令行运行
 3. **先读模块说明再执行**：执行脚本前，必须先阅读对应模块的 `references/<module>/README.md`
 4. **鉴权一致**：涉及 appKey 时，统一依赖 `cms-auth-skills`
+5. **运行命令统一**：文档与示例统一写 `python3`；执行时优先 `python3`，若命令不存在（常见于部分 Windows 仅提供 `python`）则改用 `python` 等价替换
 
 意图路由与加载规则（强制）：
 1. **先路由再加载**：必须先判定模块，再打开该模块的 `references/<module>/README.md`
@@ -91,11 +93,11 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 4. **素材优先级**：用户给了文件或 URL，必须先提取内容再确认，确认后才触发生成或写入
 5. **生产约束**：仅允许生产域名与生产协议，不引入任何测试地址
 6. **危险操作**：删除文件等高风险操作应礼貌确认，不直接执行
-7. **脚本语言限制**：调用 Open API 的业务脚本必须使用 Python
+7. **脚本语言限制**：调用 Open API 的业务脚本必须使用 Python 3（`python3`）
 8. **重试策略**：出错时间隔 1 秒、最多重试 3 次，超过后终止并上报
 9. **禁止无限重试**：严禁无限循环重试
 10. **输出规范**：脚本输出优先按 `resultCode`、`resultMsg`、`data` 读取，对用户输出最小必要信息：摘要/必要输入/链接，不回显完整 JSON 响应
-11. **直接执行**：所有脚本必须可直接通过 Python 执行，不依赖包装脚本
+11. **直接执行**：所有脚本必须可直接通过 `python3`（或 `python`）执行，不依赖包装脚本
 
 ## 触发配置
 
@@ -178,7 +180,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 
 | 用户意图 | 模块 | 能力摘要 | 模块说明 | 脚本 |
 |---|---|---|---|---|
-| "打开公司在线知识库"、"打开康哲/玄关/德镁知识库"、"浏览一下xxx文件夹"、"知识库里有什么"、"查看某个目录的内容"、"目录结构"、"我最近上传了什么"、"最近使用/最近看过哪些文件" | `browse` | 发现空间、浏览目录、最近使用、上传记录 | `./references/browse/README.md` | `./scripts/browse/browse.py` 等 |
+| "打开公司在线知识库"、"打开康哲/玄关/德镁知识库"、"浏览一下xxx文件夹"、"知识库里有什么"、"查看某个目录的内容"、"目录结构"、"我最近上传了什么"、"最近使用/最近看过哪些文件"、"查文件信息/根据fileId查projectId/这个文件在哪个空间" | `browse` | 发现空间、浏览目录、最近使用、上传记录、轻量元数据反查 | `./references/browse/README.md` | `./scripts/browse/browse.py` 等 |
 | "查询知识库中的…"、"搜索知识库里的…"、"搜索xxx"、"查询xxx"、"查找xxx"、"看看这个文件的内容"、"帮我读取xxx文件"、"帮我总结一下xxx文件" | `query` | 搜索文件并读取内容、下载链接或预览链接 | `./references/query/README.md` | `./scripts/query/search.py` |
 | "存到康哲/玄关/德镁知识库"、"上传到知识库"、"上传xxx到知识库"、"把这份文档归档"、"帮我保存这个文件"、"在知识库里建个文件夹" | `upload` | 新建文件/文件夹（已存在文件内容更新走 manage 版本流） | `./references/upload/README.md` | `./scripts/upload/upload-content.py` 等 |
 | "帮我把xxx删了"、"删除xxx文件"、"把xxx文件移除" | `delete` | 删除指定文件（高风险，需确认） | `./references/delete/README.md` | `./scripts/delete/delete-file.py` |
@@ -204,6 +206,8 @@ cms-docdb/
 │   ├── apply/README.md
 │   └── grant/README.md
 └── scripts/
+    ├── common/
+    │   └── docdb_open_api.py
     ├── browse/
     │   ├── browse.py
     │   ├── get-level1-folders.py
@@ -212,6 +216,7 @@ cms-docdb/
     │   ├── get-recent-files.py
     │   ├── get-my-upload-records.py
     │   ├── get-my-recent-used.py
+    │   ├── get-file-basic-info.py
     │   └── get-uploadable-list.py
     ├── query/
     │   ├── search.py

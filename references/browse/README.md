@@ -35,8 +35,9 @@
 | `scripts/browse/get-recent-files.py` | `POST /open-api/document-database/project/personal/getRecentFiles` | 获取当前用户最近上传的文件列表（个人库捷径） |
 | `scripts/browse/get-my-upload-records.py` | `GET /open-api/document-database/operationLog/getMyUploadRecords` | 分页查询全空间上传/新建记录（默认近90天，无需传 operations） |
 | `scripts/browse/get-my-recent-used.py` | `GET /open-api/document-database/operationLog/getMyRecentUsed` | 最近使用（预览/下载/Agent上传，与前端主页一致） |
+| `scripts/browse/get-file-basic-info.py` | `GET /open-api/document-database/file/getFileBasicInfo` | 根据 fileId 查 projectId、type 等轻量元数据 |
 
-运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。系统会自动检测 Python 命令，优先使用 `python3`，如不存在则使用 `python`。
+运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
 
 ## 输入要求
 
@@ -49,6 +50,7 @@
 | 浏览指定目录 | parentId | type, order, excludeFileTypes, excludeFolderNames, returnFileDesc |
 | 获取最近上传文件 | 无 | limit, searchKey |
 | 查询全空间上传记录 | 无 | pageIndex, pageSize, projectId, startTime, endTime |
+| 查询文件/文件夹基本信息 | fileId | 无 |
 
 ## 参数详细说明
 
@@ -122,6 +124,14 @@
 
 > 服务端固定查询 `file_online_read`、`file_download`、`upload2agent`，详见 dev-guide **1.16**。
 
+### get-file-basic-info.py — 文件/文件夹轻量元数据
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `file_id` | Long | 是 | 文件或文件夹 ID | 有效 fileId | 上传前反查 projectId 时常用 |
+
+> 返回 `projectId`、`type`、`parentId` 等，不含正文与权限子集，详见 dev-guide **1.17**。
+
 ## 动作列表
 
 ### 1. 获取个人空间 ID
@@ -164,6 +174,11 @@
 - **用途**: 查询当前用户最近预览/下载/Agent 上传过的文件（与前端「最近使用」一致）
 - **输出**: 分页 `pageData`，`operation` 为 `file_online_read` / `file_download` / `upload2agent`
 
+### 9. 查询文件/文件夹基本信息
+- **脚本**: `get-file-basic-info.py`
+- **用途**: 根据 `fileId` 反查 `projectId`、判断文件/文件夹类型；上传到指定父目录前推荐使用
+- **输出**: `FileBasicInfoVO`（含 `projectId`、`parentId`、`type` 等）
+
 ## 输出说明
 
 所有脚本输出统一为 JSON 格式，包含：
@@ -201,6 +216,9 @@
    - 查看最近上传（个人库）→ `get-recent-files.py`
    - 查看全空间上传记录（含新建文件/文件夹）→ `get-my-upload-records.py`
 
+4. **元数据反查（上传前）**：
+   - 仅有 `fileId`/`parentId` 时 → `get-file-basic-info.py` 取得 `projectId` 后再调 `save-file-by-parent-id.py`
+
 ## 用户感知与对话输出规范（建议）
 
 ### A. “打开知识库位置”（目录定位）
@@ -232,16 +250,19 @@
 - "我想保存文件，先看看有哪些空间可以写"
 - "我最近看过哪些文件"
 - "最近使用里有什么"
+- "这个文件的 projectId 是多少"
+- "查一下这个文件夹属于哪个空间"
 
 ## 运行方式速查
 
 ```bash
-python scripts/browse/get-project-list.py
-python scripts/browse/get-personal-project-id.py
-python scripts/browse/get-uploadable-list.py
-python scripts/browse/get-level1-folders.py <project_id> [--order 1|2|5|6] [--permission-query <query>]
-python scripts/browse/browse.py <parent_id> [--type 1|2] [--order 1|2|3|4|5|6] [--exclude-file-types "work_report,huiji"] [--exclude-folder-names "临时文件"]
-python scripts/browse/get-recent-files.py [--limit 10] [--search-key "关键词"]
-python scripts/browse/get-my-upload-records.py [--page-index 1] [--page-size 20] [--project-id <id>]
+python3 scripts/browse/get-project-list.py
+python3 scripts/browse/get-personal-project-id.py
+python3 scripts/browse/get-uploadable-list.py
+python3 scripts/browse/get-level1-folders.py <project_id> [--order 1|2|5|6] [--permission-query <query>]
+python3 scripts/browse/browse.py <parent_id> [--type 1|2] [--order 1|2|3|4|5|6] [--exclude-file-types "work_report,huiji"] [--exclude-folder-names "临时文件"]
+python3 scripts/browse/get-recent-files.py [--limit 10] [--search-key "关键词"]
+python3 scripts/browse/get-my-upload-records.py [--page-index 1] [--page-size 20] [--project-id <id>]
 python3 scripts/browse/get-my-recent-used.py [--page-index 1] [--page-size 20] [--biz-code kz_doc]
+python3 scripts/browse/get-file-basic-info.py <file_id>
 ```

@@ -9,7 +9,7 @@
 
 ## 鉴权模式
 
-所有动作统一使用 `appKey` 鉴权，通过 `cms-auth-skills` 获取。
+所有动作统一使用 `appKey` 鉴权，通过 `cms-auth-skills` 获取。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
 
 ## 员工 ID（empId）获取方式（必须遵循用户服务文档）
 

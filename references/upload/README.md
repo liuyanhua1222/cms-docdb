@@ -36,7 +36,7 @@
 | `scripts/upload/get-file-download-info.py` | `GET /open-api/cwork-file/getDownloadInfo` | 根据 resourceId 获取下载 URL（有效期 1 小时） |
 | `scripts/upload/create-folder.py` | `POST /open-api/document-database/file/createFolder` | 显式创建空文件夹（`parentId=0` 表示空间根下建一级目录） |
 
-运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。系统会自动检测 Python 命令，优先使用 `python3`，如不存在则使用 `python`。
+运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
 
 ## 输入要求
 
@@ -44,12 +44,12 @@
 |---|---|---|
 | 纯文本上传 | content, fileName | fileSuffix, folderName, projectId, updateFileId, versionName, versionRemark |
 | 物理文件整传 | 本地文件路径 | — |
-| 按父 ID 保存 | projectId, parentId, resourceId, name, fileType | suffix, size, isSensitive |
+| 按父 ID 保存 | parentId, resourceId, name | projectId（parentId≠0 可自动反查）, suffix, size, isSensitive |
 | 按路径保存 | projectId, resourceId, name, fileType | path, suffix, size, isSensitive |
 | 分片预检 | md5, size, suffix | — |
 | 注册分片 | filePath, md5, size, storageType | — |
 | 合并分片 | name, sliceIds | suffix, size |
-| 创建文件夹 | projectId, parentId, name | cover, autoRename |
+| 创建文件夹 | parentId, name | projectId（parentId≠0 可自动反查）, cover, autoRename |
 
 ## 参数详细说明
 
@@ -78,8 +78,9 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `project_id` | Long | 是 | 项目/空间 ID | 有效项目 ID | - |
-| `parent_id` | Long | 是 | 父目录 ID | 有效文件夹 ID（根目录传项目根目录 ID） | 需在 project_id 对应的项目内 |
+| `parent_id` | Long | 是 | 父目录 ID | 有效文件夹 ID；空间根传 **0** | `parentId≠0` 时脚本自动调 **1.17 getFileBasicInfo** 解析 projectId |
+| `--project-id` | Long | 条件 | 空间 ID | 有效 projectId | `parentId=0` 时必填；否则可省略 |
+| `--no-resolve-project-id` | Flag | 否 | 跳过自动反查 | - | 不推荐；须同时传 `--project-id` |
 | `resource_id` | Long | 是 | 物理资源 ID | 通过 upload-whole-file.py 或 merge-resource.py 获取 | - |
 | `name` | String | 是 | 文件名 | 建议带扩展名，如 `报告.pdf` | - |
 | `--file-type` | String | 否 | 文件业务类型 | 枚举：`file`（默认，物理文件）、`doc`（文档） | - |
@@ -130,8 +131,9 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `project_id` | Long | 是 | 空间 ID | 有效 projectId | 可通过 get-uploadable-list.py 获取 |
-| `parent_id` | Long | 是 | 父目录 ID | 空间根传 **0** | 需在 project 内 |
+| `parent_id` | Long | 是 | 父目录 ID | 空间根传 **0** | `parentId≠0` 时自动反查 projectId |
+| `--project-id` | Long | 条件 | 空间 ID | 有效 projectId | `parentId=0` 时必填 |
+| `--no-resolve-project-id` | Flag | 否 | 跳过自动反查 | - | 不推荐 |
 | `name` | String | 是 | 文件夹名 | 勿含 `/`、`\` | - |
 | `--cover` | Boolean | 否 | 同名覆盖 | 默认 false | 与 auto-rename 互斥策略见 API |
 | `--auto-rename` | Boolean | 否 | 同名自动重命名 | 默认 false | - |
@@ -160,6 +162,7 @@
 ### 3. 按父 ID 保存到项目目录
 - **脚本**: `save-file-by-parent-id.py`
 - **用途**: 已知目标文件夹 ID 时，将物理文件资源绑定到项目知识库
+- **projectId**：`parentId≠0` 时默认自动反查（避免 projectId 与 parentId 不一致导致脏数据）；服务端亦有自动修正兜底
 - **输出**: 返回新建文件的 fileId
 
 ### 4. 按路径保存到项目目录
@@ -251,7 +254,9 @@
 1. 鉴权预检
 2. 小文件整传（建议 20MB 以下）：调用 `upload-whole-file.py` → 获得 resourceId
 3. 大文件或整传失败：`check-slice.py` → `register-slice.py` → `merge-resource.py` → 获得 resourceId
-4. 调用 `save-file-by-path.py` 或 `save-file-by-parent-id.py` 绑定到知识库
+4. 绑定到知识库：
+   - 已知 **parentId**：`save-file-by-parent-id.py <parent_id> <resource_id> "文件名.pdf"`（自动反查 projectId）
+   - 已知 **路径**：`save-file-by-path.py`（须传 projectId）
 5. 返回 fileId
 
 ## 用户话术示例
@@ -264,14 +269,14 @@
 ## 运行方式速查
 
 ```bash
-python scripts/upload/upload-content.py "内容" "文件名.md" [--file-suffix md] [--folder-name "AI生成/周报"] [--project-id <project_id>]
-python scripts/upload/upload-content.py "新内容" "文件名.md" --update-file-id <file_id> [--version-name "V2.0"] [--version-remark "修订说明"]
-python scripts/upload/upload-whole-file.py <file_path>
-python scripts/upload/check-slice.py <md5> [--size <size>] [--suffix <suffix>]
-python scripts/upload/register-slice.py <full_path> <md5> <size> MINIO
-python scripts/upload/merge-resource.py "文件名.pdf" "sliceId1,sliceId2,..." [--suffix pdf] [--size <size>]
-python scripts/upload/save-file-by-parent-id.py <project_id> <parent_id> <resource_id> "文件名.pdf" [--suffix pdf]
-python scripts/upload/save-file-by-path.py <project_id> "文件名.pdf" <resource_id> [--path "目录"] [--suffix pdf]
-python scripts/upload/get-file-download-info.py <resource_id>
-python scripts/upload/create-folder.py <project_id> <parent_id> "文件夹名" [--cover] [--auto-rename]
+python3 scripts/upload/upload-content.py "内容" "文件名.md" [--file-suffix md] [--folder-name "AI生成/周报"] [--project-id <project_id>]
+python3 scripts/upload/upload-content.py "新内容" "文件名.md" --update-file-id <file_id> [--version-name "V2.0"] [--version-remark "修订说明"]
+python3 scripts/upload/upload-whole-file.py <file_path>
+python3 scripts/upload/check-slice.py <md5> [--size <size>] [--suffix <suffix>]
+python3 scripts/upload/register-slice.py <full_path> <md5> <size> MINIO
+python3 scripts/upload/merge-resource.py "文件名.pdf" "sliceId1,sliceId2,..." [--suffix pdf] [--size <size>]
+python3 scripts/upload/save-file-by-parent-id.py <parent_id> <resource_id> "文件名.pdf" [--project-id <id>] [--suffix pdf]
+python3 scripts/upload/save-file-by-path.py <project_id> "文件名.pdf" <resource_id> [--path "目录"] [--suffix pdf]
+python3 scripts/upload/get-file-download-info.py <resource_id>
+python3 scripts/upload/create-folder.py <parent_id> "文件夹名" [--project-id <id>] [--cover] [--auto-rename]
 ```

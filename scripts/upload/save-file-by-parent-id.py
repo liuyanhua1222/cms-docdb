@@ -5,7 +5,10 @@ upload / saveFileByParentId 脚本
 用途：已知目标文件夹 ID 时，将物理文件保存到项目目录（比 saveFileByPath 少一次路径解析）
 
 使用方式：
-  python3 scripts/upload/save-file-by-parent-id.py <project_id> <parent_id> <resource_id> "文件名.pdf" [--suffix pdf] [--size 12345]
+  python3 scripts/upload/save-file-by-parent-id.py <parent_id> <resource_id> "文件名.pdf" [--project-id <id>] [--suffix pdf] [--size 12345]
+
+  parentId != 0 时默认通过 getFileBasicInfo 自动解析 projectId（避免 projectId 与 parentId 不一致）。
+  parentId == 0（空间根）时必须传 --project-id。
 
 环境变量：
   XG_BIZ_API_KEY / XG_APP_KEY — appKey（由 cms-auth-skills 预先准备）
@@ -17,6 +20,9 @@ import json
 import urllib.request
 import urllib.error
 import ssl
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "common"))
+from docdb_open_api import resolve_project_id_for_parent  # noqa: E402
 
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
@@ -143,17 +149,27 @@ def process_result(result):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="将物理文件保存到指定父目录")
-    parser.add_argument("project_id", type=int, help="目标项目空间 ID")
     parser.add_argument("parent_id", type=int, help="目标文件夹 ID（根目录传 0）")
     parser.add_argument("resource_id", type=int, help="资源 ID（必须）")
     parser.add_argument("name", type=str, help="保存的文件名")
+    parser.add_argument("--project-id", type=int, default=None, help="空间 ID；parentId!=0 时可省略（自动反查）")
+    parser.add_argument("--no-resolve-project-id", action="store_true",
+                        help="不调用 getFileBasicInfo，直接使用 --project-id（不推荐）")
     parser.add_argument("--suffix", type=str, help="文件后缀")
     parser.add_argument("--size", type=int, help="文件大小（字节）")
     parser.add_argument("--is-sensitive", type=int, choices=[0, 1], help="是否敏感文件（0 否，1 是）")
     args = parser.parse_args()
 
+    if args.no_resolve_project_id:
+        if args.project_id is None:
+            print("错误: --no-resolve-project-id 模式下必须提供 --project-id", file=sys.stderr)
+            sys.exit(1)
+        project_id = args.project_id
+    else:
+        project_id = resolve_project_id_for_parent(args.parent_id, args.project_id)
+
     result = call_api(
-        project_id=args.project_id,
+        project_id=project_id,
         parent_id=args.parent_id,
         resource_id=args.resource_id,
         name=args.name,

@@ -112,6 +112,16 @@
 
 > 服务端固定查询 `file_upload`、`upload2agent`、`create_file`、`create_folder`，详见 dev-guide **1.15**。
 
+### get-my-recent-used.py — 最近使用（与前端主页一致）
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `--page-index` | Integer | 否 | 页码 | 从 1 开始，默认 1 | - |
+| `--page-size` | Integer | 否 | 每页条数 | 1–100，默认 20 | - |
+| `--biz-code` | String | 否 | 空间业务编码筛选 | 如 `kz_doc` | - |
+
+> 服务端固定查询 `file_online_read`、`file_download`、`upload2agent`，详见 dev-guide **1.16**。
+
 ## 动作列表
 
 ### 1. 获取个人空间 ID
@@ -149,6 +159,11 @@
 - **用途**: 小龙虾/Agent 查询「我最近在全空间上传/新建了哪些文件」
 - **输出**: 分页 `pageData`，含 `projectName`、`operation`、`fileName`、`ancestorNames` 等
 
+### 8. 查询最近使用
+- **脚本**: `get-my-recent-used.py`
+- **用途**: 查询当前用户最近预览/下载/Agent 上传过的文件（与前端「最近使用」一致）
+- **输出**: 分页 `pageData`，`operation` 为 `file_online_read` / `file_download` / `upload2agent`
+
 ## 输出说明
 
 所有脚本输出统一为 JSON 格式，包含：
@@ -182,6 +197,7 @@
    - 继续下钻 → 递归调用 `browse.py`
 
 3. **快速访问**：
+   - 查看最近使用（预览/下载）→ `get-my-recent-used.py`
    - 查看最近上传（个人库）→ `get-recent-files.py`
    - 查看全空间上传记录（含新建文件/文件夹）→ `get-my-upload-records.py`
 
@@ -214,6 +230,8 @@
 - "浏览一下根目录"
 - "查看 AI 研发中心这个空间"
 - "我想保存文件，先看看有哪些空间可以写"
+- "我最近看过哪些文件"
+- "最近使用里有什么"
 
 ## 运行方式速查
 
@@ -225,4 +243,5 @@ python scripts/browse/get-level1-folders.py <project_id> [--order 1|2|5|6] [--pe
 python scripts/browse/browse.py <parent_id> [--type 1|2] [--order 1|2|3|4|5|6] [--exclude-file-types "work_report,huiji"] [--exclude-folder-names "临时文件"]
 python scripts/browse/get-recent-files.py [--limit 10] [--search-key "关键词"]
 python scripts/browse/get-my-upload-records.py [--page-index 1] [--page-size 20] [--project-id <id>]
+python3 scripts/browse/get-my-recent-used.py [--page-index 1] [--page-size 20] [--biz-code kz_doc]
 ```

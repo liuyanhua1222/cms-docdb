@@ -34,6 +34,7 @@
 | `scripts/browse/browse.py` | `GET /open-api/document-database/file/getChildFiles` | 浏览指定目录下的直接子项 |
 | `scripts/browse/get-recent-files.py` | `POST /open-api/document-database/project/personal/getRecentFiles` | 获取当前用户最近上传的文件列表（个人库捷径） |
 | `scripts/browse/get-my-upload-records.py` | `GET /open-api/document-database/operationLog/getMyUploadRecords` | 分页查询全空间上传/新建记录（默认近90天，无需传 operations） |
+| `scripts/browse/get-my-recent-used.py` | `GET /open-api/document-database/operationLog/getMyRecentUsed` | 最近使用（预览/下载/Agent上传，与前端主页一致） |
 
 运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。系统会自动检测 Python 命令，优先使用 `python3`，如不存在则使用 `python`。
 

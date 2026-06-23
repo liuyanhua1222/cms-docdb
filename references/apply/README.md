@@ -28,6 +28,41 @@
 - 全量 replace：`updateFileShare`、`updateFileGrantV2`
 - 内部 `apply/info`（权限由 submit 入参显式传入）
 
+## 列表接口响应字段说明（FileGrantApplyVO）
+
+`list-my-applies.py`、`list-pending-applies.py`、`list-processed-applies.py` 及 `review-apply.py` 详情的 `pageData` 元素字段：
+
+| 字段 | 说明 |
+|---|---|
+| `id` | 申请 id |
+| `fileId` | 文件 id |
+| `fileName` | 文件名 |
+| `fileType` | 文件类型：`doc`/`file`/`work_report`/`work_plan` |
+| `suffix` | 文件后缀 |
+| `type` | 资源类型：`1` 文件夹，`2` 文件，`3` 库 |
+| `filePath` | 文件路径 |
+| `projectId` | 空间 id |
+| `projectName` | 空间名称 |
+| `applyType` | `add` / `update` |
+| `sourceType` | `1`-permissions，`2`-share |
+| `status` | `1` 申请中，`2` 通过，`3` 拒绝 |
+| `applyPermissions` | 申请的权限列表 |
+| `oldPermissions` | 申请前已有权限 |
+| `auditPermissions` | 审核后授予权限 |
+| `applyRemark` | 申请原因 |
+| `auditRemark` | 审核备注 |
+| `applyDueDate` | 申请有效期 yyyyMMdd |
+| `auditDueDate` | 审核后有效期 |
+| `applyTime` | 申请日期 yyyy-MM-dd |
+| `applyEmp` | 申请人信息（含 `id`/`name`/`avatar`） |
+| `auditEmp` | 审核人信息（含 `id`/`name`/`avatar`） |
+| `auditEmpList` | 审核人列表（多审批人） |
+| `isProjectMember` | 申请人是否空间成员 |
+| `isAllHave` | 申请权限是否已全部拥有 |
+| `createTime` | 创建时间（毫秒时间戳） |
+
+分页响应新增 `pageCount`（总页数）字段。
+
 ## 示例
 
 ```bash

@@ -17,10 +17,12 @@ def main():
     p.add_argument("--page-index", type=int, default=1)
     p.add_argument("--page-size", type=int, default=20)
     p.add_argument("--file-name", default=None)
+    p.add_argument("--keyword", default=None, help="统一关键字，模糊匹配申请人姓名/文件名/申请事由")
     p.add_argument("--status", type=int, default=None, help="2=通过 3=拒绝")
     args = p.parse_args()
     body = {"pageIndex": args.page_index, "pageSize": args.page_size}
     if args.file_name: body["fileName"] = args.file_name
+    if args.keyword: body["keyword"] = args.keyword
     if args.status is not None: body["status"] = args.status
     data = json.dumps(body).encode("utf-8")
     ctx = ssl.create_default_context(); ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE

@@ -105,6 +105,28 @@
 - **用途**: 将新上传的物理文件资源绑定到已有文件
 - **输出**: 返回文件 ID
 
+**projectId 自动补全（v2.5）**：
+- **默认行为**: 脚本默认不传 `--project-id` 参数，docdb 自动从文件 ID 反查
+- **显式传入**: 仅在需要覆盖或调试时传入
+- **失败处理**: 反查失败时 docdb 抛异常，脚本返回错误信息
+
+**示例**：
+```bash
+# 推荐：省略 projectId（v2.5 自动补全）
+python3 scripts/manage/update-file-version.py \
+  --file-id 12345 \
+  --resource-id 987654321 \
+  --version-status 3 \
+  --version-name "V2.0" \
+  --version-remark "修正了第三章内容"
+
+# 旧方式（仍然支持，但非必需）
+python3 scripts/manage/update-file-version.py \
+  --file-id 12345 \
+  --project-id 2025001 \
+  --resource-id 987654321
+```
+
 ### 5–7. 版本历史 / 最新版本 / 定稿
 - 见原 `get-version-list.py`、`get-last-version.py`、`finalize-version.py`
 

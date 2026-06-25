@@ -195,6 +195,77 @@
 - **用途**: 同步/归档前预置目录，或在空间根（`parentId=0`）下建一级文件夹
 - **输出**: 返回新建文件夹的 `fileId`（Long）
 
+## projectId 自动补全机制（v2.5）
+
+docdb 后端已实现智能 `projectId` 补全，以下脚本受益：
+
+### 1. save-file-by-parent-id.py
+- **`parentId > 0` 时**: 脚本默认不传 `projectId`，docdb 自动从 `parentId` 反查
+- **`parentId = 0` 时**: 必须传 `--project-id`（空间根直接子节点）
+- **反查失败**: docdb 抛异常，脚本返回错误信息
+
+**示例**：
+```bash
+# 推荐：省略 projectId（parentId > 0 时）
+python3 scripts/upload/save-file-by-parent-id.py \
+  --parent-id 10086 \
+  --resource-id 987654321 \
+  --name "技术方案.pdf"
+
+# 必填：parentId=0 时必须传 projectId
+python3 scripts/upload/save-file-by-parent-id.py \
+  --project-id 2025001 \
+  --parent-id 0 \
+  --resource-id 987654321 \
+  --name "根目录文件.pdf"
+```
+
+### 2. create-folder.py
+- **规则**: 同 `save-file-by-parent-id.py`
+- **`parentId > 0`**: 省略 `--project-id`
+- **`parentId = 0`**: 必须传 `--project-id`
+
+**示例**：
+```bash
+# 推荐：省略 projectId（parentId > 0 时）
+python3 scripts/upload/create-folder.py \
+  --parent-id 10086 \
+  --name "新建文件夹"
+
+# 必填：parentId=0 时必须传 projectId
+python3 scripts/upload/create-folder.py \
+  --project-id 2025001 \
+  --parent-id 0 \
+  --name "空间根文件夹"
+```
+
+### 3. save-file-by-path.py
+- **`path` 不为空时**: docdb 自动从路径反查 `projectId`
+- **`path` 为空时**: 需传 `--project-id` 或默认个人知识库
+- **个人库**: 不传 `--project-id` 且 `path` 为空时，存入个人知识库根目录
+
+**示例**：
+```bash
+# 推荐：省略 projectId（path 不为空时）
+python3 scripts/upload/save-file-by-path.py \
+  --path "工程档案/设计图纸" \
+  --resource-id 987654321 \
+  --name "方案.pdf"
+
+# 默认个人库：path 为空时
+python3 scripts/upload/save-file-by-path.py \
+  --resource-id 987654321 \
+  --name "笔记.pdf"
+```
+
+### 4. upload-content.py
+- **projectId 可选**: 不传时保存到个人知识库，传入时保存到指定空间
+- **无自动反查**: 此接口为个人库捷径，不涉及 parentId 反查逻辑
+
+**调用建议**: 优先省略 `projectId` 参数，减少参数传递错误风险。仅在以下场景显式传入：
+1. `parentId = 0` 且需要在空间根下创建（save-file-by-parent-id / create-folder）
+2. 明确指定目标空间（save-file-by-path 且 path 为空）
+
 ## 输出说明
 
 所有脚本输出统一为 JSON 格式，包含：

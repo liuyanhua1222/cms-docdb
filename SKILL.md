@@ -19,9 +19,9 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 
 本文件提供能力边界与路由规则。详细说明见 `references/`，实际执行见 `scripts/`。
 
-**当前版本**: 1.2.3
+**当前版本**: 1.2.4
 
-**接口版本**: 所有业务接口统一使用 `/open-api/*` 前缀，鉴权类型全部为 `appKey`。
+**接口版本**: 所有业务接口统一使用 `/open-api/*` 前缀，鉴权类型全部为 `appKey`。对齐 API v2.5 (2026-06-23)。
 
 **能力概览（8 块能力）**：
 - `browse`：发现可用空间、获取个人空间 ID、浏览目录结构、最近使用、最近上传与全空间上传记录
@@ -51,11 +51,17 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 
 输入完整性规则（强制）：
 1. 浏览目录必须提供 parentId（根目录传 0）或 projectId
-2. 搜索文件必须提供关键词 + projectId（限定搜索范围，避免返回无关结果）
+2. 搜索文件必须提供关键词；projectId 可选（不传时从 rootFileId 反查或默认个人库）
 3. 上传文件必须提供文件名和内容（纯文本）或 resourceId（物理文件）
 4. 删除/重命名/移动文件必须提供 fileId
-5. 版本更新必须提供目标文件的 fileId（纯文本）或文件 id + projectId + resourceId（物理文件）
-6. **saveFileByParentId / createFolder**：`parentId != 0` 时必须先调 `get-file-basic-info.py` 解析 `projectId`（`save-file-by-parent-id.py` / `create-folder.py` 已默认自动反查，勿手填错误 projectId）
+5. 版本更新必须提供目标文件的 fileId（纯文本）或文件 id + resourceId（物理文件）
+
+**projectId 自动补全规则（v2.5 优化）**：
+- **saveFileByParentId / createFolder**: `parentId > 0` 时 docdb 自动从 `parentId` 反查 `projectId`；脚本已默认省略 `projectId` 参数，无需手动查询
+- **updateFileVersion**: docdb 自动从文件 ID 反查 `projectId`，脚本默认省略该参数
+- **saveFileByPath**: `path` 不为空时自动反查；`path` 为空需传 `projectId` 或默认个人库
+- **searchFile / listChanges / resolvePath**: 支持从 `rootFileId` 反查或默认个人库
+- **推荐做法**: 脚本调用时优先省略 `projectId`，让 docdb 自动补全；仅在 `parentId=0` 等必填场景下显式传入
 
 版本管理强制规则（最高优先级）：
 - **禁止直接覆盖已有文件内容**：对已存在文件的任何内容更新，必须通过版本管理接口保存为新版本，不得使用覆盖方式。直接覆盖无法溯源，违反本规则。

@@ -21,7 +21,7 @@
 
 ## 鉴权模式
 
-所有动作统一使用 `appKey` 鉴权，通过 `cms-auth-skills` 获取。
+所有动作统一使用 `appKey` 鉴权，运行时从小龙虾上下文变量 `appkey` 获取。
 
 ## 脚本清单
 
@@ -37,7 +37,7 @@
 | `scripts/browse/get-my-recent-used.py` | `GET /open-api/document-database/operationLog/getMyRecentUsed` | 最近使用（预览/下载/Agent上传，与前端主页一致） |
 | `scripts/browse/get-file-basic-info.py` | `GET /open-api/document-database/file/getFileBasicInfo` | 根据 fileId 查 projectId、type 等轻量元数据 |
 
-运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
+运行时由小龙虾上下文注入 `appkey`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
 
 ## 输入要求
 

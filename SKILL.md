@@ -4,8 +4,6 @@ description: 公司内部知识库—目录浏览与搜索，读全文或下载/
 metadata:
   skillcode: cms-docdb
   github: https://github.com/liuyanhua1222/cms-docdb
-  dependencies:
-    - cms-auth-skills
   openclaw:
     requires:
       bins:
@@ -19,7 +17,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 
 本文件提供能力边界与路由规则。详细说明见 `references/`，实际执行见 `scripts/`。
 
-**当前版本**: 1.2.5
+**当前版本**: 1.2.6
 
 **接口版本**: 所有业务接口统一使用 `/open-api/*` 前缀，鉴权类型全部为 `appKey`。对齐 API v2.5 (2026-06-23)。
 
@@ -41,13 +39,13 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 - **典型有效问法（内部真实话术）**：如「打开知识库」「打开公司在线知识库」「请查询知识库中某政策标题并总结」「请阅读知识库中某文件夹内的文件」「能读产品资料-慷彼申里的内容吗」等，均在本 skill 能力范围内（具体模块依动作是浏览、搜索还是读全文而定）。
 
 统一规范：
-- 鉴权依赖：`cms-auth-skills/SKILL.md`
+- 鉴权来源：小龙虾每次调用 skill 时的运行时上下文已携带 `appkey`；脚本直接读取该上下文注入值
 - 运行日志：`.cms-log/log/cms-docdb/`
 - 运行时状态：`.cms-log/state/cms-docdb/`
 
-授权依赖：
-- 需要鉴权时先读取 `cms-auth-skills/SKILL.md`
-- 如果未安装，先安装依赖，再继续执行
+授权准备：
+- 无需额外鉴权 skill 依赖
+- 需要鉴权时，直接使用小龙虾运行时上下文中的 `appkey`
 
 输入完整性规则（强制）：
 1. 浏览目录必须提供 parentId（根目录传 0）或 projectId
@@ -82,7 +80,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 1. **每个动作必须有对应脚本**：不允许"暂无脚本"
 2. **脚本可独立执行**：所有 `scripts/` 下的脚本均可脱离 AI Agent 直接在命令行运行
 3. **先读模块说明再执行**：执行脚本前，必须先阅读对应模块的 `references/<module>/README.md`
-4. **鉴权一致**：涉及 appKey 时，统一依赖 `cms-auth-skills`
+4. **鉴权一致**：涉及 appKey 时，统一从小龙虾运行时上下文获取 `appkey`
 5. **运行命令统一**：文档与示例统一写 `python3`；执行时优先 `python3`，若命令不存在（常见于部分 Windows 仅提供 `python`）则改用 `python` 等价替换
 
 意图路由与加载规则（强制）：
@@ -94,7 +92,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 
 宪章（必须遵守）：
 1. **只读索引**：`SKILL.md` 只描述"能做什么"和"去哪里读"，不写具体接口参数
-2. **按需加载**：默认只读 `SKILL.md` + `cms-auth-skills/SKILL.md`，只有触发某模块时才加载该模块的 `references` 与 `scripts`
+2. **按需加载**：默认只读 `SKILL.md`，只有触发某模块时才加载该模块的 `references` 与 `scripts`
 3. **对外克制**：对用户只输出"可用能力、必要输入、结果链接或摘要"，不暴露鉴权细节与内部字段
 4. **素材优先级**：用户给了文件或 URL，必须先提取内容再确认，确认后才触发生成或写入
 5. **生产约束**：仅允许生产域名与生产协议，不引入任何测试地址

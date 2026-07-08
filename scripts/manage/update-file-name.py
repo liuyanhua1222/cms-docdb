@@ -5,7 +5,7 @@ manage / updateFileName — 同目录改名（同步 Open API）
 使用方式：
   python3 scripts/manage/update-file-name.py <file_id> --new-name "B.md" [--name-conflict-strategy 1]
 
-环境变量：XG_BIZ_API_KEY / XG_APP_KEY
+运行时变量：appkey
 """
 
 import sys
@@ -15,7 +15,6 @@ import argparse
 import urllib.request
 import urllib.error
 import ssl
-
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
 if sys.stderr.encoding != 'utf-8':
@@ -26,9 +25,9 @@ API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/
 
 def build_headers():
     headers = {"Content-Type": "application/json"}
-    app_key = os.environ.get("XG_BIZ_API_KEY") or os.environ.get("XG_APP_KEY")
+    app_key = os.environ.get("appkey")
     if not app_key:
-        print("错误: 请设置环境变量 XG_BIZ_API_KEY 或 XG_APP_KEY", file=sys.stderr)
+        print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
         sys.exit(1)
     headers["appKey"] = app_key
     return headers

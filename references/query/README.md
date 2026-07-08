@@ -21,7 +21,7 @@
 
 ## 鉴权模式
 
-所有动作统一使用 `appKey` 鉴权，通过 `cms-auth-skills` 获取。
+所有动作统一使用 `appKey` 鉴权，运行时从小龙虾上下文变量 `appkey` 获取。
 
 ## 脚本清单
 
@@ -34,7 +34,7 @@
 | `scripts/query/get-file-content.py` | `GET /open-api/document-database/file/getFileContent` | 分页获取文件文本内容 |
 | `scripts/query/batch-get-content.py` | `POST /open-api/document-database/ai/batchGetContent` | 批量获取多个文件全文，建议≤10个 |
 
-运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
+运行时由小龙虾上下文注入 `appkey`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
 
 ## 输入要求
 
@@ -158,7 +158,7 @@
 
 ## 标准流程
 
-1. 鉴权预检（通过 `cms-auth-skills` 获取 appKey）
+1. 鉴权预检（从小龙虾运行时上下文获取 `appkey`）
 2. 调用 `search.py` 搜索文件
 3. 根据搜索结果数量处理：
    - 多个结果：返回文件列表，告知用户可以进一步操作

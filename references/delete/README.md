@@ -7,7 +7,7 @@
 
 ## 鉴权模式
 
-所有动作统一使用 `appKey` 鉴权，通过 `cms-auth-skills` 获取。
+所有动作统一使用 `appKey` 鉴权，运行时从小龙虾上下文变量 `appkey` 获取。
 
 ## 脚本清单
 
@@ -15,7 +15,7 @@
 |---|---|---|
 | `scripts/delete/delete-file.py` | `POST /open-api/document-database/file/deleteFile` | 删除指定文件，输出 JSON 结果 |
 
-运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
+运行时由小龙虾上下文注入 `appkey`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
 
 ## 输入要求
 
@@ -56,7 +56,7 @@
 
 ## 危险操作确认流程
 
-1. 鉴权预检（通过 `cms-auth-skills` 获取 appKey）
+1. 鉴权预检（从小龙虾运行时上下文获取 `appkey`）
 2. **先向用户确认**："确认要删除文件 [文件名] 吗？此操作[可/不可]撤销。"
 3. 用户明确确认后，调用 `delete-file.py`
 4. 返回删除结果

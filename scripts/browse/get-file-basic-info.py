@@ -7,8 +7,8 @@ browse / getFileBasicInfo 脚本
 使用方式：
   python3 scripts/browse/get-file-basic-info.py <file_id>
 
-环境变量：
-  XG_BIZ_API_KEY / XG_APP_KEY — appKey（由 cms-auth-skills 预先准备）
+运行时变量：
+  appkey — 由小龙虾运行时上下文注入
 """
 
 import json

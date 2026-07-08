@@ -7,8 +7,8 @@ browse / getMyRecentUsed 脚本
 使用方式：
   python3 scripts/browse/get-my-recent-used.py [--page-index 1] [--page-size 20] [--biz-code kz_doc]
 
-环境变量：
-  XG_BIZ_API_KEY / XG_APP_KEY — appKey（由 cms-auth-skills 预先准备）
+运行时变量：
+  appkey — 由小龙虾运行时上下文注入
 """
 
 import sys
@@ -18,15 +18,14 @@ import urllib.request
 import urllib.parse
 import ssl
 import argparse
-
 API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/operationLog/getMyRecentUsed"
 
 
 def headers():
     h = {}
-    k = os.environ.get("XG_BIZ_API_KEY") or os.environ.get("XG_APP_KEY")
+    k = os.environ.get("appkey")
     if not k:
-        print("错误: 请设置 XG_BIZ_API_KEY 或 XG_APP_KEY", file=sys.stderr)
+        print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
         sys.exit(1)
     h["appKey"] = k
     return h

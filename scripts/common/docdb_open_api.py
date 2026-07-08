@@ -19,9 +19,9 @@ def app_key_headers(extra: Optional[Dict] = None) -> dict:
     headers = {"Content-Type": "application/json"}
     if extra:
         headers.update(extra)
-    app_key = os.environ.get("XG_BIZ_API_KEY") or os.environ.get("XG_APP_KEY")
+    app_key = os.environ.get("appkey")
     if not app_key:
-        print("错误: 请设置环境变量 XG_BIZ_API_KEY 或 XG_APP_KEY", file=sys.stderr)
+        print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
         sys.exit(1)
     headers["appKey"] = app_key
     return headers

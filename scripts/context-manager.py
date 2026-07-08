@@ -138,7 +138,7 @@ def main():
                 result["data"] = context
             else:
                 result = {"resultCode": -1, "resultMsg": "参数不足：需要 --project-id [--project-name]"}
-        
+
         elif cmd == "clear":
             context = clear_context(user_id)
             result["data"] = context

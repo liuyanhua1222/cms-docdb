@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """POST /document-database/fileGrant/apply/myApplies — 我的申请列表"""
 import sys, os, json, urllib.request, ssl, argparse
-
 API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/fileGrant/apply/myApplies"
 
 def headers():
     h = {"Content-Type": "application/json"}
-    k = os.environ.get("XG_BIZ_API_KEY") or os.environ.get("XG_APP_KEY")
+    k = os.environ.get("appkey")
     if not k:
-        print("错误: 请设置 XG_BIZ_API_KEY 或 XG_APP_KEY", file=sys.stderr); sys.exit(1)
+        print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr); sys.exit(1)
     h["appKey"] = k
     return h
 

@@ -10,8 +10,8 @@ upload / saveFileByParentId 脚本
   parentId != 0 时默认通过 getFileBasicInfo 自动解析 projectId（避免 projectId 与 parentId 不一致）。
   parentId == 0（空间根）时必须传 --project-id。
 
-环境变量：
-  XG_BIZ_API_KEY / XG_APP_KEY — appKey（由 cms-auth-skills 预先准备）
+运行时变量：
+  appkey — 由小龙虾运行时上下文注入
 """
 
 import sys
@@ -20,7 +20,6 @@ import json
 import urllib.request
 import urllib.error
 import ssl
-
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "common"))
 from docdb_open_api import resolve_project_id_for_parent  # noqa: E402
 
@@ -68,9 +67,9 @@ def build_headers() -> dict:
     headers = {"Content-Type": "application/json"}
 
     if AUTH_MODE == "appKey":
-        app_key = os.environ.get("XG_BIZ_API_KEY") or os.environ.get("XG_APP_KEY")
+        app_key = os.environ.get("appkey")
         if not app_key:
-            print("错误: 请设置环境变量 XG_BIZ_API_KEY 或 XG_APP_KEY", file=sys.stderr)
+            print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
             sys.exit(1)
         headers["appKey"] = app_key
 

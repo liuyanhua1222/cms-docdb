@@ -7,8 +7,8 @@ share / revokeFileShareGrants 脚本
 使用方式：
   python3 scripts/share/revoke-file-share-grants.py <file_id> --emp-ids 10002,10003
 
-环境变量：
-  XG_BIZ_API_KEY / XG_APP_KEY — appKey（由 cms-auth-skills 预先准备）
+运行时变量：
+  appkey — 由小龙虾运行时上下文注入
 """
 
 import sys
@@ -17,7 +17,6 @@ import json
 import urllib.request
 import urllib.error
 import ssl
-
 if sys.stdout.encoding != "utf-8":
     sys.stdout = open(sys.stdout.fileno(), mode="w", encoding="utf-8", buffering=1)
 if sys.stderr.encoding != "utf-8":
@@ -52,9 +51,9 @@ API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/
 
 
 def build_headers() -> dict:
-    app_key = os.environ.get("XG_BIZ_API_KEY") or os.environ.get("XG_APP_KEY")
+    app_key = os.environ.get("appkey")
     if not app_key:
-        print("错误: 请设置环境变量 XG_BIZ_API_KEY 或 XG_APP_KEY", file=sys.stderr)
+        print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
         sys.exit(1)
     return {"Content-Type": "application/json", "appKey": app_key}
 

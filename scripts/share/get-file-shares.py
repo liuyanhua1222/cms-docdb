@@ -7,8 +7,8 @@ share / getFileShares 脚本
 使用方式：
   python3 scripts/share/get-file-shares.py <file_id>
 
-环境变量：
-  XG_BIZ_API_KEY / XG_APP_KEY — appKey（由 cms-auth-skills 预先准备）
+运行时变量：
+  appkey — 由小龙虾运行时上下文注入
 """
 
 import sys
@@ -18,7 +18,6 @@ import urllib.request
 import urllib.parse
 import urllib.error
 import ssl
-
 if sys.stdout.encoding != "utf-8":
     sys.stdout = open(sys.stdout.fileno(), mode="w", encoding="utf-8", buffering=1)
 if sys.stderr.encoding != "utf-8":
@@ -56,9 +55,9 @@ AUTH_MODE = "appKey"
 def build_headers() -> dict:
     headers = {"Content-Type": "application/json"}
     if AUTH_MODE == "appKey":
-        app_key = os.environ.get("XG_BIZ_API_KEY") or os.environ.get("XG_APP_KEY")
+        app_key = os.environ.get("appkey")
         if not app_key:
-            print("错误: 请设置环境变量 XG_BIZ_API_KEY 或 XG_APP_KEY", file=sys.stderr)
+            print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
             sys.exit(1)
         headers["appKey"] = app_key
     return headers

@@ -20,7 +20,7 @@
 
 ## 鉴权模式
 
-所有动作统一使用 `appKey` 鉴权，通过 `cms-auth-skills` 获取。
+所有动作统一使用 `appKey` 鉴权，运行时从小龙虾上下文变量 `appkey` 获取。
 
 ## 脚本清单
 
@@ -36,7 +36,7 @@
 | `scripts/upload/get-file-download-info.py` | `GET /open-api/cwork-file/getDownloadInfo` | 根据 resourceId 获取下载 URL（有效期 1 小时） |
 | `scripts/upload/create-folder.py` | `POST /open-api/document-database/file/createFolder` | 显式创建空文件夹（`parentId=0` 表示空间根下建一级目录） |
 
-运行前先按 `cms-auth-skills/SKILL.md` 设置 `XG_BIZ_API_KEY` 或 `XG_APP_KEY`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
+运行时由小龙虾上下文注入 `appkey`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
 
 ## 输入要求
 
@@ -277,7 +277,7 @@ python3 scripts/upload/save-file-by-path.py \
 
 ### 纯文本上传（推荐用于 AI 生成内容）
 
-1. 鉴权预检（通过 `cms-auth-skills` 获取 appKey）
+1. 鉴权预检（从小龙虾运行时上下文获取 `appkey`）
 2. 确认文件名（建议带扩展名）和内容
 3. 调用 `upload-content.py`
    - 不传 `--project-id`：自动归档至个人空间"和AI的对话"目录（或指定目录）

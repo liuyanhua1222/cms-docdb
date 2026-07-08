@@ -12,8 +12,8 @@ manage / finalizeVersion 脚本
   # 定稿指定版本号
   python3 scripts/manage/finalize-version.py <file_id> --version-number 3
 
-环境变量：
-  XG_BIZ_API_KEY / XG_APP_KEY — appKey（由 cms-auth-skills 预先准备）
+运行时变量：
+  appkey — 由小龙虾运行时上下文注入
 """
 
 import sys
@@ -24,7 +24,6 @@ import argparse
 import urllib.request
 import urllib.error
 import ssl
-
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
@@ -68,9 +67,9 @@ RETRY_INTERVAL = 1
 
 def build_headers() -> dict:
     headers = {"Content-Type": "application/json"}
-    app_key = os.environ.get("XG_BIZ_API_KEY") or os.environ.get("XG_APP_KEY")
+    app_key = os.environ.get("appkey")
     if not app_key:
-        print("错误: 请设置环境变量 XG_BIZ_API_KEY 或 XG_APP_KEY", file=sys.stderr)
+        print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
         sys.exit(1)
     headers["appKey"] = app_key
     return headers

@@ -76,6 +76,12 @@
 
 ## 示例
 
+**重要说明**：以下示例使用相对路径以便阅读，实际执行时必须替换为绝对路径。例如：
+- 文档示例：`python3 scripts/apply/get-approvers.py 123456`
+- 实际执行：`python3 /Users/liuyanhua/skill/cms-docdb/scripts/apply/get-approvers.py 123456`
+
+禁止使用 `cd`、`&&`、管道等 shell 构造。每个脚本必须在单独的命令中使用绝对路径执行。
+
 ```bash
 python3 scripts/apply/get-approvers.py 123456 --keyword "张"
 python3 scripts/apply/submit-apply.py 123456 --permissions "read,preview" --reason "查阅方案" --approver-ids 1001

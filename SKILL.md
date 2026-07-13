@@ -17,7 +17,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 
 本文件提供能力边界与路由规则。详细说明见 `references/`，实际执行见 `scripts/`。
 
-**当前版本**: 1.2.6
+**当前版本**: 1.2.7
 
 **接口版本**: 所有业务接口统一使用 `/open-api/*` 前缀，鉴权类型全部为 `appKey`。对齐 API v2.5 (2026-06-23)。
 
@@ -39,13 +39,13 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 - **典型有效问法（内部真实话术）**：如「打开知识库」「打开公司在线知识库」「请查询知识库中某政策标题并总结」「请阅读知识库中某文件夹内的文件」「能读产品资料-慷彼申里的内容吗」等，均在本 skill 能力范围内（具体模块依动作是浏览、搜索还是读全文而定）。
 
 统一规范：
-- 鉴权来源：小龙虾每次调用 skill 时的运行时上下文已携带 `appkey`；脚本直接读取该上下文注入值
+- 鉴权来源：每次调用 skill 时的运行时上下文已携带 `appkey`；脚本直接读取该上下文注入值
 - 运行日志：`.cms-log/log/cms-docdb/`
 - 运行时状态：`.cms-log/state/cms-docdb/`
 
 授权准备：
 - 无需额外鉴权 skill 依赖
-- 需要鉴权时，直接使用小龙虾运行时上下文中的 `appkey`
+- 需要鉴权时，直接使用运行时上下文中的 `appkey`
 
 输入完整性规则（强制）：
 1. 浏览目录必须提供 parentId（根目录传 0）或 projectId
@@ -79,9 +79,14 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 脚本使用规则（强制）：
 1. **每个动作必须有对应脚本**：不允许"暂无脚本"
 2. **脚本可独立执行**：所有 `scripts/` 下的脚本均可脱离 AI Agent 直接在命令行运行
-3. **先读模块说明再执行**：执行脚本前，必须先阅读对应模块的 `references/<module>/README.md`
-4. **鉴权一致**：涉及 appKey 时，统一从小龙虾运行时上下文获取 `appkey`
-5. **运行命令统一**：文档与示例统一写 `python3`；执行时优先 `python3`，若命令不存在（常见于部分 Windows 仅提供 `python`）则改用 `python` 等价替换
+3. **路径使用规范**：执行脚本时必须使用绝对路径，禁止使用 `cd`、`&&`、管道、重定向、heredoc、`bash -lc`、`python3 -c` 或 shell 循环
+   - ✅ 正确：`python3 /Users/liuyanhua/skill/cms-docdb/scripts/browse/browse.py 12345`
+   - ❌ 错误：`cd /Users/liuyanhua/skill/cms-docdb/scripts/browse && python3 browse.py 12345`
+   - ❌ 错误：`python3 scripts/browse/browse.py 12345`（除非当前工作目录恰好是 skill 根目录）
+   - 说明：文档示例中为简洁使用相对路径（如 `scripts/browse/browse.py`），但实际执行时必须替换为完整绝对路径
+4. **先读模块说明再执行**：执行脚本前，必须先阅读对应模块的 `references/<module>/README.md`
+5. **鉴权一致**：涉及 appKey 时，统一从小龙虾运行时上下文获取 `appkey`
+6. **运行命令统一**：文档与示例统一写 `python3`；执行时优先 `python3`，若命令不存在（常见于部分 Windows 仅提供 `python`）则改用 `python` 等价替换
 
 意图路由与加载规则（强制）：
 1. **先路由再加载**：必须先判定模块，再打开该模块的 `references/<module>/README.md`

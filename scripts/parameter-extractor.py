@@ -7,20 +7,51 @@ import re
 def extract_parameters(user_input, context=None):
     """
     从用户输入中提取参数，支持上下文补全
+    
+    优化策略：
+    1. 先识别空间名称候选词
+    2. 标记需要先调用 get-uploadable-list 或 get-project-list
+    3. 在实际空间列表中进行模糊匹配，避免分词错误
     """
     params = {}
     
-    # 1. 提取关键词（文件名、搜索词）
+    # 1. 提取项目/空间名称（优先级最高，避免被关键词提取干扰）
+    project_patterns = [
+        # 明确的知识库名称模式（优先匹配）
+        r"(康哲知识库|玄关知识库|德镁知识库)",
+        r"(康哲|玄关|德镁)\s*知识库",
+        # "保存到/上传到 + 空间名" 格式
+        r"(?:保存到|上传到|归档到|存到)([^，,。.的里中之文件]+?)(?:知识库|空间|项目|的|里|中)",
+        r"(?:搜索|查询|查找|检索)([^，,。.的里中之文件]+?)(?:知识库|空间|项目|的|里|中)",
+        r"(?:打开|浏览)([^，,。.的里中之文件]+?)(?:知识库|空间|项目)?",
+        r"(?:在|从)([^，,。.的里中之文件]+?)(?:知识库|空间|项目)",
+    ]
+    
+    project_name_candidates = []
+    for pattern in project_patterns:
+        matches = re.findall(pattern, user_input, re.IGNORECASE)
+        for match in matches:
+            if isinstance(match, str) and match.strip():
+                candidate = match.strip()
+                # 过滤掉明显不是空间名的词
+                if candidate not in ['文件', '资料', '文档', '内容', '这个', '那个']:
+                    project_name_candidates.append(candidate)
+    
+    # 去重
+    project_name_candidates = list(dict.fromkeys(project_name_candidates))
+    
+    if project_name_candidates:
+        params["project_name_candidates"] = project_name_candidates
+        # 标记需要先获取空间列表进行匹配
+        params["needs_project_list"] = True
+    
+    # 2. 提取关键词（文件名、搜索词）
     keyword_patterns = [
-        # 匹配 "搜索xxx" 格式
-        r"(查询|搜索|查找|检索|读取|查看|总结)\s*[“”\"'\s]*([^“”\"'\s，,。.]+)",
-        # 匹配引号内内容
-        r"“([^”]+)”",
-        r'"([^"]+)"',
-        r"'([^']+)'",
-        # 匹配括号内内容
-        r"[（(]([^）)]+)[）)]",
-        # 匹配 "xxx文件" 格式
+        r"(?:查询|搜索|查找|检索|读取|查看|总结)\s*([^，,。.知识库空间项目]+)",
+        r"[\u201c\u201d]([^\u201c\u201d]+)[\u201c\u201d]",  # 中文引号
+        r'"([^"]+)"',  # 英文双引号
+        r"'([^']+)'",  # 英文单引号
+        r"[（(]([^）)]+)[）)]",  # 括号
         r"([\u4e00-\u9fa5a-zA-Z0-9_\-\s]+?)\s*(文件|资料|政策|文档|报告)"
     ]
     
@@ -29,9 +60,14 @@ def extract_parameters(user_input, context=None):
         matches = re.findall(pattern, user_input)
         for match in matches:
             if isinstance(match, tuple):
-                keywords.append(match[-1].strip())
+                keyword = match[-1].strip() if len(match) > 1 else match[0].strip()
             else:
-                keywords.append(match.strip())
+                keyword = match.strip()
+            # 过滤掉可能是空间名的关键词和停用词
+            if (keyword and 
+                keyword not in project_name_candidates and 
+                keyword not in ['知识库', '空间', '项目', '康哲', '玄关', '德镁']):
+                keywords.append(keyword)
     
     # 去重并过滤空字符串
     keywords = list(filter(None, list(dict.fromkeys(keywords))))
@@ -39,13 +75,37 @@ def extract_parameters(user_input, context=None):
     if keywords:
         params["keywords"] = keywords
     
-    # 2. 提取路径（如 "产品资料-慷彼申"）
-    path_pattern = r"([\u4e00-\u9fa5a-zA-Z0-9]+[-/][\u4e00-\u9fa5a-zA-Z0-9]+)"
-    match = re.search(path_pattern, user_input)
+    # 3. 提取路径和目录名称
+    # 先检查是否有"的"字连接空间和目录，如 "康哲知识库的产品资料目录"
+    space_folder_pattern = r"(?:知识库|空间|项目)的([一-龥a-zA-Z0-9]+)(?:目录|文件夹)"
+    match = re.search(space_folder_pattern, user_input)
     if match:
-        params["path"] = match.group(1)
+        folder_name = match.group(1)
+        params["folder_name_candidates"] = [folder_name]
+        params["needs_folder_navigation"] = True
+    # 3.1 提取层级路径（如 "产品资料/慷彼申"）
+    elif "/" in user_input:
+        # 提取斜杠分隔的路径，去除前面的动词
+        path_pattern = r"(?:上传到|保存到|放到|存到|归档到)?\s*([\u4e00-\u9fa5a-zA-Z0-9]+/[\u4e00-\u9fa5a-zA-Z0-9/]+)"
+        match = re.search(path_pattern, user_input)
+        if match:
+            path = match.group(1)
+            params["folder_path"] = path
+            params["needs_folder_navigation"] = True
+    # 3.2 提取单层目录名（如 "放到产品资料目录"）
+    else:
+        # 提取 "XXX目录" 或 "XXX文件夹"，去除前面的动词
+        folder_pattern = r"(?:到|在)\s*([一-龥a-zA-Z0-9]{2,10})\s*(?:目录|文件夹)"
+        match = re.search(folder_pattern, user_input)
+        if match:
+            folder_name = match.group(1)
+            # 确保不是空间名的一部分
+            if (folder_name not in ['知识库', '空间', '项目', '康哲', '玄关', '德镁'] and
+                not any(folder_name in p for p in project_name_candidates)):
+                params["folder_name_candidates"] = [folder_name]
+                params["needs_folder_navigation"] = True
     
-    # 3. 处理指代（"这个文件"、"它"等）
+    # 4. 处理指代（"这个文件"、"它"等）
     refer_patterns = ["这个文件", "该文件", "这个文档", "它", "这个"]
     if any(pattern in user_input for pattern in refer_patterns):
         if context and context.get("last_file"):
@@ -54,7 +114,7 @@ def extract_parameters(user_input, context=None):
         else:
             params["needs_file"] = True
     
-    # 4. 处理相对路径（"上一级"、"当前目录"等）
+    # 5. 处理相对路径（"上一级"、"当前目录"等）
     if "上一级" in user_input or "上级目录" in user_input:
         params["parent_folder"] = True
     elif "当前目录" in user_input or "这个文件夹" in user_input:
@@ -64,13 +124,13 @@ def extract_parameters(user_input, context=None):
         else:
             params["needs_folder"] = True
     
-    # 5. 提取数字参数（如版本号）
+    # 6. 提取数字参数（如版本号）
     num_pattern = r"(\d+)\s*(版本|页|号)"
     match = re.search(num_pattern, user_input)
     if match:
         params[match.group(2)] = match.group(1)
 
-    # 5.1 提取员工 ID（empId），用于分享授权
+    # 7. 提取员工 ID（empId），用于分享授权
     emp_id_patterns = [
         r"(empId|EMPID|员工id|员工ID|员工Id)\s*[：:\s]*\s*(\d+)",
         r".*分享给\s*(\d+)\s*$",
@@ -83,19 +143,8 @@ def extract_parameters(user_input, context=None):
             params["emp_id"] = int(emp_id)
             break
     
-    # 6. 提取项目相关信息
-    project_patterns = [
-        r"(项目|空间)\s*[：:]\s*([\u4e00-\u9fa5a-zA-Z0-9]+)",
-        r"(项目|空间)\s*([\u4e00-\u9fa5a-zA-Z0-9]+)"
-    ]
-    for pattern in project_patterns:
-        match = re.search(pattern, user_input)
-        if match:
-            params["project_name"] = match.group(2)
-            break
-    
-    # 7. 如果没有明确指定项目，使用上下文
-    if "project_name" not in params and context and context.get("current_project"):
+    # 8. 如果没有明确指定项目，使用上下文
+    if "project_name_candidates" not in params and context and context.get("current_project"):
         params["project_id"] = context["current_project"].get("id")
         params["project_name"] = context["current_project"].get("name")
     
@@ -111,11 +160,25 @@ def generate_missing_params_hint(params):
     if params.get("needs_folder"):
         hints.append("请问你想在哪个目录下操作？")
     
-    if "keywords" not in params and "path" not in params and "file_id" not in params:
-        hints.append("请提供要搜索或操作的文件名、关键词或路径")
+    if params.get("needs_project_list"):
+        # 有空间名候选词，但需要先获取空间列表进行匹配
+        candidates = ', '.join(params.get('project_name_candidates', []))
+        hints.append(f"识别到空间名称：{candidates}，需要先获取你有权限的空间列表进行匹配")
     
-    if not params.get("project_id") and not params.get("project_name"):
-        hints.append("请指定要操作的项目或空间")
+    if params.get("needs_folder_navigation"):
+        # 有目录名或路径，需要在空间内导航
+        if params.get("folder_path"):
+            hints.append(f"识别到目录路径：{params['folder_path']}，需要在空间内导航")
+        elif params.get("folder_name_candidates"):
+            candidates = ', '.join(params['folder_name_candidates'])
+            hints.append(f"识别到目录名称：{candidates}，需要在空间内查找匹配的目录")
+    
+    if ("keywords" not in params and 
+        "folder_path" not in params and
+        "folder_name_candidates" not in params and
+        "file_id" not in params and
+        "project_name_candidates" not in params):
+        hints.append("请提供要搜索或操作的文件名、关键词或路径")
     
     return "\n".join(hints) if hints else None
 

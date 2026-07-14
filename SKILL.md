@@ -1,6 +1,6 @@
 ---
 name: cms-docdb
-description: 公司内部知识库—目录浏览与搜索，读全文或下载/预览；上传与归档；已存在文件用新版本与定稿更新（禁止覆盖），删除须确认；Open API 仅允许通过本仓库脚本执行。
+description: 公司内部知识库/资料库/法务文档—目录浏览与搜索，读全文或下载/预览；上传与归档；已存在文件用新版本与定稿更新（禁止覆盖），删除须确认；Open API 仅允许通过本仓库脚本执行。
 metadata:
   skillcode: cms-docdb
   github: https://github.com/liuyanhua1222/cms-docdb
@@ -13,11 +13,11 @@ metadata:
 
 # cms-docdb — 索引
 
-OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`** 保持一致。本技能用于访问公司内部文档库应用通道（按 `t_doc_app.app_code`）：**康哲/德镁/玄关知识库**、**康哲/德镁资料库**、**法务文档**等。
+OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`** 保持一致。用于公司内部 **知识库 / 资料库 / 法务文档**（康哲、德镁、玄关等产品入口）的目录浏览、搜索、读写与归档。接口侧用 `appCode` 区分产品；明细见下节「产品通道」。
 
 本文件提供能力边界与路由规则。详细说明见 `references/`，实际执行见 `scripts/`。
 
-**当前版本**: 1.2.8
+**当前版本**: 1.2.9
 
 **接口版本**: 所有业务接口统一使用 `/open-api/*` 前缀，鉴权类型全部为 `appKey`。对齐 API v2.5+（含 `app/listAll`）。
 

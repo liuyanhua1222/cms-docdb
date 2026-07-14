@@ -1,5 +1,21 @@
 # 空间智能匹配使用指南
 
+## 应用通道（必读）
+
+拉空间列表前必须确定 **appCode**（产品通道，来自 `t_doc_app`）：
+
+| 用户说法 | appCode |
+|---|---|
+| 法务文档 / 法务 | `fw_doc` |
+| 康哲/德镁资料库、资料库、文档数据库 | `kz_doc` |
+| 玄关知识库 | `kz_doc` |
+| 康哲/德镁知识库 | `kz_knowledge_base` |
+| 仅说「知识库」 | 先 `get-app-list.py`，企业可用应用求交后再定 |
+
+流程：`get-app-list.py` → `app_code_router.py --apps '...'` → `get-project-list.py --app-code <code>`。
+
+`bizCode`（如 `pmo`）是空间业务线，**不是** appCode；禁止写 `--biz-code kz_doc`。
+
 ## 概述
 
 本指南说明如何在小龙虾（AI Agent）中正确处理用户提到的空间名称，避免因分词错误导致的匹配失败。
@@ -75,8 +91,14 @@ python3 /path/to/scripts/browse/get-uploadable-list.py
 
 **查询/浏览场景（query/browse）**：
 ```bash
-# 获取所有可访问的空间
-python3 /path/to/scripts/browse/get-project-list.py
+# 先企业可用应用（意图不明时必做）
+python3 /path/to/scripts/browse/get-app-list.py
+
+# 获取所有可访问的空间（必须带 appCode）
+python3 /path/to/scripts/browse/get-project-list.py --app-code kz_knowledge_base
+# 资料库 / 法务示例：
+# python3 /path/to/scripts/browse/get-project-list.py --app-code kz_doc
+# python3 /path/to/scripts/browse/get-project-list.py --app-code fw_doc
 ```
 
 输出示例：

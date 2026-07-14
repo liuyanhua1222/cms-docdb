@@ -27,6 +27,7 @@
 
 | 脚本 | 对应接口 | 用途 |
 |---|---|---|
+| `scripts/browse/get-app-list.py` | `GET /open-api/document-database/app/listAll` | 当前企业可用应用通道（意图不明时先调用） |
 | `scripts/browse/get-project-list.py` | `GET /open-api/document-database/project/list` | 获取有权限访问的所有空间列表 |
 | `scripts/browse/get-personal-project-id.py` | `GET /open-api/document-database/project/personal/getProjectId` | 获取当前用户的个人知识库空间 ID |
 | `scripts/browse/get-uploadable-list.py` | `GET /open-api/document-database/project/uploadableList` | 获取有上传/编辑权限的空间列表 |
@@ -43,9 +44,10 @@
 
 | 动作 | 必填输入 | 可选输入 |
 |---|---|---|
+| 列出企业可用应用 | 无 | 无 |
 | 获取个人空间 ID | 无 | appCode |
-| 列出所有可访问空间 | 无 | appCode, nameKey, bizCode |
-| 列出可写空间 | 无 | appCode, nameKey, bizCode |
+| 列出所有可访问空间 | 无（**强烈建议传 appCode**） | appCode, nameKey, bizCode |
+| 列出可写空间 | 无（**强烈建议传 appCode**） | appCode, nameKey, bizCode |
 | 浏览项目根目录 | projectId | order, permissionQuery |
 | 浏览指定目录 | parentId | type, order, excludeFileTypes, excludeFolderNames, returnFileDesc |
 | 获取最近上传文件 | 无 | limit, searchKey |
@@ -54,27 +56,32 @@
 
 ## 参数详细说明
 
+### get-app-list.py — 企业可用应用通道
+
+无额外参数。返回 `[{ "name", "appCode" }]`。  
+典型 appCode：`kz_doc`（资料库/玄关知识库）、`kz_knowledge_base`（康哲/德镁知识库）、`fw_doc`（法务文档）。
+
 ### get-personal-project-id.py — 获取个人空间 ID
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `--app-code` | String | 否 | 应用编码 | 应用标识字符串 | - |
+| `--app-code` | String | 否 | 应用编码 | `kz_doc` / `fw_doc` / `kz_knowledge_base` | - |
 
 ### get-project-list.py — 列出所有可访问空间
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `--app-code` | String | 否 | 应用编码 | 应用标识字符串 | - |
-| `--name-key` | String | 否 | 空间名称关键词 | 任意字符串，用于模糊搜索 | - |
-| `--biz-code` | String | 否 | 业务编码 | 业务标识字符串 | - |
+| `--app-code` | String | 否 | 应用通道 | `kz_doc` / `fw_doc` / `kz_knowledge_base`；不传=后端企业默认 | 访问非默认通道时必传 |
+| `--name-key` | String | 否 | 空间名称关键词 | 任意字符串 | - |
+| `--biz-code` | String | 否 | 业务线编码 | 如 `pmo`（**不是** `kz_doc`） | 与 appCode 无关 |
 
 ### get-uploadable-list.py — 列出可写空间
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `--app-code` | String | 否 | 应用编码 | 应用标识字符串 | - |
+| `--app-code` | String | 否 | 应用通道 | 同 get-project-list | 建议先由 get-app-list 确定 |
 | `--name-key` | String | 否 | 空间名称关键词 | 任意字符串 | - |
-| `--biz-code` | String | 否 | 业务编码 | 业务标识字符串 | - |
+| `--biz-code` | String | 否 | 业务线编码 | 如 `pmo` | - |
 
 ### get-level1-folders.py — 浏览项目根目录
 
@@ -120,7 +127,7 @@
 |------|------|------|------|---------------|----------|
 | `--page-index` | Integer | 否 | 页码 | 从 1 开始，默认 1 | - |
 | `--page-size` | Integer | 否 | 每页条数 | 1–100，默认 20 | - |
-| `--biz-code` | String | 否 | 空间业务编码筛选 | 如 `kz_doc` | - |
+| `--biz-code` | String | 否 | 空间业务编码筛选 | 如 `pmo`（不是 `kz_doc`） | - |
 
 > 服务端固定查询 `file_online_read`、`file_download`、`upload2agent`，详见 dev-guide **1.16**。
 
@@ -133,6 +140,11 @@
 > 返回 `projectId`、`type`、`parentId` 等，不含正文与权限子集，详见 dev-guide **1.17**。
 
 ## 动作列表
+
+### 0. 列出企业可用应用通道
+- **脚本**: `get-app-list.py`
+- **用途**: 意图/通道不明时先调用；仅返回当前企业用户可访问的应用
+- **输出**: `[{ "name", "appCode" }]`
 
 ### 1. 获取个人空间 ID
 - **脚本**: `get-personal-project-id.py`
@@ -269,6 +281,10 @@ python3 scripts/browse/get-level1-folders.py <project_id> [--order 1|2|5|6] [--p
 python3 scripts/browse/browse.py <parent_id> [--type 1|2] [--order 1|2|3|4|5|6] [--exclude-file-types "work_report,huiji"] [--exclude-folder-names "临时文件"]
 python3 scripts/browse/get-recent-files.py [--limit 10] [--search-key "关键词"]
 python3 scripts/browse/get-my-upload-records.py [--page-index 1] [--page-size 20] [--project-id <id>]
-python3 scripts/browse/get-my-recent-used.py [--page-index 1] [--page-size 20] [--biz-code kz_doc]
+python3 scripts/browse/get-my-recent-used.py [--page-index 1] [--page-size 20] [--biz-code pmo]
+python3 scripts/browse/get-app-list.py
+python3 scripts/browse/get-project-list.py --app-code fw_doc
+python3 scripts/browse/get-project-list.py --app-code kz_doc
+python3 scripts/browse/get-project-list.py --app-code kz_knowledge_base
 python3 scripts/browse/get-file-basic-info.py <file_id>
 ```

@@ -1,5 +1,22 @@
 # 智能导航完整指南 - 空间+目录双重匹配
 
+## 企业应用先筛（必读）
+
+意图或通道不明时，**禁止**直接猜 appCode：
+
+1. `get-app-list.py` 拉本企业可用应用
+2. `app_code_router.py "用户话术" --apps '<listAll data JSON>'` 求交
+3. 唯一则直用并 `context-manager.py set_app_code --app-code …`；多个则追问（只列本企业）
+4. 再 `get-project-list.py --app-code …`
+
+| 说法 | appCode |
+|---|---|
+| 法务文档 | `fw_doc` |
+| 资料库 / 文档数据库 / 玄关知识库 | `kz_doc` |
+| 康哲/德镁知识库 | `kz_knowledge_base` |
+
+`bizCode`（如 `pmo`）≠ `appCode`。
+
 ## 问题概述
 
 用户在使用知识库时，经常遇到两类匹配失败问题：

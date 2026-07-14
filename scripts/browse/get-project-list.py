@@ -5,10 +5,15 @@ browse / getProjectList 脚本
 用途：获取当前账号有权限访问的所有空间列表
 
 使用方式：
-  python3 scripts/browse/get-project-list.py [--name-key "关键词"] [--biz-code pmo]
+  python3 scripts/browse/get-project-list.py [--app-code kz_doc|fw_doc|kz_knowledge_base] [--name-key "关键词"] [--biz-code pmo]
 
 运行时变量：
   appkey — 由小龙虾运行时上下文注入
+
+说明：
+  --app-code 为产品通道（t_doc_app）；不传则由后端按企业默认解析（康哲常为 kz_knowledge_base）。
+  访问资料库/法务/玄关知识库时必须显式传对应 appCode。
+  --biz-code 是空间业务线（如 pmo），与 appCode 不同，切勿把 kz_doc 当作 bizCode。
 """
 
 import sys
@@ -133,9 +138,9 @@ def process_result(result):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="获取当前账号有权限访问的空间列表")
-    parser.add_argument("--app-code", type=str, help="应用编码（默认 kz_doc）")
+    parser.add_argument("--app-code", type=str, help="应用通道编码：kz_doc / fw_doc / kz_knowledge_base（不传=后端按企业默认）")
     parser.add_argument("--name-key", type=str, help="空间名称模糊搜索关键词")
-    parser.add_argument("--biz-code", type=str, help="业务线编码过滤")
+    parser.add_argument("--biz-code", type=str, help="业务线编码过滤（如 pmo，不是 kz_doc）")
     args = parser.parse_args()
 
     result = call_api(

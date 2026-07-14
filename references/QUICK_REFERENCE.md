@@ -15,25 +15,34 @@
 - "上传到XXX/YYY"（多级路径）
 - "保存到XXX目录里"
 
-## 快速流程（4步）
+## 快速流程（5步）
+
+### 步骤0️⃣：企业应用先筛（通道不明时必做）
+```bash
+python3 browse/get-app-list.py
+python3 common/app_code_router.py "打开知识库" --apps '[{"name":"康哲知识库","appCode":"kz_knowledge_base"},...]'
+# 或多个选项时追问用户后：
+python3 context-manager.py set_app_code --app-code kz_doc --app-name 康哲资料库
+```
 
 ### 步骤1️⃣：提取参数
 ```bash
 python3 parameter-extractor.py "保存到康哲知识库的产品资料目录"
 ```
-→ 获取 `project_name_candidates`, `folder_name_candidates` 和相应标记
+→ 获取 `app_code`, `project_name_candidates`, `folder_name_candidates` 等
 
 ### 步骤2️⃣：匹配空间（如果 needs_project_list）
 ```bash
-# 上传场景
-python3 browse/get-uploadable-list.py
+# 上传场景（务必带 app-code）
+python3 browse/get-uploadable-list.py --app-code kz_knowledge_base
 
 # 查询/浏览场景
-python3 browse/get-project-list.py
+python3 browse/get-project-list.py --app-code kz_knowledge_base
+# 资料库/法务：--app-code kz_doc 或 fw_doc
 
 # 智能匹配
 python3 project-matcher.py \
-  --candidates "康哲,知识库" \
+  --candidates "康哲知识库" \
   --project-list '[...]'
 ```
 

@@ -5,7 +5,10 @@ browse / getPersonalProjectId 脚本
 用途：获取当前用户的个人知识库空间 ID
 
 使用方式：
-  python3 scripts/browse/get-personal-project-id.py [--app-code kz_doc]
+  python3 scripts/browse/get-personal-project-id.py [--app-code kz_doc|fw_doc|kz_knowledge_base]
+
+说明：
+  --app-code 为产品通道；不传则由后端按企业默认解析（勿理解为固定默认 kz_doc）。
 
 运行时变量：
   appkey — 由小龙虾运行时上下文注入
@@ -129,7 +132,11 @@ def process_result(result):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="获取当前用户的个人知识库空间 ID")
-    parser.add_argument("--app-code", type=str, help="应用编码")
+    parser.add_argument(
+        "--app-code",
+        type=str,
+        help="应用通道编码：kz_doc / fw_doc / kz_knowledge_base（不传=后端按企业默认）",
+    )
     args = parser.parse_args()
 
     result = call_api(app_code=args.app_code)

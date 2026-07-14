@@ -5,7 +5,7 @@ browse / getMyRecentUsed 脚本
 用途：分页查询当前用户最近使用记录（固定 file_online_read、file_download、upload2agent）
 
 使用方式：
-  python3 scripts/browse/get-my-recent-used.py [--page-index 1] [--page-size 20] [--biz-code kz_doc]
+  python3 scripts/browse/get-my-recent-used.py [--page-index 1] [--page-size 20] [--biz-code pmo]
 
 运行时变量：
   appkey — 由小龙虾运行时上下文注入

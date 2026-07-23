@@ -38,7 +38,7 @@
 | `scripts/browse/get-my-recent-used.py` | `GET /open-api/document-database/operationLog/getMyRecentUsed` | 最近使用（预览/下载/Agent上传，与前端主页一致） |
 | `scripts/browse/get-file-basic-info.py` | `GET /open-api/document-database/file/getFileBasicInfo` | 根据 fileId 查 projectId、type 等轻量元数据 |
 
-运行时由小龙虾上下文注入 `appkey`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
+运行时由小龙虾上下文注入 `appkey`。文档与示例统一写 `python3 -B`；执行时优先 `python3 -B`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python -B` 等价替换。
 
 ## 输入要求
 
@@ -95,7 +95,7 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `parent_id` | Long | 是 | 父目录 ID | 有效文件夹 ID，根目录传 0 | - |
+| `parent_id` | Long | 是 | 父目录 ID | **个人库根传 `0`**；**项目空间传该空间 `rootFileId`**（勿对任意空间一律传 0） | 缺参会中文提示；空间 rootFileId 来自 get-project-list / 上下文 |
 | `--type` | Integer | 否 | 查询类型 | 枚举：`1`（只查文件夹）、`2`（只查文件） | - |
 | `--order` | Integer | 否 | 排序规则 | 枚举：`1`（更新倒序）、`2`（更新顺序）、`3`（创建倒序）、`4`（创建顺序）、`5`（名字倒序）、`6`（名字顺序） | - |
 | `--exclude-file-types` | String | 否 | 排除的文件业务分类 | 枚举：`work_report`、`work_plan`、`huiji`、`ai-report` 等，多个用逗号分隔 | - |
@@ -268,23 +268,27 @@
 ## 运行方式速查
 
 **重要说明**：以下示例使用相对路径以便阅读，实际执行时必须替换为绝对路径。例如：
-- 文档示例：`python3 scripts/browse/browse.py <parent_id>`
-- 实际执行：`python3 <skill-dir>/scripts/browse/browse.py <parent_id>`（将 `<skill-dir>` 换成 skill 根目录绝对路径）
+- 文档示例：`python3 -B <skill-dir>/scripts/browse/browse.py <parent_id>`
+- 实际执行：`python3 -B <skill-dir>/scripts/browse/browse.py <parent_id>`（将 `<skill-dir>` 换成 skill 根目录绝对路径）
+- 缺参：stderr 中文提示（个人库 `0` / 空间 `rootFileId`），exit 2
 
 禁止使用 `cd`、`&&`、管道等 shell 构造。每个脚本必须在单独的命令中使用绝对路径执行。
 
 ```bash
-python3 scripts/browse/get-project-list.py
-python3 scripts/browse/get-personal-project-id.py
-python3 scripts/browse/get-uploadable-list.py
-python3 scripts/browse/get-level1-folders.py <project_id> [--order 1|2|5|6] [--permission-query <query>]
-python3 scripts/browse/browse.py <parent_id> [--type 1|2] [--order 1|2|3|4|5|6] [--exclude-file-types "work_report,huiji"] [--exclude-folder-names "临时文件"]
-python3 scripts/browse/get-recent-files.py [--limit 10] [--search-key "关键词"]
-python3 scripts/browse/get-my-upload-records.py [--page-index 1] [--page-size 20] [--project-id <id>]
-python3 scripts/browse/get-my-recent-used.py [--page-index 1] [--page-size 20] [--biz-code pmo]
-python3 scripts/browse/get-app-list.py
-python3 scripts/browse/get-project-list.py --app-code fw_doc
-python3 scripts/browse/get-project-list.py --app-code kz_doc
-python3 scripts/browse/get-project-list.py --app-code kz_knowledge_base
-python3 scripts/browse/get-file-basic-info.py <file_id>
+python3 -B <skill-dir>/scripts/browse/get-project-list.py
+python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py
+python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py
+python3 -B <skill-dir>/scripts/browse/get-level1-folders.py <project_id> [--order 1|2|5|6] [--permission-query <query>]
+# 个人库根：
+python3 -B <skill-dir>/scripts/browse/browse.py 0
+# 项目空间根：先取空间 rootFileId，再：
+python3 -B <skill-dir>/scripts/browse/browse.py <rootFileId> [--type 1|2] [--order 1|2|3|4|5|6] [--exclude-file-types "work_report,huiji"] [--exclude-folder-names "临时文件"]
+python3 -B <skill-dir>/scripts/browse/get-recent-files.py [--limit 10] [--search-key "关键词"]
+python3 -B <skill-dir>/scripts/browse/get-my-upload-records.py [--page-index 1] [--page-size 20] [--project-id <id>]
+python3 -B <skill-dir>/scripts/browse/get-my-recent-used.py [--page-index 1] [--page-size 20] [--biz-code pmo]
+python3 -B <skill-dir>/scripts/browse/get-app-list.py
+python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code fw_doc
+python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_doc
+python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledge_base
+python3 -B <skill-dir>/scripts/browse/get-file-basic-info.py <file_id>
 ```

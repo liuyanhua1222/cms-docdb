@@ -26,8 +26,10 @@ if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
 _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
-from docdb_open_api import ensure_common_on_path, ssl_context
+sys.dont_write_bytecode = True
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
 ensure_common_on_path(__file__)
+from cli_args import DocdbArgumentParser
 
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
@@ -74,12 +76,7 @@ def build_headers() -> dict:
     headers = {"Content-Type": "application/json"}
 
     if AUTH_MODE == "appKey":
-        app_key = os.environ.get("appkey")
-        if not app_key:
-            print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
-            sys.exit(1)
-        headers["appKey"] = app_key
-
+        headers["appKey"] = resolve_app_key()
     return headers
 
 
@@ -148,9 +145,18 @@ def process_result(result):
     return result
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="浏览目录下的文件和文件夹")
-    parser.add_argument("parent_id", type=int, help="父目录 ID（根目录传 0）")
+    parser = DocdbArgumentParser(
+        description="浏览目录下的文件和文件夹",
+        hint="""browse.py 必须提供 parent_id：
+- 个人库根目录传 0
+- 项目空间请传该空间 rootFileId（勿对任意空间一律传 0）
+示例: python3 -B <skill-dir>/scripts/browse/browse.py 0""",
+    )
+    parser.add_argument(
+        "parent_id",
+        type=int,
+        help="父目录 ID：个人库根传 0；项目空间传该空间 rootFileId",
+    )
     parser.add_argument("--type", type=int, choices=[1, 2], help="1 只查文件夹，2 只查文件")
     parser.add_argument("--order", type=int, choices=[1, 2, 3, 4, 5, 6], help="排序规则")
     parser.add_argument("--exclude-file-types", type=str, help="排除的文件类型，逗号分隔")

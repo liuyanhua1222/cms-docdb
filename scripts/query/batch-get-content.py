@@ -26,8 +26,10 @@ if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
 _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
-from docdb_open_api import ensure_common_on_path, ssl_context
+sys.dont_write_bytecode = True
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
 ensure_common_on_path(__file__)
+from cli_args import DocdbArgumentParser
 
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
@@ -76,12 +78,7 @@ def build_headers() -> dict:
     headers = {"Content-Type": "application/json"}
 
     if AUTH_MODE == "appKey":
-        app_key = os.environ.get("appkey")
-        if not app_key:
-            print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
-            sys.exit(1)
-        headers["appKey"] = app_key
-
+        headers["appKey"] = resolve_app_key()
     return headers
 
 
@@ -179,8 +176,8 @@ def process_result(result, max_chars: int, max_chars_per_file: int):
     return result
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="批量获取多个文件的全文内容")
+    parser = DocdbArgumentParser(description="批量获取文件内容", hint="""batch-get-content.py 必须提供 files_json。
+示例: python3 -B <skill-dir>/scripts/query/batch-get-content.py '[{"fileId":123}]'""")
     parser.add_argument("files_json", type=str, help='文件列表 JSON，如 [{"fileId":123},{"fileId":456}]')
     parser.add_argument("--max-chars", type=int, default=DEFAULT_MAX_CHARS, help="内容字段总字符上限，<=0 表示不限制")
     parser.add_argument("--max-chars-per-file", type=int, default=DEFAULT_MAX_CHARS_PER_FILE, help="单个内容字段字符上限，<=0 表示不限制")

@@ -25,8 +25,10 @@ if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
 _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
-from docdb_open_api import ensure_common_on_path, ssl_context
+sys.dont_write_bytecode = True
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
 ensure_common_on_path(__file__)
+from cli_args import DocdbArgumentParser
 from safety import add_safety_args, enforce_or_dry_run
 
 if sys.stdout.encoding != "utf-8":
@@ -63,10 +65,7 @@ API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/
 
 
 def build_headers() -> dict:
-    app_key = os.environ.get("appkey")
-    if not app_key:
-        print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
-        sys.exit(1)
+    app_key = resolve_app_key()
     return {"Content-Type": "application/json", "appKey": app_key}
 
 
@@ -132,9 +131,9 @@ def parse_emp_ids(raw: str) -> list:
 
 
 def main():
-    import argparse
-
-    parser = argparse.ArgumentParser(description="撤销指定员工的文件/文件夹协同分享")
+    parser = DocdbArgumentParser(description="撤销协同分享", hint="""revoke-file-share-grants.py 必须提供 file_id，且必须带 --emp-ids。
+真实写入还需 --confirm YES。
+示例: python3 -B <skill-dir>/scripts/share/revoke-file-share-grants.py 12345 --emp-ids 1,2 --confirm YES""")
     parser.add_argument("file_id", type=int, help="文件/文件夹 ID")
     parser.add_argument("--emp-ids", type=str, required=True, help="员工 empId 列表，逗号分隔")
     add_safety_args(parser)

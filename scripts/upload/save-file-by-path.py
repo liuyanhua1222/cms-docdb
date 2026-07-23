@@ -26,8 +26,10 @@ if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
 _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
-from docdb_open_api import ensure_common_on_path, ssl_context
+sys.dont_write_bytecode = True
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
 ensure_common_on_path(__file__)
+from cli_args import DocdbArgumentParser
 from safety import add_safety_args, enforce_or_dry_run
 
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
@@ -74,12 +76,7 @@ def build_headers() -> dict:
     headers = {"Content-Type": "application/json"}
 
     if AUTH_MODE == "appKey":
-        app_key = os.environ.get("appkey")
-        if not app_key:
-            print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
-            sys.exit(1)
-        headers["appKey"] = app_key
-
+        headers["appKey"] = resolve_app_key()
     return headers
 
 
@@ -153,8 +150,9 @@ def process_result(result):
     return result
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="将物理文件保存到指定项目空间的指定路径")
+    parser = DocdbArgumentParser(description="按逻辑路径保存物理文件", hint="""save-file-by-path.py 必须提供 project_id name resource_id。
+真实写入还需 --confirm YES（可先 --dry-run）。
+示例: python3 -B <skill-dir>/scripts/upload/save-file-by-path.py 10001 报告.pdf 999 --confirm YES""")
     parser.add_argument("project_id", type=int, help="目标项目空间 ID")
     parser.add_argument("name", type=str, help="保存的文件名")
     parser.add_argument("resource_id", type=int, help="资源 ID（必须，先通过 upload-whole-file 获得）")

@@ -42,7 +42,7 @@
 
 #### 步骤1：意图识别
 ```bash
-python3 /path/to/scripts/intent-matcher.py "保存到康哲知识库"
+python3 -B <skill-dir>/scripts/intent-matcher.py "保存到康哲知识库"
 ```
 
 输出：
@@ -58,7 +58,7 @@ python3 /path/to/scripts/intent-matcher.py "保存到康哲知识库"
 
 #### 步骤2：参数提取（识别空间名候选词）
 ```bash
-python3 /path/to/scripts/parameter-extractor.py "保存到康哲知识库"
+python3 -B <skill-dir>/scripts/parameter-extractor.py "保存到康哲知识库"
 ```
 
 输出：
@@ -86,19 +86,19 @@ python3 /path/to/scripts/parameter-extractor.py "保存到康哲知识库"
 **上传场景（upload）**：
 ```bash
 # 获取有上传权限的空间
-python3 /path/to/scripts/browse/get-uploadable-list.py
+python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py
 ```
 
 **查询/浏览场景（query/browse）**：
 ```bash
 # 先企业可用应用（意图不明时必做）
-python3 /path/to/scripts/browse/get-app-list.py
+python3 -B <skill-dir>/scripts/browse/get-app-list.py
 
 # 获取所有可访问的空间（必须带 appCode）
-python3 /path/to/scripts/browse/get-project-list.py --app-code kz_knowledge_base
+python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledge_base
 # 资料库 / 法务示例：
-# python3 /path/to/scripts/browse/get-project-list.py --app-code kz_doc
-# python3 /path/to/scripts/browse/get-project-list.py --app-code fw_doc
+# python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_doc
+# python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code fw_doc
 ```
 
 输出示例：
@@ -117,9 +117,7 @@ python3 /path/to/scripts/browse/get-project-list.py --app-code kz_knowledge_base
 #### 步骤4：智能匹配
 
 ```bash
-python3 /path/to/scripts/project-matcher.py \
-  --candidates "康哲,知识库" \
-  --project-list '[{"id":10001,"name":"康哲知识库"},{"id":10002,"name":"玄关知识库"}]'
+python3 -B <skill-dir>/scripts/project-matcher.py --candidates "康哲,知识库" --project-list '[{"id":10001,"name":"康哲知识库"},{"id":10002,"name":"玄关知识库"}]'
 ```
 
 输出示例：
@@ -249,20 +247,15 @@ candidates=["康哲", "知识库"]
 needs_project_list=true
 
 # 3. 获取可上传空间
-python3 scripts/browse/get-uploadable-list.py
+python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py
 # 返回：[{"id":10001,"name":"康哲知识库"}, {"id":10002,"name":"玄关知识库"}, ...]
 
 # 4. 智能匹配
-python3 scripts/project-matcher.py \
-  --candidates "康哲,知识库" \
-  --project-list '[...]'
+python3 -B <skill-dir>/scripts/project-matcher.py --candidates "康哲,知识库" --project-list '[...]'
 # 返回：match_type="exact", matched_projects=[{"id":10001,"name":"康哲知识库"}]
 
 # 5. 直接使用匹配结果
-python3 scripts/upload/upload-content.py \
-  "报告内容" \
-  "报告.md" \
-  --project-id 10001
+python3 -B <skill-dir>/scripts/upload/upload-content.py "报告内容" "报告.md" --project-id 10001 --confirm YES
 ```
 
 **AI 输出**：
@@ -295,13 +288,11 @@ keywords=["政策文件"]
 needs_project_list=true
 
 # 3. 获取可访问空间
-python3 scripts/browse/get-project-list.py
+python3 -B <skill-dir>/scripts/browse/get-project-list.py
 # 返回：[{"id":10001,"name":"康哲知识库"}, {"id":10003,"name":"康哲研发中心"}, ...]
 
 # 4. 智能匹配
-python3 scripts/project-matcher.py \
-  --candidates "康哲" \
-  --project-list '[...]'
+python3 -B <skill-dir>/scripts/project-matcher.py --candidates "康哲" --project-list '[...]'
 # 返回：match_type="multiple", matched_projects=[
 #   {"id":10001,"name":"康哲知识库","match_score":85},
 #   {"id":10003,"name":"康哲研发中心","match_score":82}
@@ -337,8 +328,8 @@ candidates=[]  # 未提取到空间名
 keywords=["政策文件"]
 needs_project_list=false
 
-# 3. 直接在所有空间搜索
-python3 scripts/query/search.py "政策文件"
+# 3. 直接在指定空间搜索（必须带 --project-id）
+python3 -B <skill-dir>/scripts/query/search.py "政策文件" --project-id 10001
 ```
 
 ## 代码集成示例
@@ -349,12 +340,14 @@ python3 scripts/query/search.py "政策文件"
 import json
 import subprocess
 
+SKILL_DIR = "<skill-dir>"  # 替换为 skill 根目录绝对路径
+
 def smart_upload_to_project(user_input, content, filename):
     """智能上传文件到用户指定的空间"""
     
     # 1. 参数提取
     result = subprocess.run(
-        ['python3', 'scripts/parameter-extractor.py', user_input],
+        ['python3', '-B', f'{SKILL_DIR}/scripts/parameter-extractor.py', user_input],
         capture_output=True, text=True
     )
     params = json.loads(result.stdout)['data']['parameters']
@@ -366,7 +359,7 @@ def smart_upload_to_project(user_input, content, filename):
     
     # 3. 获取可上传空间列表
     result = subprocess.run(
-        ['python3', 'scripts/browse/get-uploadable-list.py'],
+        ['python3', '-B', f'{SKILL_DIR}/scripts/browse/get-uploadable-list.py'],
         capture_output=True, text=True
     )
     project_list = json.loads(result.stdout)['data']
@@ -374,7 +367,7 @@ def smart_upload_to_project(user_input, content, filename):
     # 4. 智能匹配
     candidates = ','.join(params['project_name_candidates'])
     result = subprocess.run(
-        ['python3', 'scripts/project-matcher.py',
+        ['python3', '-B', f'{SKILL_DIR}/scripts/project-matcher.py',
          '--candidates', candidates,
          '--project-list', json.dumps(project_list)],
         capture_output=True, text=True
@@ -405,7 +398,7 @@ def smart_upload_to_project(user_input, content, filename):
 
 def upload_content(content, filename, project_id=None):
     """执行实际上传"""
-    cmd = ['python3', 'scripts/upload/upload-content.py', content, filename]
+    cmd = ['python3', '-B', f'{SKILL_DIR}/scripts/upload/upload-content.py', content, filename, '--confirm', 'YES']
     if project_id:
         cmd.extend(['--project-id', str(project_id)])
     

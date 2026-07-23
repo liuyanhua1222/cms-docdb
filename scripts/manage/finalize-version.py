@@ -32,8 +32,10 @@ if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
 _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
-from docdb_open_api import ensure_common_on_path, ssl_context
+sys.dont_write_bytecode = True
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
 ensure_common_on_path(__file__)
+from cli_args import DocdbArgumentParser
 from safety import add_safety_args, enforce_or_dry_run
 
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
@@ -79,10 +81,7 @@ RETRY_INTERVAL = 1
 
 def build_headers() -> dict:
     headers = {"Content-Type": "application/json"}
-    app_key = os.environ.get("appkey")
-    if not app_key:
-        print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
-        sys.exit(1)
+    app_key = resolve_app_key()
     headers["appKey"] = app_key
     return headers
 
@@ -118,7 +117,9 @@ def call_api(payload: dict) -> dict:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="将文件版本标记为定稿")
+    parser = DocdbArgumentParser(description="版本定稿", hint="""finalize-version.py 必须提供 file_id。
+真实写入还需 --confirm YES。
+示例: python3 -B <skill-dir>/scripts/manage/finalize-version.py 12345 --confirm YES""")
     parser.add_argument("file_id", type=int, help="文件 ID")
     parser.add_argument("--version-number", type=int, default=0,
                         help="要定稿的版本号（不传或传 0 则定稿最新版本）")

@@ -183,8 +183,14 @@ if __name__ == "__main__":
     
     user_input = args.user_input or args.user_input_opt
     if user_input is None:
+        print(
+            "错误: 缺少用户输入。\n"
+            "intent-matcher.py 需要位置参数或 --user-input。\n"
+            '示例: python3 -B <skill-dir>/scripts/intent-matcher.py "打开康哲知识库"',
+            file=sys.stderr,
+        )
         print(json.dumps({
-            "resultCode": -1, 
+            "resultCode": -1,
             "resultMsg": "缺少输入参数",
             "data": {}
         }, ensure_ascii=False))

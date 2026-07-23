@@ -23,8 +23,10 @@ if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
 _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
-from docdb_open_api import ensure_common_on_path, ssl_context
+sys.dont_write_bytecode = True
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
 ensure_common_on_path(__file__)
+from cli_args import DocdbArgumentParser
 from safety import add_safety_args, enforce_or_dry_run
 
 if sys.stdout.encoding != 'utf-8':
@@ -37,10 +39,7 @@ API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/
 
 def build_headers():
     headers = {"Content-Type": "application/json"}
-    app_key = os.environ.get("appkey")
-    if not app_key:
-        print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
-        sys.exit(1)
+    app_key = resolve_app_key()
     headers["appKey"] = app_key
     return headers
 
@@ -78,7 +77,9 @@ def post_json(body: dict) -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="移动文件或文件夹（moveFile）")
+    parser = DocdbArgumentParser(description="移动文件或文件夹", hint="""move-file.py 必须提供 file_id，且必须带 --target-parent-id。
+真实写入还需 --confirm YES。
+示例: python3 -B <skill-dir>/scripts/manage/move-file.py 12345 --target-parent-id 0 --confirm YES""")
     parser.add_argument("file_id", type=int, help="被移动节点 ID")
     parser.add_argument("--target-parent-id", type=int, required=True, help="目标父目录 ID")
     parser.add_argument("--new-name", type=str, help="移动后名称，省略则保留原名")

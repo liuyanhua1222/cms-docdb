@@ -92,7 +92,7 @@
 ### 步骤1️⃣：参数提取
 
 ```bash
-python3 parameter-extractor.py "保存到康哲知识库的产品资料目录"
+python3 -B <skill-dir>/scripts/parameter-extractor.py "保存到康哲知识库的产品资料目录"
 ```
 
 **输出**：
@@ -125,12 +125,10 @@ python3 parameter-extractor.py "保存到康哲知识库的产品资料目录"
 
 ```bash
 # 获取可上传空间
-python3 browse/get-uploadable-list.py
+python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py
 
 # 智能匹配
-python3 project-matcher.py \
-  --candidates "康哲,知识库" \
-  --project-list '[...]'
+python3 -B <skill-dir>/scripts/project-matcher.py --candidates "康哲,知识库" --project-list '[...]'
 ```
 
 详见 [SPACE_MATCHING_GUIDE.md](./SPACE_MATCHING_GUIDE.md)
@@ -140,10 +138,7 @@ python3 project-matcher.py \
 #### 场景A：按目录名搜索
 
 ```bash
-python3 folder-navigator.py \
-  --project-id 10001 \
-  --folder-name "产品资料" \
-  --max-depth 3
+python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料" --max-depth 3
 ```
 
 **输出**：
@@ -179,9 +174,7 @@ python3 folder-navigator.py \
 #### 场景B：按路径导航（多级目录）
 
 ```bash
-python3 folder-navigator.py \
-  --project-id 10001 \
-  --folder-path "产品资料/慷彼申"
+python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-path "产品资料/慷彼申"
 ```
 
 **输出**：
@@ -227,9 +220,7 @@ python3 folder-navigator.py \
 #### 场景C：跨空间搜索目录
 
 ```bash
-python3 folder-navigator.py \
-  --project-ids "10001,10002,10003" \
-  --folder-name "AI生成"
+python3 -B <skill-dir>/scripts/folder-navigator.py --project-ids "10001,10002,10003" --folder-name "AI生成"
 ```
 
 **用途**：当用户没明确说空间，但说了目录名时使用
@@ -331,22 +322,20 @@ if match_type == "none":
 **AI 执行**：
 ```bash
 # 1. 提取参数
-python3 parameter-extractor.py "..."
+python3 -B <skill-dir>/scripts/parameter-extractor.py "..."
 # → project: ["康哲","知识库"], folder: ["产品资料"]
 
 # 2. 匹配空间
-python3 get-uploadable-list.py
-python3 project-matcher.py --candidates "康哲,知识库" --project-list '[...]'
+python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py
+python3 -B <skill-dir>/scripts/project-matcher.py --candidates "康哲,知识库" --project-list '[...]'
 # → project_id: 10001, name: "康哲知识库"
 
 # 3. 导航目录
-python3 folder-navigator.py --project-id 10001 --folder-name "产品资料"
+python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料"
 # → folder_id: 20001, name: "产品资料"
 
 # 4. 执行上传
-python3 upload-content.py "报告内容" "报告.md" \
-  --project-id 10001 \
-  --folder-name "产品资料"
+python3 -B <skill-dir>/scripts/upload/upload-content.py "报告内容" "报告.md" --project-id 10001 --folder-name "产品资料" --confirm YES
 ```
 
 **AI 输出**：
@@ -370,7 +359,7 @@ python3 upload-content.py "报告内容" "报告.md" \
 **AI 执行**：
 ```bash
 # 1. 提取参数
-python3 parameter-extractor.py "..."
+python3 -B <skill-dir>/scripts/parameter-extractor.py "..."
 # → folder: ["AI生成"], 无 project
 
 # 2. 策略选择：
@@ -378,13 +367,11 @@ python3 parameter-extractor.py "..."
 #    - 如果没有 → 跨所有可上传空间查找
 
 # 2a. 无上下文 → 获取所有可上传空间
-python3 get-uploadable-list.py
+python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py
 # → projects: [10001, 10002, 10003]
 
 # 3. 跨空间搜索目录
-python3 folder-navigator.py \
-  --project-ids "10001,10002,10003" \
-  --folder-name "AI生成"
+python3 -B <skill-dir>/scripts/folder-navigator.py --project-ids "10001,10002,10003" --folder-name "AI生成"
 # → 找到2个匹配
 ```
 
@@ -407,7 +394,7 @@ python3 folder-navigator.py \
 **AI 执行**：
 ```bash
 # 1. 提取参数
-python3 parameter-extractor.py "..."
+python3 -B <skill-dir>/scripts/parameter-extractor.py "..."
 # → folder_path: "产品资料/慷彼申/临床研究"
 
 # 2. 需要空间上下文
@@ -417,9 +404,7 @@ python3 parameter-extractor.py "..."
 # 假设上下文有：current_project_id = 10001
 
 # 3. 路径导航
-python3 folder-navigator.py \
-  --project-id 10001 \
-  --folder-path "产品资料/慷彼申/临床研究"
+python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-path "产品资料/慷彼申/临床研究"
 # → 逐层导航，返回最终目录
 
 # 4. 执行上传

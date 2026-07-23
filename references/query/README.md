@@ -180,17 +180,17 @@
 ## 运行方式速查
 
 **重要说明**：以下示例使用相对路径以便阅读，实际执行时必须替换为绝对路径。例如：
-- 文档示例：`python3 scripts/query/search.py "关键词"`
-- 实际执行：`python3 <skill-dir>/scripts/query/search.py "关键词"`（将 `<skill-dir>` 换成 skill 根目录绝对路径）
+- 文档示例：`python3 -B <skill-dir>/scripts/query/search.py "关键词"`
+- 实际执行：`python3 -B <skill-dir>/scripts/query/search.py "关键词"`（将 `<skill-dir>` 换成 skill 根目录绝对路径）
 
 禁止使用 `cd`、`&&`、管道等 shell 构造。每个脚本必须在单独的命令中使用绝对路径执行。
 
 ```bash
-python3 scripts/query/search.py "关键词" --project-id <project_id> [--root-file-id <root_id>] [--start-time <ts>] [--end-time <ts>] [--exclude-file-types "work_report,huiji"]
-python3 scripts/query/get-full-content.py <file_id> [--relation-id <relation_id>] [--file-type <file_type>]
-python3 scripts/query/get-download-info.py <file_id>
-python3 scripts/query/get-download-info.py <file_id> --force-download
-python3 scripts/query/download-file.py <file_id> [--output /path/to/save.pdf]
-python3 scripts/query/get-file-content.py <file_id> [--page-number 1]
-python3 scripts/query/batch-get-content.py '[{"fileId":123},{"fileId":456}]' [--max-chars 60000] [--max-chars-per-file 20000]
+python3 -B <skill-dir>/scripts/query/search.py "关键词" --project-id <project_id> [--root-file-id <root_id>] [--start-time <ts>] [--end-time <ts>] [--exclude-file-types "work_report,huiji"]
+python3 -B <skill-dir>/scripts/query/get-full-content.py <file_id> [--relation-id <relation_id>] [--file-type <file_type>]
+python3 -B <skill-dir>/scripts/query/get-download-info.py <file_id>
+python3 -B <skill-dir>/scripts/query/get-download-info.py <file_id> --force-download
+python3 -B <skill-dir>/scripts/query/download-file.py <file_id> [--output /path/to/save.pdf]
+python3 -B <skill-dir>/scripts/query/get-file-content.py <file_id> [--page-number 1]
+python3 -B <skill-dir>/scripts/query/batch-get-content.py '[{"fileId":123},{"fileId":456}]' [--max-chars 60000] [--max-chars-per-file 20000]
 ```

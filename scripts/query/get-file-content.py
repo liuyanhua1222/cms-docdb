@@ -26,8 +26,10 @@ if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
 _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
-from docdb_open_api import ensure_common_on_path, ssl_context
+sys.dont_write_bytecode = True
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
 ensure_common_on_path(__file__)
+from cli_args import DocdbArgumentParser
 
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
@@ -73,12 +75,7 @@ def build_headers() -> dict:
     headers = {"Content-Type": "application/json"}
 
     if AUTH_MODE == "appKey":
-        app_key = os.environ.get("appkey")
-        if not app_key:
-            print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
-            sys.exit(1)
-        headers["appKey"] = app_key
-
+        headers["appKey"] = resolve_app_key()
     return headers
 
 
@@ -133,8 +130,8 @@ def process_result(result):
     return result
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="分页获取文件文本内容")
+    parser = DocdbArgumentParser(description="分页获取文件内容", hint="""get-file-content.py 必须提供 file_id。
+示例: python3 -B <skill-dir>/scripts/query/get-file-content.py 12345""")
     parser.add_argument("file_id", type=int, help="文件 ID")
     parser.add_argument("--page-number", type=int, default=1, help="页码，从 1 开始")
     args = parser.parse_args()

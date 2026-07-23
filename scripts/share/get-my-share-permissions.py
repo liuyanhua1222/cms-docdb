@@ -26,8 +26,10 @@ if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
 _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
-from docdb_open_api import ensure_common_on_path, ssl_context
+sys.dont_write_bytecode = True
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
 ensure_common_on_path(__file__)
+from cli_args import DocdbArgumentParser
 
 if sys.stdout.encoding != "utf-8":
     sys.stdout = open(sys.stdout.fileno(), mode="w", encoding="utf-8", buffering=1)
@@ -66,11 +68,7 @@ AUTH_MODE = "appKey"
 def build_headers() -> dict:
     headers = {"Content-Type": "application/json"}
     if AUTH_MODE == "appKey":
-        app_key = os.environ.get("appkey")
-        if not app_key:
-            print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
-            sys.exit(1)
-        headers["appKey"] = app_key
+        headers["appKey"] = resolve_app_key()
     return headers
 
 
@@ -116,9 +114,8 @@ def process_result(result):
 
 
 def main():
-    import argparse
-
-    parser = argparse.ArgumentParser(description="获取调用方对指定 fileId 的可分享权限上限子集")
+    parser = DocdbArgumentParser(description="查询我对该文件的分享权限", hint="""get-my-share-permissions.py 必须提供 file_id。
+示例: python3 -B <skill-dir>/scripts/share/get-my-share-permissions.py 12345""")
     parser.add_argument("file_id", type=int, help="文件/文件夹 ID")
     args = parser.parse_args()
 

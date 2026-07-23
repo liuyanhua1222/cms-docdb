@@ -26,7 +26,8 @@ if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
 _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
-from docdb_open_api import ensure_common_on_path, ssl_context
+sys.dont_write_bytecode = True
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
 ensure_common_on_path(__file__)
 
 if sys.stdout.encoding != "utf-8":
@@ -63,10 +64,7 @@ API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/
 
 
 def build_headers() -> dict:
-    app_key = os.environ.get("appkey")
-    if not app_key:
-        print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
-        sys.exit(1)
+    app_key = resolve_app_key()
     return {"appKey": app_key}
 
 

@@ -17,7 +17,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 
 本文件提供能力边界与路由规则。详细说明见 `references/`，实际执行见 `scripts/`。
 
-**当前版本**: 1.3.0
+**当前版本**: 1.3.2
 
 **接口版本**: 所有业务接口统一使用 `/open-api/*` 前缀，鉴权类型全部为 `appKey`。对齐 API v2.5+（含 `app/listAll`）。
 
@@ -55,7 +55,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 - 需要鉴权时，直接使用运行时上下文中的 `appkey`
 
 输入完整性规则（强制）：
-1. 浏览目录必须提供 parentId（根目录传 0）或 projectId
+1. 浏览目录必须提供 parentId：个人库根传 `0`；项目空间传该空间 `rootFileId`（勿对任意空间一律传 0）；或先用 projectId 拉空间/一级目录
 2. 搜索文件必须提供关键词；projectId 可选（不传时从 rootFileId 反查或默认个人库）
 3. 上传文件必须提供文件名和内容（纯文本）或 resourceId（物理文件）
 4. 删除/重命名/移动文件必须提供 fileId
@@ -86,14 +86,35 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 脚本使用规则（强制）：
 1. **每个动作必须有对应脚本**：不允许"暂无脚本"
 2. **脚本可独立执行**：所有 `scripts/` 下的脚本均可脱离 AI Agent 直接在命令行运行
-3. **路径使用规范**：执行脚本时必须使用绝对路径，禁止使用 `cd`、`&&`、管道、重定向、heredoc、`bash -lc`、`python3 -c` 或 shell 循环
-   - ✅ 正确：`python3 <skill-dir>/scripts/browse/browse.py 12345`
+3. **路径使用规范**：执行脚本时必须使用绝对路径，禁止使用 `cd`、`&&`、管道、重定向、heredoc、`bash -lc`、`python3 -c` 或 shell 循环；优先 `python3 -B`（禁止写 `__pycache__`）
+   - ✅ 正确：`python3 -B <skill-dir>/scripts/browse/browse.py 12345`
    - ❌ 错误：`cd <skill-dir>/scripts/browse && python3 browse.py 12345`
-   - ❌ 错误：`python3 scripts/browse/browse.py 12345`（除非当前工作目录恰好是 skill 根目录）
-   - 说明：文档中的 `<skill-dir>` 须替换为当前 skill 根目录的绝对路径；相对路径仅便于阅读
+   - ❌ 错误：`python3 scripts/browse/browse.py 12345`（相对路径；除非 cwd 恰好是 skill 根，仍禁止依赖）
+   - 说明：文档中的 `<skill-dir>` 须替换为当前 skill 根目录的绝对路径；相对路径仅便于阅读（不得当作可执行正例）
 4. **先读模块说明再执行**：执行脚本前，必须先阅读对应模块的 `references/<module>/README.md`
 5. **鉴权一致**：涉及 appKey 时，统一从小龙虾运行时上下文获取 `appkey`
-6. **运行命令统一**：文档与示例统一写 `python3`；执行时优先 `python3`，若命令不存在（常见于部分 Windows 仅提供 `python`）则改用 `python` 等价替换
+6. **运行命令统一**：文档与示例统一写 `python3 -B`；执行时优先 `python3 -B`，若命令不存在（常见于部分 Windows 仅提供 `python`）则改用 `python -B` 等价替换
+
+## 运行时常见失败（强制，v1.3.2+）
+
+| 现象 | 原因 | Agent 立刻怎么做 |
+|------|------|------------------|
+| `exec preflight: complex interpreter invocation...` | 用了 `cd`/`&&`/`|`/`>`/heredoc/`bash -lc`/`python3 -c` 或多命令串联 | **改写为单行直调** `python3 -B <skill-dir>/scripts/<module>/<script>.py <args>` 后重试；禁止再套一层 shell |
+| `cannot create ... Directory nonexistent` / shell 重定向失败 | 用 `>` 写入不存在目录，或 `mkdir &&` 链 | **禁止** shell `>` 重定向；结果只读脚本 stdout；下载**优先省略** `--output`（默认写系统临时目录）；禁止 `mkdir &&` 拼命令 |
+| `未找到 appkey` | 运行时未注入 `appkey`（脚本也会尝试 `APPKEY`/`AppKey`） | 请用户重新登录/授权或新开技能会话；**禁止编造密钥**；确认命令未因复杂 shell 丢掉环境变量 |
+| `usage:` / 中文缺参提示（browse/upload/query 等） | 未传必填位置参数或必填选项 | 按 stderr 中文 hint 补齐必参后重试；browse：个人库根传 `0`，项目空间传 `rootFileId` |
+| `Read-only file system` / `__pycache__` | 只读 skill 树写字节码 | 使用 `python3 -B`；脚本已禁写字节码；勿在 skill 目录造文件 |
+| `can't open file` / `/tmp/_*.py` / 非 scripts 路径 | 自造脚本或把目录当 `.py` | **停止**；只用本仓库 `scripts/` 下脚本 |
+| `README.venv` / pip / pypdf 等 | 自建 venv 或装第三方包 | 禁止；只用系统 `python3 -B` + 本仓库脚本 |
+| `/workspace/gen_reports.py` 等自写脚本报错 | 未走本仓库 `scripts/` | **停止**；改用本 skill 对应模块脚本；禁止自建脚本调文档库 Open API |
+| 写入类提示须 `--confirm YES` | 1.3.0+ 安全门禁 | 先获用户确认，再带 `--confirm YES`（物理删除用 `PHYSICAL`）；可先 `--dry-run` |
+
+合法命令唯一形态（复制后替换 `<skill-dir>`）：
+
+```bash
+python3 -B <skill-dir>/scripts/browse/browse.py 0
+python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledge_base
+```
 
 ## 安全基线（强制，v1.3.0+）
 
@@ -264,25 +285,17 @@ project-matcher.py → 精确/包含/组合/模糊匹配
 **AI 执行流程**：
 ```bash
 # 1. 参数提取
-parameter-extractor.py "..."
-# → project_name_candidates: ["康哲", "知识库"]
-# → folder_name_candidates: ["产品资料"]
-# → needs_project_list: true
-# → needs_folder_navigation: true
+python3 -B <skill-dir>/scripts/parameter-extractor.py "把这份报告保存到康哲知识库的产品资料目录"
 
 # 2. 空间匹配
-get-uploadable-list.py  # 获取可上传空间列表
-project-matcher.py --candidates "康哲,知识库" --project-list '[...]'
-# → project_id: 10001, project_name: "康哲知识库", match_type: "exact"
+python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py --app-code kz_knowledge_base
+python3 -B <skill-dir>/scripts/project-matcher.py --candidates "康哲,知识库" --project-list '[...]'
 
 # 3. 目录导航
-folder-navigator.py --project-id 10001 --folder-name "产品资料"
-# → folder_id: 20001, folder_name: "产品资料", match_type: "exact"
+python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料"
 
-# 4. 执行上传
-upload-content.py "报告内容" "报告.md" \
-  --project-id 10001 \
-  --folder-name "产品资料"
+# 4. 执行上传（真实写入须 --confirm YES；可先 --dry-run）
+python3 -B <skill-dir>/scripts/upload/upload-content.py "报告内容" "报告.md" --project-id 10001 --folder-name "产品资料" --confirm YES
 ```
 
 **AI 输出**：

@@ -207,17 +207,10 @@ docdb 后端已实现智能 `projectId` 补全，以下脚本受益：
 **示例**：
 ```bash
 # 推荐：省略 projectId（parentId > 0 时）
-python3 scripts/upload/save-file-by-parent-id.py \
-  --parent-id 10086 \
-  --resource-id 987654321 \
-  --name "技术方案.pdf"
+python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py --parent-id 10086 --resource-id 987654321 --name "技术方案.pdf" --confirm YES
 
 # 必填：parentId=0 时必须传 projectId
-python3 scripts/upload/save-file-by-parent-id.py \
-  --project-id 2025001 \
-  --parent-id 0 \
-  --resource-id 987654321 \
-  --name "根目录文件.pdf"
+python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py --project-id 2025001 --parent-id 0 --resource-id 987654321 --name "根目录文件.pdf" --confirm YES
 ```
 
 ### 2. create-folder.py
@@ -228,15 +221,10 @@ python3 scripts/upload/save-file-by-parent-id.py \
 **示例**：
 ```bash
 # 推荐：省略 projectId（parentId > 0 时）
-python3 scripts/upload/create-folder.py \
-  --parent-id 10086 \
-  --name "新建文件夹"
+python3 -B <skill-dir>/scripts/upload/create-folder.py --parent-id 10086 --name "新建文件夹" --confirm YES
 
 # 必填：parentId=0 时必须传 projectId
-python3 scripts/upload/create-folder.py \
-  --project-id 2025001 \
-  --parent-id 0 \
-  --name "空间根文件夹"
+python3 -B <skill-dir>/scripts/upload/create-folder.py --project-id 2025001 --parent-id 0 --name "空间根文件夹" --confirm YES
 ```
 
 ### 3. save-file-by-path.py
@@ -247,15 +235,10 @@ python3 scripts/upload/create-folder.py \
 **示例**：
 ```bash
 # 推荐：省略 projectId（path 不为空时）
-python3 scripts/upload/save-file-by-path.py \
-  --path "工程档案/设计图纸" \
-  --resource-id 987654321 \
-  --name "方案.pdf"
+python3 -B <skill-dir>/scripts/upload/save-file-by-path.py --path "工程档案/设计图纸" --resource-id 987654321 --name "方案.pdf" --confirm YES
 
 # 默认个人库：path 为空时
-python3 scripts/upload/save-file-by-path.py \
-  --resource-id 987654321 \
-  --name "笔记.pdf"
+python3 -B <skill-dir>/scripts/upload/save-file-by-path.py --resource-id 987654321 --name "笔记.pdf" --confirm YES
 ```
 
 ### 4. upload-content.py
@@ -340,21 +323,21 @@ python3 scripts/upload/save-file-by-path.py \
 ## 运行方式速查
 
 **重要说明**：以下示例使用相对路径以便阅读，实际执行时必须替换为绝对路径。例如：
-- 文档示例：`python3 scripts/upload/upload-content.py "内容" "文件名.md"`
-- 实际执行：`python3 <skill-dir>/scripts/upload/upload-content.py "内容" "文件名.md"`（将 `<skill-dir>` 换成 skill 根目录绝对路径）
-
-禁止使用 `cd`、`&&`、管道等 shell 构造。每个脚本必须在单独的命令中使用绝对路径执行。
+- 文档示例：`python3 -B <skill-dir>/scripts/upload/upload-content.py "内容" "文件名.md" --confirm YES`
+- 实际执行：`python3 -B <skill-dir>/scripts/upload/upload-content.py "内容" "文件名.md" --confirm YES`（将 `<skill-dir>` 换成 skill 根目录绝对路径）
+- 缺参：stderr 中文提示（须 `content` + `file_name`），exit 2
 
 ```bash
-python3 scripts/upload/upload-content.py "内容" "文件名.md" --confirm YES [--file-suffix md] [--folder-name "AI生成/周报"] [--project-id <project_id>]
-python3 scripts/upload/upload-content.py "新内容" "文件名.md" --update-file-id <file_id> --confirm YES [--version-name "V2.0"] [--version-remark "修订说明"]
-python3 scripts/upload/upload-whole-file.py <file_path> --confirm YES
-python3 scripts/upload/check-slice.py <md5> --confirm YES [--size <size>] [--suffix <suffix>]
-python3 scripts/upload/register-slice.py <full_path> <md5> <size> MINIO --confirm YES
-python3 scripts/upload/merge-resource.py "文件名.pdf" "sliceId1,sliceId2,..." --confirm YES [--suffix pdf] [--size <size>]
-python3 scripts/upload/save-file-by-parent-id.py <parent_id> <resource_id> "文件名.pdf" --confirm YES [--project-id <id>] [--suffix pdf]
-python3 scripts/upload/save-file-by-path.py <project_id> "文件名.pdf" <resource_id> --confirm YES [--path "目录"] [--suffix pdf]
-python3 scripts/upload/get-file-download-info.py <resource_id>
-python3 scripts/upload/create-folder.py <parent_id> "文件夹名" --confirm YES [--project-id <id>] [--cover] [--auto-rename]
+python3 -B <skill-dir>/scripts/upload/upload-content.py "内容" "文件名.md" --confirm YES [--file-suffix md] [--folder-name "AI生成/周报"] [--project-id <project_id>]
+python3 -B <skill-dir>/scripts/upload/upload-content.py "新内容" "文件名.md" --update-file-id <file_id> --confirm YES [--version-name "V2.0"] [--version-remark "修订说明"]
+python3 -B <skill-dir>/scripts/upload/upload-whole-file.py <file_path> --confirm YES
+python3 -B <skill-dir>/scripts/upload/check-slice.py <md5> --confirm YES [--size <size>] [--suffix <suffix>]
+python3 -B <skill-dir>/scripts/upload/register-slice.py <full_path> <md5> <size> MINIO --confirm YES
+python3 -B <skill-dir>/scripts/upload/merge-resource.py "文件名.pdf" "sliceId1,sliceId2,..." --confirm YES [--suffix pdf] [--size <size>]
+python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py <parent_id> <resource_id> "文件名.pdf" --confirm YES [--project-id <id>] [--suffix pdf]
+python3 -B <skill-dir>/scripts/upload/save-file-by-path.py <project_id> "文件名.pdf" <resource_id> --confirm YES [--path "目录"] [--suffix pdf]
+python3 -B <skill-dir>/scripts/upload/create-folder.py <parent_id> "文件夹名" --confirm YES [--project-id <id>] [--cover] [--auto-rename]
 # 预览：把 --confirm YES 换成 --dry-run
 ```
+
+禁止使用 `cd`、`&&`、管道等 shell 构造。每个脚本必须在单独的命令中使用绝对路径与 `python3 -B` 执行。

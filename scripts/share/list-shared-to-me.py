@@ -10,16 +10,15 @@ if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
 _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
-from docdb_open_api import ensure_common_on_path, ssl_context
+sys.dont_write_bytecode = True
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
 ensure_common_on_path(__file__)
 
 API_BASE = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/share/sharedToMe"
 
 def headers():
     h = {"Content-Type": "application/json"}
-    k = os.environ.get("appkey")
-    if not k:
-        print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr); sys.exit(1)
+    k = resolve_app_key()
     h["appKey"] = k
     return h
 

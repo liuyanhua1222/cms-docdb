@@ -1,5 +1,7 @@
 # 快速参考卡 - 智能导航（空间+目录）
 
+执行约定（强制）：所有命令必须是**单行直调**，使用绝对路径与 `python3 -B`。将 `<skill-dir>` 换成当前 skill 根目录绝对路径。禁止 `cd`、`&&`、管道、重定向、`bash -lc`、`python3 -c`、自建 venv。详见 `SKILL.md`「运行时常见失败」。
+
 ## 何时使用智能导航？
 
 当用户输入包含以下模式时，触发智能导航流程：
@@ -19,48 +21,42 @@
 
 ### 步骤0️⃣：企业应用先筛（通道不明时必做）
 ```bash
-python3 browse/get-app-list.py
-python3 common/app_code_router.py "打开知识库" --apps '[{"name":"康哲知识库","appCode":"kz_knowledge_base"},...]'
+python3 -B <skill-dir>/scripts/browse/get-app-list.py
+python3 -B <skill-dir>/scripts/common/app_code_router.py "打开知识库" --apps '[{"name":"康哲知识库","appCode":"kz_knowledge_base"}]'
 # 或多个选项时追问用户后：
-python3 context-manager.py set_app_code --app-code kz_doc --app-name 康哲资料库
+python3 -B <skill-dir>/scripts/context-manager.py set_app_code --app-code kz_doc --app-name 康哲资料库
 ```
 
 ### 步骤1️⃣：提取参数
 ```bash
-python3 parameter-extractor.py "保存到康哲知识库的产品资料目录"
+python3 -B <skill-dir>/scripts/parameter-extractor.py "保存到康哲知识库的产品资料目录"
 ```
 → 获取 `app_code`, `project_name_candidates`, `folder_name_candidates` 等
 
 ### 步骤2️⃣：匹配空间（如果 needs_project_list）
 ```bash
 # 上传场景（务必带 app-code）
-python3 browse/get-uploadable-list.py --app-code kz_knowledge_base
+python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py --app-code kz_knowledge_base
 
 # 查询/浏览场景
-python3 browse/get-project-list.py --app-code kz_knowledge_base
+python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledge_base
 # 资料库/法务：--app-code kz_doc 或 fw_doc
 
-# 智能匹配
-python3 project-matcher.py \
-  --candidates "康哲知识库" \
-  --project-list '[...]'
+# 智能匹配（--project-list 传入上一步 JSON 字符串，勿用管道）
+python3 -B <skill-dir>/scripts/project-matcher.py --candidates "康哲知识库" --project-list '[...]'
 ```
 
 ### 步骤3️⃣：导航目录（如果 needs_folder_navigation）
 ```bash
 # 按目录名搜索
-python3 folder-navigator.py \
-  --project-id 10001 \
-  --folder-name "产品资料"
+python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料"
 
 # 或按路径导航
-python3 folder-navigator.py \
-  --project-id 10001 \
-  --folder-path "产品资料/慷彼申"
+python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-path "产品资料/慷彼申"
 ```
 
 ### 步骤4️⃣：执行操作
-使用获得的 `project_id` 和 `folder_id` 执行实际操作
+使用获得的 `project_id` 和 `folder_id` 执行实际操作。写入类须先用户确认并带 `--confirm YES`。
 
 ## 匹配结果处理
 
@@ -68,33 +64,33 @@ python3 folder-navigator.py \
 
 | match_type | match_count | 处理方式 |
 |-----------|-------------|---------|
-| exact | 1 | ✅ 直接使用 |
-| best_match | 1 | ✅ 直接使用（可告知） |
-| fuzzy | 1 | ⚠️ 建议确认后使用 |
-| multiple | ≥2 | 📋 列出让用户选择 |
-| none | 0 | 📋 列出所有空间 |
+| exact | 1 | 直接使用 |
+| best_match | 1 | 直接使用（可告知） |
+| fuzzy | 1 | 建议确认后使用 |
+| multiple | ≥2 | 列出让用户选择 |
+| none | 0 | 列出所有空间 |
 
 ### 目录匹配结果
 
 | match_type | match_count | 处理方式 |
 |-----------|-------------|---------|
-| exact | 1 | ✅ 直接使用 |
-| fuzzy | 1 | ⚠️ 建议确认后使用 |
-| multiple | ≥2 | 📋 列出完整路径让用户选择 |
-| none | 0 | 💡 建议创建或浏览目录结构 |
+| exact | 1 | 直接使用 |
+| fuzzy | 1 | 建议确认后使用 |
+| multiple | ≥2 | 列出完整路径让用户选择 |
+| none | 0 | 建议创建或浏览目录结构 |
 
 ## AI 输出模板
 
-### ✅ 完整匹配（空间+目录）
+### 完整匹配（空间+目录）
 ```
-已识别目标位置 ✅
+已识别目标位置
   空间：康哲知识库
   目录：产品资料
 
 正在保存文件...
 ```
 
-### 📋 空间多个匹配
+### 空间多个匹配
 ```
 找到多个匹配的空间：
 1. 康哲知识库（精确匹配）
@@ -103,7 +99,7 @@ python3 folder-navigator.py \
 请选择序号或空间名称。
 ```
 
-### 📋 目录多个匹配
+### 目录多个匹配
 ```
 在"康哲知识库"中找到多个"产品资料"目录：
 1. 产品资料（路径：产品资料）
@@ -112,7 +108,7 @@ python3 folder-navigator.py \
 请选择序号。
 ```
 
-### 💡 目录未找到
+### 目录未找到
 ```
 未找到"产品资料"目录。
 
@@ -159,34 +155,49 @@ needs_folder_navigation?
 ## 常用命令速查
 
 ```bash
-# 空间匹配（上传场景）
-python3 browse/get-uploadable-list.py | \
-  python3 project-matcher.py --candidates "康哲,知识库" --project-list "$(cat -)"
+# 空间列表（上传场景）— 单独执行，勿管道
+python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py --app-code kz_knowledge_base
 
-# 空间匹配（查询场景）
-python3 browse/get-project-list.py | \
-  python3 project-matcher.py --candidates "玄关" --project-list "$(cat -)"
+# 空间匹配（将上一步输出作为 --project-list 字符串传入）
+python3 -B <skill-dir>/scripts/project-matcher.py --candidates "康哲,知识库" --project-list '[...]'
+
+# 空间列表（查询场景）
+python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledge_base
+python3 -B <skill-dir>/scripts/project-matcher.py --candidates "玄关" --project-list '[...]'
 
 # 目录搜索（单层）
-python3 folder-navigator.py \
-  --project-id 10001 \
-  --folder-name "产品资料" \
-  --max-depth 3
+python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料" --max-depth 3
 
 # 目录导航（多层）
-python3 folder-navigator.py \
-  --project-id 10001 \
-  --folder-path "产品资料/慷彼申"
+python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-path "产品资料/慷彼申"
 
 # 跨空间搜索目录
-python3 folder-navigator.py \
-  --project-ids "10001,10002,10003" \
-  --folder-name "AI生成"
+python3 -B <skill-dir>/scripts/folder-navigator.py --project-ids "10001,10002,10003" --folder-name "AI生成"
+
+# 浏览：个人库根用 0；项目空间用 rootFileId
+python3 -B <skill-dir>/scripts/browse/browse.py 0
+python3 -B <skill-dir>/scripts/browse/browse.py <rootFileId>
 ```
+
+## 运行时常见失败（摘要）
+
+| 现象 | 立刻怎么做 |
+|------|------------|
+| preflight complex interpreter | 改成单行 `python3 -B <skill-dir>/scripts/...` |
+| Directory nonexistent / `>` 失败 | 禁止重定向与 `mkdir &&`；只读 stdout；下载省略 `--output` |
+| 未找到 appkey | 请用户重登/授权；勿编造 key |
+| `usage:` / 中文缺参 | 按 stderr hint 补齐必参 |
+| `__pycache__` Read-only | 使用 `python3 -B` |
+| 自写 `/workspace/*.py` / `/tmp/_*.py` | 改回本仓库 scripts |
+| venv / pip / pypdf | 禁止；只用系统 python3 -B |
+| browse 缺 parent_id | 个人库 `0` / 空间 `rootFileId` |
+| 写入缺 `--confirm YES` | 用户确认后再带 confirm |
+
+完整表见 `SKILL.md`「运行时常见失败」。
 
 ## 关键点
 
-### ✅ DO
+### DO
 1. **先列举再匹配**，不要盲目搜索
 2. **分层导航**，先空间后目录
 3. **支持模糊匹配**，容忍用户输入不完整
@@ -194,14 +205,16 @@ python3 folder-navigator.py \
 5. **多个匹配时列出完整信息**（路径、空间等）
 6. **记录上下文**，减少重复询问
 7. **递归搜索目录**，但限制深度避免性能问题
+8. **单行绝对路径执行**，命中 preflight 立即改写重试
 
-### ❌ DON'T
+### DON'T
 1. 不要直接用分词结果搜索空间或目录
 2. 不要简单说"找不到"或"无权限"
 3. 不要忽略用户的上下文
 4. 不要无限递归搜索
 5. 不要假设用户知道 ID 或完整路径
 6. 不要跳过匹配步骤
+7. 不要用 `cd`/`&&`/管道/`>`/`python3 -c`/自写临时脚本/venv
 
 ## 性能建议
 

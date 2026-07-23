@@ -28,8 +28,10 @@ if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
 _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
-from docdb_open_api import ensure_common_on_path, ssl_context
+sys.dont_write_bytecode = True
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
 ensure_common_on_path(__file__)
+from cli_args import DocdbArgumentParser
 
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
@@ -78,12 +80,7 @@ def build_headers() -> dict:
     headers = {"Content-Type": "application/json"}
 
     if AUTH_MODE == "appKey":
-        app_key = os.environ.get("appkey")
-        if not app_key:
-            print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
-            sys.exit(1)
-        headers["appKey"] = app_key
-
+        headers["appKey"] = resolve_app_key()
     return headers
 
 
@@ -137,8 +134,9 @@ def download_file(download_url: str, output_path: str) -> str:
 
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="下载文件到本地")
+    parser = DocdbArgumentParser(description="下载文件到本地", hint="""download-file.py 必须提供 file_id。
+优先省略 --output（默认写系统临时目录，读 stdout 路径）；禁止 shell 重定向。
+示例: python3 -B <skill-dir>/scripts/query/download-file.py 12345""")
     parser.add_argument("file_id", type=int, help="文件 ID")
     parser.add_argument("--output", type=str, help="输出文件路径（可选，默认保存到临时目录）")
     args = parser.parse_args()

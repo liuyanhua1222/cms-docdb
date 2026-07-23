@@ -21,6 +21,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _cms_common = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "common"))
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
+sys.dont_write_bytecode = True
 from docdb_open_api import ensure_common_on_path
 ensure_common_on_path(__file__)
 from safety import add_safety_args

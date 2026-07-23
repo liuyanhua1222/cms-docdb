@@ -27,8 +27,10 @@ if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
 _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_project_id_for_parent
+sys.dont_write_bytecode = True
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_project_id_for_parent, resolve_app_key
 ensure_common_on_path(__file__)
+from cli_args import DocdbArgumentParser
 from safety import add_safety_args, enforce_or_dry_run
 
 if sys.stdout.encoding != "utf-8":
@@ -65,10 +67,7 @@ API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/
 
 
 def build_headers() -> dict:
-    app_key = os.environ.get("appkey")
-    if not app_key:
-        print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
-        sys.exit(1)
+    app_key = resolve_app_key()
     return {"Content-Type": "application/json", "appKey": app_key}
 
 
@@ -127,9 +126,9 @@ def process_result(result):
 
 
 def main():
-    import argparse
-
-    parser = argparse.ArgumentParser(description="创建空文件夹")
+    parser = DocdbArgumentParser(description="在指定父目录下创建文件夹", hint="""create-folder.py 必须提供 parent_id 与 name。
+真实写入还需 --confirm YES（可先 --dry-run）。
+示例: python3 -B <skill-dir>/scripts/upload/create-folder.py 0 "新产品" --confirm YES""")
     parser.add_argument("parent_id", type=int, help="父目录 fileId，空间根传 0")
     parser.add_argument("name", type=str, help="文件夹名称（勿含 / 或 \\）")
     parser.add_argument("--project-id", type=int, default=None, help="空间 ID；parentId!=0 时可省略（自动反查）")

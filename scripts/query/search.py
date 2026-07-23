@@ -26,8 +26,10 @@ if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
 _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
-from docdb_open_api import ensure_common_on_path, ssl_context
+sys.dont_write_bytecode = True
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
 ensure_common_on_path(__file__)
+from cli_args import DocdbArgumentParser
 
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
@@ -73,12 +75,7 @@ def build_headers() -> dict:
     headers = {"Content-Type": "application/json"}
 
     if AUTH_MODE == "appKey":
-        app_key = os.environ.get("appkey")
-        if not app_key:
-            print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
-            sys.exit(1)
-        headers["appKey"] = app_key
-
+        headers["appKey"] = resolve_app_key()
     return headers
 
 
@@ -154,11 +151,8 @@ def process_result(result):
     return result
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(
-        description="搜索文件或目录",
-        epilog="注意: --project-id 是必填参数，用于限定搜索范围，避免返回无关结果"
-    )
+    parser = DocdbArgumentParser(description="按关键词搜索文件", hint="""search.py 必须提供 name_key，且必须带 --project-id。
+示例: python3 -B <skill-dir>/scripts/query/search.py "合同" --project-id 10001""")
     parser.add_argument("name_key", type=str, help="搜索关键词（必填）")
     parser.add_argument("--project-id", type=int, required=True, help="项目/空间 ID（必填，用于限定搜索范围）")
     parser.add_argument("--root-file-id", type=int, help="指定根目录 ID（可选）")

@@ -12,6 +12,9 @@ import urllib.parse
 import urllib.request
 from typing import Dict, Optional
 
+# 兜底：只读 skill 树禁止写 __pycache__（主路径应在各脚本 import 本模块之前已设置）
+sys.dont_write_bytecode = True
+
 OPEN_API_BASE = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database"
 
 
@@ -39,15 +42,32 @@ def ensure_common_on_path(caller_file: str) -> str:
     raise RuntimeError(f"无法定位 scripts/common（caller={caller_file}）")
 
 
+def resolve_app_key() -> str:
+    """
+    从小龙虾运行时读取 appKey。
+    优先 appkey，其次 APPKEY / AppKey（大小写别名兜底）。
+    未注入时打印可执行排障说明并 exit 1。
+    """
+    for name in ("appkey", "APPKEY", "AppKey"):
+        value = os.environ.get(name)
+        if value:
+            return value
+    print(
+        "错误: 未找到 appkey（也尝试了 APPKEY / AppKey）。\n"
+        "请确认：\n"
+        "1) 小龙虾运行时上下文已注入环境变量 appkey（勿手填或编造密钥）\n"
+        "2) 当前会话已登录/授权；若刚换账号请重新打开技能会话\n"
+        "3) 命令须直调 python3 <skill-dir>/scripts/... ，勿用 cd/&&/管道导致环境丢失",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+
 def app_key_headers(extra: Optional[Dict] = None) -> dict:
     headers = {"Content-Type": "application/json"}
     if extra:
         headers.update(extra)
-    app_key = os.environ.get("appkey")
-    if not app_key:
-        print("错误: 未找到 appkey，请确认小龙虾运行时上下文已注入 appkey", file=sys.stderr)
-        sys.exit(1)
-    headers["appKey"] = app_key
+    headers["appKey"] = resolve_app_key()
     return headers
 
 

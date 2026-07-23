@@ -22,14 +22,15 @@ if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
 _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
+sys.dont_write_bytecode = True
 from docdb_open_api import ensure_common_on_path, get_file_basic_info
 ensure_common_on_path(__file__)
+from cli_args import DocdbArgumentParser
 
 
 def main():
-    import argparse
-
-    p = argparse.ArgumentParser(description="根据 fileId 查询文件/文件夹基本信息")
+    p = DocdbArgumentParser(description="根据 fileId 查询文件/文件夹基本信息", hint="""get-file-basic-info.py 必须提供 file_id。
+示例: python3 -B <skill-dir>/scripts/browse/get-file-basic-info.py 12345""")
     p.add_argument("file_id", type=int, help="文件或文件夹 ID")
     args = p.parse_args()
     data = get_file_basic_info(args.file_id)

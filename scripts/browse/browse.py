@@ -17,7 +17,18 @@ import json
 import urllib.request
 import urllib.parse
 import urllib.error
-import ssl
+
+# --- cms-docdb common ---
+_cms_here = os.path.dirname(os.path.abspath(__file__))
+_cms_common = os.path.join(_cms_here, "common")
+if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
+    _cms_common = os.path.join(_cms_here, "..", "common")
+_cms_common = os.path.abspath(_cms_common)
+if _cms_common not in sys.path:
+    sys.path.insert(0, _cms_common)
+from docdb_open_api import ensure_common_on_path, ssl_context
+ensure_common_on_path(__file__)
+
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
@@ -94,9 +105,7 @@ def call_api(parent_id: int, type: int = None, order: int = None,
 
     req = urllib.request.Request(url, headers=headers, method="GET")
 
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    ctx = ssl_context()
 
     opener = build_opener(ctx)
 

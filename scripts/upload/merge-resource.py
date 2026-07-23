@@ -16,7 +16,19 @@ import os
 import json
 import urllib.request
 import urllib.error
-import ssl
+
+# --- cms-docdb common ---
+_cms_here = os.path.dirname(os.path.abspath(__file__))
+_cms_common = os.path.join(_cms_here, "common")
+if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
+    _cms_common = os.path.join(_cms_here, "..", "common")
+_cms_common = os.path.abspath(_cms_common)
+if _cms_common not in sys.path:
+    sys.path.insert(0, _cms_common)
+from docdb_open_api import ensure_common_on_path, ssl_context
+ensure_common_on_path(__file__)
+from safety import add_safety_args, enforce_or_dry_run
+
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
@@ -90,9 +102,7 @@ def call_api(name: str, slice_ids: list, suffix: str = None, size: int = None) -
         method="POST"
     )
 
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    ctx = ssl_context()
 
     opener = build_opener(ctx)
 
@@ -140,9 +150,16 @@ def main():
     parser.add_argument("slice_ids", type=str, help="分片 ID 列表，逗号分隔")
     parser.add_argument("--suffix", type=str, help="文件后缀")
     parser.add_argument("--size", type=int, help="文件总大小（字节）")
+    add_safety_args(parser)
     args = parser.parse_args()
 
     slice_ids = [int(x.strip()) for x in args.slice_ids.split(",")]
+    body = {"name": args.name, "sliceIds": slice_ids}
+    if args.suffix:
+        body["suffix"] = args.suffix
+    if args.size is not None:
+        body["size"] = args.size
+    enforce_or_dry_run(args, method="POST", url=API_URL, body=body)
 
     result = call_api(name=args.name, slice_ids=slice_ids, suffix=args.suffix, size=args.size)
 

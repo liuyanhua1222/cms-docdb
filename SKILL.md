@@ -17,7 +17,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 
 本文件提供能力边界与路由规则。详细说明见 `references/`，实际执行见 `scripts/`。
 
-**当前版本**: 1.2.9
+**当前版本**: 1.3.0
 
 **接口版本**: 所有业务接口统一使用 `/open-api/*` 前缀，鉴权类型全部为 `appKey`。对齐 API v2.5+（含 `app/listAll`）。
 
@@ -87,13 +87,24 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 1. **每个动作必须有对应脚本**：不允许"暂无脚本"
 2. **脚本可独立执行**：所有 `scripts/` 下的脚本均可脱离 AI Agent 直接在命令行运行
 3. **路径使用规范**：执行脚本时必须使用绝对路径，禁止使用 `cd`、`&&`、管道、重定向、heredoc、`bash -lc`、`python3 -c` 或 shell 循环
-   - ✅ 正确：`python3 /Users/liuyanhua/skill/cms-docdb/scripts/browse/browse.py 12345`
-   - ❌ 错误：`cd /Users/liuyanhua/skill/cms-docdb/scripts/browse && python3 browse.py 12345`
+   - ✅ 正确：`python3 <skill-dir>/scripts/browse/browse.py 12345`
+   - ❌ 错误：`cd <skill-dir>/scripts/browse && python3 browse.py 12345`
    - ❌ 错误：`python3 scripts/browse/browse.py 12345`（除非当前工作目录恰好是 skill 根目录）
-   - 说明：文档示例中为简洁使用相对路径（如 `scripts/browse/browse.py`），但实际执行时必须替换为完整绝对路径
+   - 说明：文档中的 `<skill-dir>` 须替换为当前 skill 根目录的绝对路径；相对路径仅便于阅读
 4. **先读模块说明再执行**：执行脚本前，必须先阅读对应模块的 `references/<module>/README.md`
 5. **鉴权一致**：涉及 appKey 时，统一从小龙虾运行时上下文获取 `appkey`
 6. **运行命令统一**：文档与示例统一写 `python3`；执行时优先 `python3`，若命令不存在（常见于部分 Windows 仅提供 `python`）则改用 `python` 等价替换
+
+## 安全基线（强制，v1.3.0+）
+
+1. **TLS 默认开启校验**：所有脚本经 `scripts/common/docdb_open_api.ssl_context()` 访问 HTTPS；禁止在业务脚本内自行 `CERT_NONE`。
+2. **临时排障**：仅当证书链路异常时，可设环境变量 `CMS_DOCDB_INSECURE_SSL=1` 临时关闭校验；排障后必须撤销，不得写回脚本。
+3. **写入类门禁**：删除、授权/撤权、分享授权/撤销、移动/重命名、版本更新/定稿、上传落库、审批、加成员等脚本：
+   - 预览：`--dry-run`（stdout JSON，含 `dryRun:true`，不发 HTTP，无需 appkey）
+   - 真实调用：必须 `--confirm YES`
+   - 物理删除：必须 `--confirm PHYSICAL`（与 `--physical` 同用）
+4. **Agent 闭环**：先向用户确认高危意图 → 用户明确同意后 → 再执行脚本并带上对应 `--confirm`；禁止无确认静默写入。
+5. **admin**：`add-member` 等同属写入门禁；无独立 `references/admin/`，以本基线为准。
 
 意图路由与加载规则（强制）：
 1. **先路由再加载**：必须先判定模块，再打开该模块的 `references/<module>/README.md`
@@ -109,7 +120,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 3. **对外克制**：对用户只输出"可用能力、必要输入、结果链接或摘要"，不暴露鉴权细节与内部字段
 4. **素材优先级**：用户给了文件或 URL，必须先提取内容再确认，确认后才触发生成或写入
 5. **生产约束**：仅允许生产域名与生产协议，不引入任何测试地址
-6. **危险操作**：删除文件等高风险操作应礼貌确认，不直接执行
+6. **危险操作**：删除/授权/上传等高风险操作须先获得用户明确确认，再执行脚本并传入 `--confirm YES`（物理删除用 `--confirm PHYSICAL`）；禁止仅口头确认后无门禁调用
 7. **脚本语言限制**：调用 Open API 的业务脚本必须使用 Python 3（`python3`）
 8. **重试策略**：出错时间隔 1 秒、最多重试 3 次，超过后终止并上报
 9. **禁止无限重试**：严禁无限循环重试

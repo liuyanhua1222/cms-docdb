@@ -15,8 +15,15 @@ import json
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "common"))
-from docdb_open_api import get_file_basic_info  # noqa: E402
+_cms_here = os.path.dirname(os.path.abspath(__file__))
+_cms_common = os.path.join(_cms_here, "common")
+if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
+    _cms_common = os.path.join(_cms_here, "..", "common")
+_cms_common = os.path.abspath(_cms_common)
+if _cms_common not in sys.path:
+    sys.path.insert(0, _cms_common)
+from docdb_open_api import ensure_common_on_path, get_file_basic_info
+ensure_common_on_path(__file__)
 
 
 def main():

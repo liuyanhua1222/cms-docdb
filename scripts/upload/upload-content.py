@@ -17,7 +17,19 @@ import json
 import urllib.request
 import urllib.parse
 import urllib.error
-import ssl
+
+# --- cms-docdb common ---
+_cms_here = os.path.dirname(os.path.abspath(__file__))
+_cms_common = os.path.join(_cms_here, "common")
+if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
+    _cms_common = os.path.join(_cms_here, "..", "common")
+_cms_common = os.path.abspath(_cms_common)
+if _cms_common not in sys.path:
+    sys.path.insert(0, _cms_common)
+from docdb_open_api import ensure_common_on_path, ssl_context
+ensure_common_on_path(__file__)
+from safety import add_safety_args, enforce_or_dry_run
+
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
@@ -103,9 +115,7 @@ def call_api(content: str, file_name: str,
         method="POST"
     )
 
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    ctx = ssl_context()
 
     opener = build_opener(ctx)
 
@@ -157,7 +167,26 @@ def main():
     parser.add_argument("--update-file-id", type=int, help="版本更新模式：要更新的目标文件 ID，传入后切换为版本更新模式")
     parser.add_argument("--version-name", type=str, help="版本名称，如 V2.0（版本更新模式专用）")
     parser.add_argument("--version-remark", type=str, help="版本说明（版本更新模式专用）")
+    add_safety_args(parser)
     args = parser.parse_args()
+
+    body = {
+        "content": args.content,
+        "fileName": args.file_name,
+    }
+    if args.file_suffix:
+        body["fileSuffix"] = args.file_suffix
+    if args.folder_name:
+        body["folderName"] = args.folder_name
+    if args.project_id is not None:
+        body["projectId"] = args.project_id
+    if args.update_file_id is not None:
+        body["updateFileId"] = args.update_file_id
+    if args.version_name:
+        body["versionName"] = args.version_name
+    if args.version_remark:
+        body["versionRemark"] = args.version_remark
+    enforce_or_dry_run(args, method="POST", url=API_URL, body=body)
 
     result = call_api(
         content=args.content,

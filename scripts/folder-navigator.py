@@ -42,8 +42,19 @@ import os
 import urllib.request
 import urllib.parse
 import urllib.error
-import ssl
 from difflib import SequenceMatcher
+
+
+# --- cms-docdb common ---
+_cms_here = os.path.dirname(os.path.abspath(__file__))
+_cms_common = os.path.join(_cms_here, "common")
+if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
+    _cms_common = os.path.join(_cms_here, "..", "common")
+_cms_common = os.path.abspath(_cms_common)
+if _cms_common not in sys.path:
+    sys.path.insert(0, _cms_common)
+from docdb_open_api import ensure_common_on_path, ssl_context
+ensure_common_on_path(__file__)
 
 # 强制标准输出使用 UTF-8 编码
 if sys.stdout.encoding != 'utf-8':
@@ -86,9 +97,7 @@ def get_level1_folders(project_id):
     headers = build_headers()
     req = urllib.request.Request(url, headers=headers, method="GET")
     
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    ctx = ssl_context()
     opener = build_opener(ctx)
     
     try:
@@ -109,9 +118,7 @@ def get_child_folders(parent_id):
     headers = build_headers()
     req = urllib.request.Request(url, headers=headers, method="GET")
     
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    ctx = ssl_context()
     opener = build_opener(ctx)
     
     try:

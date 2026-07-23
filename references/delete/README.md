@@ -31,13 +31,15 @@
 |------|------|------|------|---------------|----------|
 | `file_id` | Long | 是 | 文件 ID | 有效文件 ID | - |
 | `--physical` | Boolean | 否 | 物理彻底删除（不可恢复） | 无值标志，存在即为 true | - |
+| `--dry-run` | Flag | 否 | 仅打印拟发请求 JSON，不发 HTTP | - | 无需 appkey |
+| `--confirm` | String | 条件 | 真实调用必填 | 逻辑删除=`YES`；物理删除=`PHYSICAL` | 与 `--physical` 联动 |
 
 ## 动作列表
 
 ### 1. 删除文件
 - **脚本**: `delete-file.py`
 - **用途**: 删除指定文件，支持逻辑删除（移入回收站）或物理彻底删除
-- **⚠️ 高风险操作**：执行前必须获得用户明确确认
+- **⚠️ 高风险操作**：执行前必须获得用户明确确认，并传入 `--confirm`
 - **输出**: 返回 Boolean，表示操作是否成功
 
 ## 输出说明
@@ -56,9 +58,9 @@
 
 ## 危险操作确认流程
 
-1. 鉴权预检（从小龙虾运行时上下文获取 `appkey`）
-2. **先向用户确认**："确认要删除文件 [文件名] 吗？此操作[可/不可]撤销。"
-3. 用户明确确认后，调用 `delete-file.py`
+1. **先向用户确认**："确认要删除文件 [文件名] 吗？此操作[可/不可]撤销。"
+2. 用户明确确认后，调用 `delete-file.py` 并带上 `--confirm YES`（物理删除用 `--confirm PHYSICAL`）
+3. 可选先 `--dry-run` 预览拟发请求
 4. 返回删除结果
 
 ## 用户话术示例
@@ -71,11 +73,12 @@
 
 **重要说明**：以下示例使用相对路径以便阅读,实际执行时必须替换为绝对路径。例如：
 - 文档示例：`python3 scripts/delete/delete-file.py <file_id>`
-- 实际执行：`python3 /Users/liuyanhua/skill/cms-docdb/scripts/delete/delete-file.py <file_id>`
+- 实际执行：`python3 <skill-dir>/scripts/delete/delete-file.py <file_id>`（将 `<skill-dir>` 换成 skill 根目录绝对路径）
 
 禁止使用 `cd`、`&&`、管道等 shell 构造。每个脚本必须在单独的命令中使用绝对路径执行。
 
 ```bash
-python3 scripts/delete/delete-file.py <file_id>
-python3 scripts/delete/delete-file.py <file_id> --physical
+python3 scripts/delete/delete-file.py <file_id> --dry-run
+python3 scripts/delete/delete-file.py <file_id> --confirm YES
+python3 scripts/delete/delete-file.py <file_id> --physical --confirm PHYSICAL
 ```

@@ -22,7 +22,19 @@ import json
 import urllib.request
 import urllib.parse
 import urllib.error
-import ssl
+
+# --- cms-docdb common ---
+_cms_here = os.path.dirname(os.path.abspath(__file__))
+_cms_common = os.path.join(_cms_here, "common")
+if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
+    _cms_common = os.path.join(_cms_here, "..", "common")
+_cms_common = os.path.abspath(_cms_common)
+if _cms_common not in sys.path:
+    sys.path.insert(0, _cms_common)
+from docdb_open_api import ensure_common_on_path, ssl_context
+ensure_common_on_path(__file__)
+from safety import add_safety_args, enforce_or_dry_run
+
 if sys.stdout.encoding != "utf-8":
     sys.stdout = open(sys.stdout.fileno(), mode="w", encoding="utf-8", buffering=1)
 if sys.stderr.encoding != "utf-8":
@@ -82,9 +94,7 @@ def call_json(method: str, url: str, body: dict = None, params: list = None) -> 
 
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
 
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    ctx = ssl_context()
     opener = build_opener(ctx)
 
     for attempt in range(3):
@@ -147,6 +157,7 @@ def main():
     parser.add_argument("--no-notice", action="store_true", help="不发送钉钉分享通知（默认发送）")
     parser.add_argument("--source", type=str, help="生成短链的 source（可选，配合 --print-share-url）")
     parser.add_argument("--print-share-url", action="store_true", help="成功后额外输出 shareUrl")
+    add_safety_args(parser)
     args = parser.parse_args()
 
     perms = parse_permissions(args.permissions) or DEFAULT_PERMISSIONS
@@ -167,6 +178,7 @@ def main():
         "shareGrants": [grant],
     }
 
+    enforce_or_dry_run(args, method="POST", url=URL_UPSERT, body=body)
     result = call_json("POST", URL_UPSERT, body=body)
     processed = process_result(result)
 

@@ -19,9 +19,18 @@ import os
 import json
 import urllib.request
 import urllib.error
-import ssl
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "common"))
-from docdb_open_api import resolve_project_id_for_parent  # noqa: E402
+
+# --- cms-docdb common ---
+_cms_here = os.path.dirname(os.path.abspath(__file__))
+_cms_common = os.path.join(_cms_here, "common")
+if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
+    _cms_common = os.path.join(_cms_here, "..", "common")
+_cms_common = os.path.abspath(_cms_common)
+if _cms_common not in sys.path:
+    sys.path.insert(0, _cms_common)
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_project_id_for_parent
+ensure_common_on_path(__file__)
+from safety import add_safety_args, enforce_or_dry_run
 
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
@@ -102,9 +111,7 @@ def call_api(project_id: int, parent_id: int, resource_id: int, name: str,
         method="POST"
     )
 
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    ctx = ssl_context()
 
     opener = build_opener(ctx)
 
@@ -157,7 +164,29 @@ def main():
     parser.add_argument("--suffix", type=str, help="文件后缀")
     parser.add_argument("--size", type=int, help="文件大小（字节）")
     parser.add_argument("--is-sensitive", type=int, choices=[0, 1], help="是否敏感文件（0 否，1 是）")
+    add_safety_args(parser)
     args = parser.parse_args()
+
+    body_preview = {
+        "projectId": args.project_id,
+        "parentId": args.parent_id,
+        "resourceId": args.resource_id,
+        "name": args.name,
+        "fileType": "file",
+    }
+    if args.suffix:
+        body_preview["suffix"] = args.suffix
+    if args.size is not None:
+        body_preview["size"] = args.size
+    if args.is_sensitive is not None:
+        body_preview["isSensitive"] = args.is_sensitive
+    enforce_or_dry_run(
+        args,
+        method="POST",
+        url=API_URL,
+        body=body_preview,
+        extra={"projectIdResolved": False},
+    )
 
     if args.no_resolve_project_id:
         if args.project_id is None:

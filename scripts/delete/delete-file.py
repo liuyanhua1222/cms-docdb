@@ -16,7 +16,19 @@ import os
 import json
 import urllib.request
 import urllib.error
-import ssl
+
+# --- cms-docdb common ---
+_cms_here = os.path.dirname(os.path.abspath(__file__))
+_cms_common = os.path.join(_cms_here, "common")
+if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
+    _cms_common = os.path.join(_cms_here, "..", "common")
+_cms_common = os.path.abspath(_cms_common)
+if _cms_common not in sys.path:
+    sys.path.insert(0, _cms_common)
+from docdb_open_api import ensure_common_on_path, ssl_context
+ensure_common_on_path(__file__)
+from safety import add_safety_args, enforce_or_dry_run
+
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
@@ -85,9 +97,7 @@ def call_api(file_id: int, is_physical: bool = False) -> dict:
         method="POST"
     )
 
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    ctx = ssl_context()
 
     opener = build_opener(ctx)
 
@@ -133,7 +143,19 @@ def main():
     parser = argparse.ArgumentParser(description="删除指定文件")
     parser.add_argument("file_id", type=int, help="要删除的文件 ID")
     parser.add_argument("--physical", action="store_true", help="加上此参数则物理彻底删除，否则移入回收站")
+    add_safety_args(parser)
     args = parser.parse_args()
+
+    body = {"fileId": args.file_id}
+    if args.physical:
+        body["isPhysical"] = True
+    enforce_or_dry_run(
+        args,
+        method="POST",
+        url=API_URL,
+        body=body,
+        require_physical_confirm=bool(args.physical),
+    )
 
     result = call_api(file_id=args.file_id, is_physical=args.physical)
 

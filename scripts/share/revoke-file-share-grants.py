@@ -16,7 +16,19 @@ import os
 import json
 import urllib.request
 import urllib.error
-import ssl
+
+# --- cms-docdb common ---
+_cms_here = os.path.dirname(os.path.abspath(__file__))
+_cms_common = os.path.join(_cms_here, "common")
+if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
+    _cms_common = os.path.join(_cms_here, "..", "common")
+_cms_common = os.path.abspath(_cms_common)
+if _cms_common not in sys.path:
+    sys.path.insert(0, _cms_common)
+from docdb_open_api import ensure_common_on_path, ssl_context
+ensure_common_on_path(__file__)
+from safety import add_safety_args, enforce_or_dry_run
+
 if sys.stdout.encoding != "utf-8":
     sys.stdout = open(sys.stdout.fileno(), mode="w", encoding="utf-8", buffering=1)
 if sys.stderr.encoding != "utf-8":
@@ -67,9 +79,7 @@ def call_api(file_id: int, emp_ids: list) -> dict:
         method="POST",
     )
 
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    ctx = ssl_context()
     opener = build_opener(ctx)
 
     for attempt in range(3):
@@ -127,9 +137,12 @@ def main():
     parser = argparse.ArgumentParser(description="撤销指定员工的文件/文件夹协同分享")
     parser.add_argument("file_id", type=int, help="文件/文件夹 ID")
     parser.add_argument("--emp-ids", type=str, required=True, help="员工 empId 列表，逗号分隔")
+    add_safety_args(parser)
     args = parser.parse_args()
 
     emp_ids = parse_emp_ids(args.emp_ids)
+    body = {"fileId": args.file_id, "empIds": emp_ids}
+    enforce_or_dry_run(args, method="POST", url=API_URL, body=body)
     result = call_api(args.file_id, emp_ids)
     print(json.dumps(process_result(result), ensure_ascii=False))
 

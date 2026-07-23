@@ -16,7 +16,19 @@ import os
 import json
 import urllib.request
 import urllib.error
-import ssl
+
+# --- cms-docdb common ---
+_cms_here = os.path.dirname(os.path.abspath(__file__))
+_cms_common = os.path.join(_cms_here, "common")
+if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
+    _cms_common = os.path.join(_cms_here, "..", "common")
+_cms_common = os.path.abspath(_cms_common)
+if _cms_common not in sys.path:
+    sys.path.insert(0, _cms_common)
+from docdb_open_api import ensure_common_on_path, ssl_context
+ensure_common_on_path(__file__)
+from safety import add_safety_args, enforce_or_dry_run
+
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
@@ -88,9 +100,7 @@ def call_api(file_path: str, md5: str, size: int, storage_type: str) -> dict:
         method="POST"
     )
 
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    ctx = ssl_context()
 
     opener = build_opener(ctx)
 
@@ -142,6 +152,7 @@ def main():
     parser.add_argument("--md5", type=str, dest="md5_opt", help="文件 MD5（命名参数）")
     parser.add_argument("--size", type=int, dest="size_opt", help="文件大小（命名参数）")
     parser.add_argument("--storage-type", type=str, dest="storage_type_opt", help="存储类型（命名参数）")
+    add_safety_args(parser)
     args = parser.parse_args()
     
     file_path = args.file_path or args.file_path_opt
@@ -152,6 +163,14 @@ def main():
     if None in [file_path, md5, size, storage_type]:
         print("用法: python3 scripts/upload/register-slice.py <full_path> <md5> <size> <storage_type>", file=sys.stderr)
         sys.exit(1)
+
+    body = {
+        "filePath": file_path,
+        "md5": md5,
+        "size": size,
+        "storageType": storage_type,
+    }
+    enforce_or_dry_run(args, method="POST", url=API_URL, body=body)
 
     result = call_api(file_path, md5, size, storage_type)
 

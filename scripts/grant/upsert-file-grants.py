@@ -1,6 +1,19 @@
 #!/usr/bin/env python3
 """POST /document-database/fileGrant/upsertGrants — 增量目录授权（t_file_grant）"""
-import sys, os, json, urllib.request, ssl, argparse
+import sys, os, json, urllib.request, argparse
+
+# --- cms-docdb common ---
+_cms_here = os.path.dirname(os.path.abspath(__file__))
+_cms_common = os.path.join(_cms_here, "common")
+if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
+    _cms_common = os.path.join(_cms_here, "..", "common")
+_cms_common = os.path.abspath(_cms_common)
+if _cms_common not in sys.path:
+    sys.path.insert(0, _cms_common)
+from docdb_open_api import ensure_common_on_path, ssl_context
+ensure_common_on_path(__file__)
+from safety import add_safety_args, enforce_or_dry_run
+
 API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/fileGrant/upsertGrants"
 
 def headers():
@@ -17,6 +30,7 @@ def main():
     p.add_argument("--emp-id", type=int, required=True)
     p.add_argument("--permissions", required=True, help="逗号分隔")
     p.add_argument("--due-date", type=int, default=20991231)
+    add_safety_args(p)
     args = p.parse_args()
     body = {
         "fileId": args.file_id,
@@ -26,8 +40,9 @@ def main():
             "dueDate": args.due_date,
         }],
     }
+    enforce_or_dry_run(args, method="POST", url=API_URL, body=body)
     data = json.dumps(body).encode("utf-8")
-    ctx = ssl.create_default_context(); ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE
+    ctx = ssl_context()
     req = urllib.request.Request(API_URL, data=data, headers=headers(), method="POST")
     with urllib.request.urlopen(req, context=ctx, timeout=60) as resp:
         print(json.dumps(json.loads(resp.read().decode()), ensure_ascii=False))

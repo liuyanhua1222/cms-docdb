@@ -164,20 +164,20 @@ python3 scripts/manage/update-file-version.py \
 
 **重要说明**：以下示例使用相对路径以便阅读，实际执行时必须替换为绝对路径。例如：
 - 文档示例：`python3 scripts/manage/update-file-name.py <file_id>`
-- 实际执行：`python3 /Users/liuyanhua/skill/cms-docdb/scripts/manage/update-file-name.py <file_id>`
+- 实际执行：`python3 <skill-dir>/scripts/manage/update-file-name.py <file_id>`（将 `<skill-dir>` 换成 skill 根目录绝对路径）
 
 禁止使用 `cd`、`&&`、管道等 shell 构造。每个脚本必须在单独的命令中使用绝对路径执行。
 
 ```bash
-# 推荐：新接口
-python3 scripts/manage/update-file-name.py <file_id> --new-name "B.md" [--project-id <pid>]
-python3 scripts/manage/move-file.py <file_id> --target-parent-id <parent_id> [--new-name "X.md"]
+# 推荐：新接口（写入须 --confirm YES；可先 --dry-run）
+python3 scripts/manage/update-file-name.py <file_id> --new-name "B.md" --confirm YES [--project-id <pid>]
+python3 scripts/manage/move-file.py <file_id> --target-parent-id <parent_id> --confirm YES [--new-name "X.md"]
 
-# 兼容：旧命令（stderr 警告后转发）
-python3 scripts/manage/update-file-property.py <file_id> --new-name "新文件名.pdf"
-python3 scripts/manage/update-file-property.py <file_id> --target-parent-id <parent_id> --cover
+# 兼容：旧命令（stderr 警告后转发；须带 --confirm YES）
+python3 scripts/manage/update-file-property.py <file_id> --new-name "新文件名.pdf" --confirm YES
+python3 scripts/manage/update-file-property.py <file_id> --target-parent-id <parent_id> --cover --confirm YES
 
-python3 scripts/manage/update-file-version.py <file_id> <project_id> <resource_id> --version-status 3
+python3 scripts/manage/update-file-version.py <file_id> <project_id> <resource_id> --version-status 3 --confirm YES
 python3 scripts/manage/get-version-list.py <file_id>
-python3 scripts/manage/finalize-version.py <file_id>
+python3 scripts/manage/finalize-version.py <file_id> --confirm YES
 ```

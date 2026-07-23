@@ -18,9 +18,18 @@ import os
 import json
 import urllib.request
 import urllib.error
-import ssl
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "common"))
-from docdb_open_api import resolve_project_id_for_parent  # noqa: E402
+
+# --- cms-docdb common ---
+_cms_here = os.path.dirname(os.path.abspath(__file__))
+_cms_common = os.path.join(_cms_here, "common")
+if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
+    _cms_common = os.path.join(_cms_here, "..", "common")
+_cms_common = os.path.abspath(_cms_common)
+if _cms_common not in sys.path:
+    sys.path.insert(0, _cms_common)
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_project_id_for_parent
+ensure_common_on_path(__file__)
+from safety import add_safety_args, enforce_or_dry_run
 
 if sys.stdout.encoding != "utf-8":
     sys.stdout = open(sys.stdout.fileno(), mode="w", encoding="utf-8", buffering=1)
@@ -78,9 +87,7 @@ def call_api(project_id: int, parent_id: int, name: str, cover: bool, auto_renam
         method="POST",
     )
 
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    ctx = ssl_context()
     opener = build_opener(ctx)
 
     for attempt in range(3):
@@ -129,17 +136,23 @@ def main():
     parser.add_argument("--no-resolve-project-id", action="store_true", help="不调用 getFileBasicInfo（不推荐）")
     parser.add_argument("--cover", action="store_true", help="同名时覆盖（慎用）")
     parser.add_argument("--auto-rename", action="store_true", help="同名时自动重命名")
+    add_safety_args(parser)
     args = parser.parse_args()
 
-    if args.no_resolve_project_id:
-        if args.project_id is None:
-            print("错误: --no-resolve-project-id 模式下必须提供 --project-id", file=sys.stderr)
-            sys.exit(1)
-        project_id = args.project_id
-    else:
-        project_id = resolve_project_id_for_parent(args.parent_id, args.project_id)
-
-    result = call_api(project_id, args.parent_id, args.name, args.cover, args.auto_rename)
+    body_preview = {
+        "projectId": args.project_id,
+        "parentId": args.parent_id,
+        "name": args.name,
+        "cover": args.cover,
+        "autoRename": args.auto_rename,
+    }
+    enforce_or_dry_run(
+        args,
+        method="POST",
+        url=API_URL,
+        body=body_preview,
+        extra={"projectIdResolved": False},
+    )
     print(json.dumps(process_result(result), ensure_ascii=False))
 
 

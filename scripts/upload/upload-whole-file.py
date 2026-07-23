@@ -17,8 +17,20 @@ import json
 import http.client
 import urllib.parse
 import uuid
-import ssl
 import time
+
+# --- cms-docdb common ---
+_cms_here = os.path.dirname(os.path.abspath(__file__))
+_cms_common = os.path.join(_cms_here, "common")
+if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
+    _cms_common = os.path.join(_cms_here, "..", "common")
+_cms_common = os.path.abspath(_cms_common)
+if _cms_common not in sys.path:
+    sys.path.insert(0, _cms_common)
+from docdb_open_api import ensure_common_on_path, ssl_context
+ensure_common_on_path(__file__)
+from safety import add_safety_args, enforce_or_dry_run
+
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
@@ -120,9 +132,7 @@ def call_api(file_path: str) -> dict:
 
     for attempt in range(MAX_RETRIES):
         try:
-            ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
+            ctx = ssl_context()
 
             scheme = "https"
             host = API_HOST
@@ -194,6 +204,7 @@ def main():
     parser = argparse.ArgumentParser(description="上传完整文件到知识库")
     parser.add_argument("file_path", type=str, nargs='?', help="文件路径（位置参数）")
     parser.add_argument("--file-path", type=str, dest="file_path_opt", help="文件路径（命名参数）")
+    add_safety_args(parser)
     args = parser.parse_args()
     
     file_path = args.file_path or args.file_path_opt
@@ -204,6 +215,14 @@ def main():
     if not os.path.isfile(file_path):
         print(f"错误: 文件不存在: {file_path}", file=sys.stderr)
         sys.exit(1)
+
+    upload_url = f"https://{API_HOST}{API_PATH}"
+    enforce_or_dry_run(
+        args,
+        method="POST",
+        url=upload_url,
+        body={"filePath": file_path, "fileName": os.path.basename(file_path)},
+    )
 
     result = call_api(file_path)
     processed_result = process_result(result)

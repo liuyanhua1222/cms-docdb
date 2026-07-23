@@ -17,7 +17,19 @@ import json
 import urllib.request
 import urllib.parse
 import urllib.error
-import ssl
+
+# --- cms-docdb common ---
+_cms_here = os.path.dirname(os.path.abspath(__file__))
+_cms_common = os.path.join(_cms_here, "common")
+if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
+    _cms_common = os.path.join(_cms_here, "..", "common")
+_cms_common = os.path.abspath(_cms_common)
+if _cms_common not in sys.path:
+    sys.path.insert(0, _cms_common)
+from docdb_open_api import ensure_common_on_path, ssl_context
+ensure_common_on_path(__file__)
+from safety import add_safety_args, enforce_or_dry_run
+
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
@@ -85,9 +97,7 @@ def call_api(md5: str, size: int = None, suffix: str = None) -> dict:
 
     req = urllib.request.Request(url, headers=headers, method="GET")
 
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    ctx = ssl_context()
 
     opener = build_opener(ctx)
 
@@ -134,7 +144,16 @@ def main():
     parser.add_argument("md5", type=str, help="文件/分片的 MD5（hex 字符串）")
     parser.add_argument("--size", type=int, help="文件总大小（字节）")
     parser.add_argument("--suffix", type=str, help="文件后缀")
+    add_safety_args(parser)
     args = parser.parse_args()
+
+    params = [("md5", args.md5)]
+    if args.size is not None:
+        params.append(("size", str(args.size)))
+    if args.suffix:
+        params.append(("suffix", args.suffix))
+    url = f"{API_URL}?{urllib.parse.urlencode(params)}"
+    enforce_or_dry_run(args, method="GET", url=url, body=None)
 
     result = call_api(md5=args.md5, size=args.size, suffix=args.suffix)
 

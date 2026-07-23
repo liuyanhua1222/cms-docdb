@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-cms-docdb Open API 公共工具（appKey 鉴权、getFileBasicInfo、projectId 解析）
+cms-docdb Open API 公共工具（appKey 鉴权、getFileBasicInfo、projectId 解析、TLS）
 """
 
 import json
@@ -13,6 +13,30 @@ import urllib.request
 from typing import Dict, Optional
 
 OPEN_API_BASE = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database"
+
+
+def ensure_common_on_path(caller_file: str) -> str:
+    """
+    将 scripts/common 加入 sys.path。
+    - scripts/<module>/*.py → ../common
+    - scripts/*.py → ./common
+    返回 common 绝对路径。
+    """
+    here = os.path.dirname(os.path.abspath(caller_file))
+    candidates = [
+        os.path.join(here, "common"),
+        os.path.join(here, "..", "common"),
+        here if os.path.basename(here) == "common" else "",
+    ]
+    for candidate in candidates:
+        if not candidate:
+            continue
+        common = os.path.abspath(candidate)
+        if os.path.isdir(common) and os.path.isfile(os.path.join(common, "docdb_open_api.py")):
+            if common not in sys.path:
+                sys.path.insert(0, common)
+            return common
+    raise RuntimeError(f"无法定位 scripts/common（caller={caller_file}）")
 
 
 def app_key_headers(extra: Optional[Dict] = None) -> dict:
@@ -28,9 +52,11 @@ def app_key_headers(extra: Optional[Dict] = None) -> dict:
 
 
 def ssl_context() -> ssl.SSLContext:
+    """默认启用 TLS 校验；仅 CMS_DOCDB_INSECURE_SSL=1 时临时关闭（排障用）。"""
     ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    if os.environ.get("CMS_DOCDB_INSECURE_SSL") == "1":
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
     return ctx
 
 

@@ -341,19 +341,20 @@ python3 scripts/upload/save-file-by-path.py \
 
 **重要说明**：以下示例使用相对路径以便阅读，实际执行时必须替换为绝对路径。例如：
 - 文档示例：`python3 scripts/upload/upload-content.py "内容" "文件名.md"`
-- 实际执行：`python3 /Users/liuyanhua/skill/cms-docdb/scripts/upload/upload-content.py "内容" "文件名.md"`
+- 实际执行：`python3 <skill-dir>/scripts/upload/upload-content.py "内容" "文件名.md"`（将 `<skill-dir>` 换成 skill 根目录绝对路径）
 
 禁止使用 `cd`、`&&`、管道等 shell 构造。每个脚本必须在单独的命令中使用绝对路径执行。
 
 ```bash
-python3 scripts/upload/upload-content.py "内容" "文件名.md" [--file-suffix md] [--folder-name "AI生成/周报"] [--project-id <project_id>]
-python3 scripts/upload/upload-content.py "新内容" "文件名.md" --update-file-id <file_id> [--version-name "V2.0"] [--version-remark "修订说明"]
-python3 scripts/upload/upload-whole-file.py <file_path>
-python3 scripts/upload/check-slice.py <md5> [--size <size>] [--suffix <suffix>]
-python3 scripts/upload/register-slice.py <full_path> <md5> <size> MINIO
-python3 scripts/upload/merge-resource.py "文件名.pdf" "sliceId1,sliceId2,..." [--suffix pdf] [--size <size>]
-python3 scripts/upload/save-file-by-parent-id.py <parent_id> <resource_id> "文件名.pdf" [--project-id <id>] [--suffix pdf]
-python3 scripts/upload/save-file-by-path.py <project_id> "文件名.pdf" <resource_id> [--path "目录"] [--suffix pdf]
+python3 scripts/upload/upload-content.py "内容" "文件名.md" --confirm YES [--file-suffix md] [--folder-name "AI生成/周报"] [--project-id <project_id>]
+python3 scripts/upload/upload-content.py "新内容" "文件名.md" --update-file-id <file_id> --confirm YES [--version-name "V2.0"] [--version-remark "修订说明"]
+python3 scripts/upload/upload-whole-file.py <file_path> --confirm YES
+python3 scripts/upload/check-slice.py <md5> --confirm YES [--size <size>] [--suffix <suffix>]
+python3 scripts/upload/register-slice.py <full_path> <md5> <size> MINIO --confirm YES
+python3 scripts/upload/merge-resource.py "文件名.pdf" "sliceId1,sliceId2,..." --confirm YES [--suffix pdf] [--size <size>]
+python3 scripts/upload/save-file-by-parent-id.py <parent_id> <resource_id> "文件名.pdf" --confirm YES [--project-id <id>] [--suffix pdf]
+python3 scripts/upload/save-file-by-path.py <project_id> "文件名.pdf" <resource_id> --confirm YES [--path "目录"] [--suffix pdf]
 python3 scripts/upload/get-file-download-info.py <resource_id>
-python3 scripts/upload/create-folder.py <parent_id> "文件夹名" [--project-id <id>] [--cover] [--auto-rename]
+python3 scripts/upload/create-folder.py <parent_id> "文件夹名" --confirm YES [--project-id <id>] [--cover] [--auto-rename]
+# 预览：把 --confirm YES 换成 --dry-run
 ```

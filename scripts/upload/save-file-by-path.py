@@ -17,7 +17,19 @@ import json
 import urllib.request
 import urllib.parse
 import urllib.error
-import ssl
+
+# --- cms-docdb common ---
+_cms_here = os.path.dirname(os.path.abspath(__file__))
+_cms_common = os.path.join(_cms_here, "common")
+if not os.path.isfile(os.path.join(_cms_common, "docdb_open_api.py")):
+    _cms_common = os.path.join(_cms_here, "..", "common")
+_cms_common = os.path.abspath(_cms_common)
+if _cms_common not in sys.path:
+    sys.path.insert(0, _cms_common)
+from docdb_open_api import ensure_common_on_path, ssl_context
+ensure_common_on_path(__file__)
+from safety import add_safety_args, enforce_or_dry_run
+
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
@@ -99,9 +111,7 @@ def call_api(project_id: int, name: str, resource_id: int,
         method="POST"
     )
 
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    ctx = ssl_context()
 
     opener = build_opener(ctx)
 
@@ -152,7 +162,24 @@ def main():
     parser.add_argument("--suffix", type=str, help="文件后缀")
     parser.add_argument("--size", type=int, help="文件大小（字节）")
     parser.add_argument("--is-sensitive", type=int, choices=[0, 1], help="是否敏感文件（0 否，1 是）")
+    add_safety_args(parser)
     args = parser.parse_args()
+
+    body = {
+        "projectId": args.project_id,
+        "name": args.name,
+        "fileType": "file",
+        "resourceId": args.resource_id,
+    }
+    if args.path:
+        body["path"] = args.path
+    if args.suffix:
+        body["suffix"] = args.suffix
+    if args.size is not None:
+        body["size"] = args.size
+    if args.is_sensitive is not None:
+        body["isSensitive"] = args.is_sensitive
+    enforce_or_dry_run(args, method="POST", url=API_URL, body=body)
 
     result = call_api(
         project_id=args.project_id,

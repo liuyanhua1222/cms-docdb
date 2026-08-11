@@ -27,7 +27,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 
@@ -36,41 +36,14 @@ if sys.stdout.encoding != "utf-8":
 if sys.stderr.encoding != "utf-8":
     sys.stderr = open(sys.stderr.fileno(), mode="w", encoding="utf-8", buffering=1)
 
-
-class CustomRedirectHandler(urllib.request.HTTPRedirectHandler):
-    def http_error_301(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_302(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_303(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_307(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_308(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-
-def build_opener(ctx):
-    handlers = [CustomRedirectHandler()]
-    if ctx:
-        handlers.append(urllib.request.HTTPSHandler(context=ctx))
-    return urllib.request.build_opener(*handlers)
-
-
 API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/share/getShareUrl"
 AUTH_MODE = "appKey"
-
 
 def build_headers() -> dict:
     headers = {"Content-Type": "application/json"}
     if AUTH_MODE == "appKey":
         headers["appKey"] = resolve_app_key()
     return headers
-
 
 def call_api(file_id: int, source: str = None) -> dict:
     headers = build_headers()
@@ -105,7 +78,6 @@ def call_api(file_id: int, source: str = None) -> dict:
                 print(f"错误: {e}", file=sys.stderr)
                 sys.exit(1)
 
-
 def process_result(result):
     if isinstance(result, dict):
         return {
@@ -114,7 +86,6 @@ def process_result(result):
             "data": result.get("data"),
         }
     return result
-
 
 def main():
     parser = DocdbArgumentParser(description="获取分享短链", hint="""get-share-url.py 必须提供 file_id。
@@ -126,7 +97,6 @@ def main():
     result = call_api(args.file_id, source=args.source if args.source else None)
     processed = process_result(result)
     print(json.dumps(processed, ensure_ascii=False))
-
 
 if __name__ == "__main__":
     main()

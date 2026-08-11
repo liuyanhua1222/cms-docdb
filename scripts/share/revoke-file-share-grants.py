@@ -26,7 +26,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 from safety import add_safety_args, enforce_or_dry_run
@@ -36,38 +36,11 @@ if sys.stdout.encoding != "utf-8":
 if sys.stderr.encoding != "utf-8":
     sys.stderr = open(sys.stderr.fileno(), mode="w", encoding="utf-8", buffering=1)
 
-
-class CustomRedirectHandler(urllib.request.HTTPRedirectHandler):
-    def http_error_301(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_302(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_303(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_307(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_308(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-
-def build_opener(ctx):
-    handlers = [CustomRedirectHandler()]
-    if ctx:
-        handlers.append(urllib.request.HTTPSHandler(context=ctx))
-    return urllib.request.build_opener(*handlers)
-
-
 API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/share/revokeFileShareGrants"
-
 
 def build_headers() -> dict:
     app_key = resolve_app_key()
     return {"Content-Type": "application/json", "appKey": app_key}
-
 
 def call_api(file_id: int, emp_ids: list) -> dict:
     body = {"fileId": file_id, "empIds": emp_ids}
@@ -106,7 +79,6 @@ def call_api(file_id: int, emp_ids: list) -> dict:
                 print(f"错误: {e}", file=sys.stderr)
                 sys.exit(1)
 
-
 def process_result(result):
     if isinstance(result, dict):
         return {
@@ -115,7 +87,6 @@ def process_result(result):
             "data": result.get("data"),
         }
     return result
-
 
 def parse_emp_ids(raw: str) -> list:
     parts = [p.strip() for p in raw.split(",")]
@@ -128,7 +99,6 @@ def parse_emp_ids(raw: str) -> list:
         print("错误: --emp-ids 不能为空", file=sys.stderr)
         sys.exit(1)
     return ids
-
 
 def main():
     parser = DocdbArgumentParser(description="撤销协同分享", hint="""revoke-file-share-grants.py 必须提供 file_id，且必须带 --emp-ids。
@@ -144,7 +114,6 @@ def main():
     enforce_or_dry_run(args, method="POST", url=API_URL, body=body)
     result = call_api(args.file_id, emp_ids)
     print(json.dumps(process_result(result), ensure_ascii=False))
-
 
 if __name__ == "__main__":
     main()

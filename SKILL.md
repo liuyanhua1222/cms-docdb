@@ -17,7 +17,9 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 
 本文件提供能力边界与路由规则。详细说明见 `references/`，实际执行见 `scripts/`。
 
-**当前版本**: 1.3.4
+**当前版本**: 1.3.5
+
+**1.3.5 变更**：修复错误的 `CustomRedirectHandler`（漏传 `newurl` 导致遇 3xx 即 TypeError）；公共 `build_opener` 正确支持 POST+307/308 保 method/body，并统一各脚本 HTTP 调用。
 
 **1.3.4 变更**：预检由 `requires.bins`（须同时有 `python3` 与 `python`）改为 `requires.anyBins`（有其一即可），避免仅有 `python3` 的 Mac 被标成 Needs setup；仅有 `python` 的 Windows 亦可 Ready。执行仍优先 `python3 -B`，否则回退 `python -B`。
 

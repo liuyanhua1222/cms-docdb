@@ -27,7 +27,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 
@@ -37,41 +37,12 @@ if sys.stdout.encoding != 'utf-8':
 if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
-
-class CustomRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """自定义重定向处理器，显式支持 307/308 重定向并保留请求方法和请求体"""
-    
-    def http_error_301(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_302(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_303(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_307(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_308(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-
-def build_opener(ctx):
-    """构建支持 307/308 重定向的自定义 opener"""
-    handlers = [CustomRedirectHandler()]
-    if ctx:
-        handlers.append(urllib.request.HTTPSHandler(context=ctx))
-    return urllib.request.build_opener(*handlers)
-
-
 # 接口完整 URL（与 openapi/query/batch-get-content.md 中声明的一致）
 API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/ai/batchGetContent"
 AUTH_MODE = "appKey"
 DEFAULT_MAX_CHARS = 0
 DEFAULT_MAX_CHARS_PER_FILE = 0
 CONTENT_KEYS = {"content", "text", "markdown", "fullContent", "fileContent"}
-
 
 def build_headers() -> dict:
     """根据鉴权模式构造请求头"""
@@ -80,7 +51,6 @@ def build_headers() -> dict:
     if AUTH_MODE == "appKey":
         headers["appKey"] = resolve_app_key()
     return headers
-
 
 def call_api(files: list) -> dict:
     """调用批量获取文件内容接口，返回原始 JSON 响应"""
@@ -118,7 +88,6 @@ def call_api(files: list) -> dict:
                 print(f"错误: {e}", file=sys.stderr)
                 sys.exit(1)
 
-
 def truncate_content_fields(value, state, max_chars: int, max_chars_per_file: int):
     """截断内容字段，避免批量全文结果撑爆上层上下文或传输链路。"""
     if isinstance(value, dict):
@@ -131,7 +100,6 @@ def truncate_content_fields(value, state, max_chars: int, max_chars_per_file: in
     if isinstance(value, list):
         return [truncate_content_fields(item, state, max_chars, max_chars_per_file) for item in value]
     return value
-
 
 def truncate_text(value, state, max_chars: int, max_chars_per_file: int):
     if not isinstance(value, str):
@@ -150,7 +118,6 @@ def truncate_text(value, state, max_chars: int, max_chars_per_file: int):
         state["omitted_chars"] += omitted
         return value[:keep] + f"\n\n[TRUNCATED: omitted {omitted} chars]"
     return value
-
 
 def process_result(result, max_chars: int, max_chars_per_file: int):
     """处理 API 响应结果，优先按 resultCode、resultMsg、data 读取"""
@@ -188,7 +155,6 @@ def main():
 
     processed_result = process_result(result, args.max_chars, args.max_chars_per_file)
     print(json.dumps(processed_result, ensure_ascii=False))
-
 
 if __name__ == "__main__":
     main()

@@ -28,7 +28,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
 
 if sys.stdout.encoding != 'utf-8':
@@ -55,7 +55,7 @@ def call_api() -> dict:
 
     for attempt in range(3):
         try:
-            with urllib.request.urlopen(req, context=ctx, timeout=60) as resp:
+            with build_opener(ctx).open(req, timeout=60) as resp:
                 return json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             if attempt < 2:

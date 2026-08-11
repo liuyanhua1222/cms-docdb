@@ -28,7 +28,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_project_id_for_parent, resolve_app_key
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_project_id_for_parent, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 from safety import add_safety_args, enforce_or_dry_run
@@ -38,38 +38,11 @@ if sys.stdout.encoding != "utf-8":
 if sys.stderr.encoding != "utf-8":
     sys.stderr = open(sys.stderr.fileno(), mode="w", encoding="utf-8", buffering=1)
 
-
-class CustomRedirectHandler(urllib.request.HTTPRedirectHandler):
-    def http_error_301(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_302(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_303(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_307(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_308(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-
-def build_opener(ctx):
-    handlers = [CustomRedirectHandler()]
-    if ctx:
-        handlers.append(urllib.request.HTTPSHandler(context=ctx))
-    return urllib.request.build_opener(*handlers)
-
-
 API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/createFolder"
-
 
 def build_headers() -> dict:
     app_key = resolve_app_key()
     return {"Content-Type": "application/json", "appKey": app_key}
-
 
 def call_api(project_id: int, parent_id: int, name: str, cover: bool, auto_rename: bool) -> dict:
     body = {
@@ -114,7 +87,6 @@ def call_api(project_id: int, parent_id: int, name: str, cover: bool, auto_renam
                 print(f"错误: {e}", file=sys.stderr)
                 sys.exit(1)
 
-
 def process_result(result):
     if isinstance(result, dict):
         return {
@@ -123,7 +95,6 @@ def process_result(result):
             "data": result.get("data"),
         }
     return result
-
 
 def main():
     parser = DocdbArgumentParser(description="在指定父目录下创建文件夹", hint="""create-folder.py 必须提供 parent_id 与 name。
@@ -153,7 +124,6 @@ def main():
         extra={"projectIdResolved": False},
     )
     print(json.dumps(process_result(result), ensure_ascii=False))
-
 
 if __name__ == "__main__":
     main()

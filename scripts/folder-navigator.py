@@ -44,7 +44,6 @@ import urllib.parse
 import urllib.error
 from difflib import SequenceMatcher
 
-
 # --- cms-docdb common ---
 _cms_here = os.path.dirname(os.path.abspath(__file__))
 _cms_common = os.path.join(_cms_here, "common")
@@ -54,7 +53,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
 
 # 强制标准输出使用 UTF-8 编码
@@ -63,23 +62,6 @@ if sys.stdout.encoding != 'utf-8':
 if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
-
-class CustomRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """自定义重定向处理器"""
-    def http_error_307(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    def http_error_308(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-
-def build_opener(ctx):
-    """构建支持重定向的 opener"""
-    handlers = [CustomRedirectHandler()]
-    if ctx:
-        handlers.append(urllib.request.HTTPSHandler(context=ctx))
-    return urllib.request.build_opener(*handlers)
-
-
 def build_headers():
     """构造请求头"""
     app_key = resolve_app_key()
@@ -87,7 +69,6 @@ def build_headers():
         "Content-Type": "application/json",
         "appKey": app_key
     }
-
 
 def get_level1_folders(project_id):
     """获取项目根目录下的所有文件夹"""
@@ -109,7 +90,6 @@ def get_level1_folders(project_id):
         print(f"警告: 获取项目 {project_id} 根目录失败: {e}", file=sys.stderr)
         return []
 
-
 def get_child_folders(parent_id):
     """获取指定目录下的子文件夹"""
     url = f"https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getChildFiles?parentId={parent_id}&type=1"
@@ -130,7 +110,6 @@ def get_child_folders(parent_id):
         print(f"警告: 获取目录 {parent_id} 的子文件夹失败: {e}", file=sys.stderr)
         return []
 
-
 def normalize_name(name):
     """规范化名称"""
     if not name:
@@ -138,11 +117,9 @@ def normalize_name(name):
     import re
     return re.sub(r'\s+', '', name.lower())
 
-
 def calculate_similarity(str1, str2):
     """计算相似度"""
     return SequenceMatcher(None, str1, str2).ratio()
-
 
 def match_folder_in_list(folder_name, folders):
     """在文件夹列表中匹配目标文件夹"""
@@ -190,7 +167,6 @@ def match_folder_in_list(folder_name, folders):
     matched.sort(key=lambda x: x['match_score'], reverse=True)
     return matched
 
-
 def navigate_by_path(project_id, folder_path):
     """按路径导航（支持多级路径，如 "产品资料/慷彼申"）"""
     if not folder_path:
@@ -233,7 +209,6 @@ def navigate_by_path(project_id, folder_path):
             return best_match, navigation
     
     return None, navigation
-
 
 def search_folder_in_project(project_id, folder_name, max_depth=3):
     """
@@ -279,7 +254,6 @@ def search_folder_in_project(project_id, folder_name, max_depth=3):
     
     return matched_folders
 
-
 def determine_match_type(matched_folders):
     """判断匹配类型"""
     count = len(matched_folders)
@@ -299,7 +273,6 @@ def determine_match_type(matched_folders):
             if top_score - second_score >= 20:
                 return "best_match"
         return "multiple"
-
 
 def main():
     import argparse
@@ -394,7 +367,6 @@ def main():
             "data": {}
         }, ensure_ascii=False))
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()

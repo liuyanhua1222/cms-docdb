@@ -80,11 +80,44 @@ def ssl_context() -> ssl.SSLContext:
     return ctx
 
 
+class MethodPreservingRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """
+    仅增强 307/308：对非 GET/HEAD 保留 method 与 body。
+    不覆盖 http_error_*（复用标准库 Location 解析与 parent.open）。
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        m = req.get_method()
+        if code in (307, 308) and m not in ("GET", "HEAD"):
+            newheaders = {
+                k: v for k, v in req.headers.items()
+                if k.lower() != "content-length"
+            }
+            return urllib.request.Request(
+                newurl.replace(" ", "%20"),
+                data=req.data,
+                headers=newheaders,
+                origin_req_host=req.origin_req_host,
+                unverifiable=True,
+                method=m,
+            )
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def build_opener(ctx=None):
+    """构建支持 POST+307/308 保 method/body 的 opener。"""
+    handlers = [MethodPreservingRedirectHandler()]
+    if ctx is not None:
+        handlers.append(urllib.request.HTTPSHandler(context=ctx))
+    return urllib.request.build_opener(*handlers)
+
+
 def fetch_json(url: str, method: str = "GET", body: Optional[dict] = None, timeout: int = 60) -> dict:
     data = json.dumps(body).encode("utf-8") if body is not None else None
     req = urllib.request.Request(url, data=data, headers=app_key_headers(), method=method)
     try:
-        with urllib.request.urlopen(req, context=ssl_context(), timeout=timeout) as resp:
+        opener = build_opener(ssl_context())
+        with opener.open(req, timeout=timeout) as resp:
             return json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         try:

@@ -11,7 +11,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
 
 API_BASE = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/share/sharedToMe"
@@ -35,7 +35,7 @@ def main():
     url = f"{API_BASE}?{urllib.parse.urlencode(q)}"
     ctx = ssl_context()
     req = urllib.request.Request(url, headers=headers(), method="GET")
-    with urllib.request.urlopen(req, context=ctx, timeout=60) as resp:
+    with build_opener(ctx).open(req, timeout=60) as resp:
         print(json.dumps(json.loads(resp.read().decode()), ensure_ascii=False))
 
 if __name__ == "__main__":

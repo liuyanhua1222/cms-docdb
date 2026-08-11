@@ -32,7 +32,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 from safety import add_safety_args, enforce_or_dry_run
@@ -42,31 +42,6 @@ if sys.stdout.encoding != "utf-8":
 if sys.stderr.encoding != "utf-8":
     sys.stderr = open(sys.stderr.fileno(), mode="w", encoding="utf-8", buffering=1)
 
-
-class CustomRedirectHandler(urllib.request.HTTPRedirectHandler):
-    def http_error_301(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_302(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_303(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_307(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_308(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-
-def build_opener(ctx):
-    handlers = [CustomRedirectHandler()]
-    if ctx:
-        handlers.append(urllib.request.HTTPSHandler(context=ctx))
-    return urllib.request.build_opener(*handlers)
-
-
 BASE = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/share"
 URL_UPSERT = f"{BASE}/upsertFileShareGrants"
 URL_GET_SHARE_URL = f"{BASE}/getShareUrl"
@@ -74,13 +49,11 @@ URL_GET_SHARE_URL = f"{BASE}/getShareUrl"
 DEFAULT_PERMISSIONS = ["fileshare", "preview", "read"]
 DEFAULT_DUE_DATE = 20991231
 
-
 def build_headers() -> dict:
     headers = {"Content-Type": "application/json"}
     app_key = resolve_app_key()
     headers["appKey"] = app_key
     return headers
-
 
 def call_json(method: str, url: str, body: dict = None, params: list = None) -> dict:
     headers = build_headers()
@@ -121,14 +94,12 @@ def call_json(method: str, url: str, body: dict = None, params: list = None) -> 
                 print(f"错误: {e}", file=sys.stderr)
                 sys.exit(1)
 
-
 def parse_permissions(raw: str):
     if not raw:
         return None
     parts = [p.strip() for p in raw.split(",")]
     perms = [p for p in parts if p]
     return perms or None
-
 
 def process_result(result):
     if isinstance(result, dict):
@@ -138,7 +109,6 @@ def process_result(result):
             "data": result.get("data"),
         }
     return result
-
 
 def main():
     parser = DocdbArgumentParser(description="增量授予协同分享", hint="""upsert-file-share-grants.py 必须提供 file_id，且必须带 --emp-id。
@@ -190,7 +160,6 @@ def main():
         print(json.dumps(out, ensure_ascii=False))
     else:
         print(json.dumps(processed, ensure_ascii=False))
-
 
 if __name__ == "__main__":
     main()

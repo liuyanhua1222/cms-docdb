@@ -29,7 +29,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 
@@ -39,47 +39,17 @@ if sys.stdout.encoding != 'utf-8':
 if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
-
-class CustomRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """自定义重定向处理器，显式支持 307/308 重定向并保留请求方法和请求体"""
-    
-    def http_error_301(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_302(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_303(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_307(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_308(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-
-def build_opener(ctx):
-    """构建支持 307/308 重定向的自定义 opener"""
-    handlers = [CustomRedirectHandler()]
-    if ctx:
-        handlers.append(urllib.request.HTTPSHandler(context=ctx))
-    return urllib.request.build_opener(*handlers)
-
-
 API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getVersionList"
 AUTH_MODE = "appKey"
 TIMEOUT = 60
 MAX_RETRIES = 3
 RETRY_INTERVAL = 1
 
-
 def build_headers() -> dict:
     headers = {"Content-Type": "application/json"}
     app_key = resolve_app_key()
     headers["appKey"] = app_key
     return headers
-
 
 def call_api(file_id: int) -> dict:
     headers = build_headers()
@@ -106,7 +76,6 @@ def call_api(file_id: int) -> dict:
             else:
                 print(f"错误: {e}", file=sys.stderr)
                 sys.exit(1)
-
 
 def main() -> None:
     parser = DocdbArgumentParser(description="查看版本列表", hint="""get-version-list.py 必须提供 file_id。
@@ -135,7 +104,6 @@ def main() -> None:
         ] if isinstance(versions, list) else versions,
     }
     print(json.dumps(output, ensure_ascii=False))
-
 
 if __name__ == "__main__":
     main()

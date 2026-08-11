@@ -27,7 +27,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
 
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
@@ -36,38 +36,9 @@ if sys.stdout.encoding != 'utf-8':
 if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
-
-class CustomRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """自定义重定向处理器，显式支持 307/308 重定向并保留请求方法和请求体"""
-    
-    def http_error_301(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_302(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_303(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_307(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_308(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-
-def build_opener(ctx):
-    """构建支持 307/308 重定向的自定义 opener"""
-    handlers = [CustomRedirectHandler()]
-    if ctx:
-        handlers.append(urllib.request.HTTPSHandler(context=ctx))
-    return urllib.request.build_opener(*handlers)
-
-
 # 接口完整 URL（与 openapi/upload/get-file-download-info.md 中声明的一致）
 API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/cwork-file/getDownloadInfo"
 AUTH_MODE = "appKey"
-
 
 def build_headers() -> dict:
     """根据鉴权模式构造请求头"""
@@ -76,7 +47,6 @@ def build_headers() -> dict:
     if AUTH_MODE == "appKey":
         headers["appKey"] = resolve_app_key()
     return headers
-
 
 def call_api(resource_id: int) -> dict:
     """调用获取文件下载信息接口，返回原始 JSON 响应"""
@@ -110,7 +80,6 @@ def call_api(resource_id: int) -> dict:
                 print(f"错误: {e}", file=sys.stderr)
                 sys.exit(1)
 
-
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="获取文件下载信息（临时下载 URL）")
@@ -126,7 +95,6 @@ def main():
     result = call_api(resource_id)
 
     print(json.dumps(result, ensure_ascii=False))
-
 
 if __name__ == "__main__":
     main()

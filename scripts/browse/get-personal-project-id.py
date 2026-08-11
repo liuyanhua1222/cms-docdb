@@ -30,7 +30,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
 
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
@@ -39,38 +39,9 @@ if sys.stdout.encoding != 'utf-8':
 if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
-
-class CustomRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """自定义重定向处理器，显式支持 307/308 重定向并保留请求方法和请求体"""
-    
-    def http_error_301(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_302(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_303(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_307(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_308(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-
-def build_opener(ctx):
-    """构建支持 307/308 重定向的自定义 opener"""
-    handlers = [CustomRedirectHandler()]
-    if ctx:
-        handlers.append(urllib.request.HTTPSHandler(context=ctx))
-    return urllib.request.build_opener(*handlers)
-
-
 # 接口完整 URL（与 openapi/browse/get-personal-project-id.md 中声明的一致）
 API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/project/personal/getProjectId"
 AUTH_MODE = "appKey"
-
 
 def build_headers() -> dict:
     """根据鉴权模式构造请求头"""
@@ -79,7 +50,6 @@ def build_headers() -> dict:
     if AUTH_MODE == "appKey":
         headers["appKey"] = resolve_app_key()
     return headers
-
 
 def call_api(app_code: str = None) -> dict:
     """调用获取个人空间 ID 接口，返回原始 JSON 响应"""
@@ -116,7 +86,6 @@ def call_api(app_code: str = None) -> dict:
                 print(f"错误: {e}", file=sys.stderr)
                 sys.exit(1)
 
-
 def process_result(result):
     """处理 API 响应结果，优先按 resultCode、resultMsg、data 读取"""
     if isinstance(result, dict):
@@ -148,7 +117,6 @@ def main():
 
     processed_result = process_result(result)
     print(json.dumps(processed_result, ensure_ascii=False))
-
 
 if __name__ == "__main__":
     main()

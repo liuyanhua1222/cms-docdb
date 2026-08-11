@@ -27,7 +27,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
 
 if sys.stdout.encoding != "utf-8":
@@ -35,38 +35,11 @@ if sys.stdout.encoding != "utf-8":
 if sys.stderr.encoding != "utf-8":
     sys.stderr = open(sys.stderr.fileno(), mode="w", encoding="utf-8", buffering=1)
 
-
-class CustomRedirectHandler(urllib.request.HTTPRedirectHandler):
-    def http_error_301(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_302(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_303(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_307(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-    def http_error_308(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-
-def build_opener(ctx):
-    handlers = [CustomRedirectHandler()]
-    if ctx:
-        handlers.append(urllib.request.HTTPSHandler(context=ctx))
-    return urllib.request.build_opener(*handlers)
-
-
 API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/operationLog/getMyUploadRecords"
-
 
 def build_headers() -> dict:
     app_key = resolve_app_key()
     return {"appKey": app_key}
-
 
 def call_api(page_index=None, page_size=None, project_id=None, start_time=None, end_time=None) -> dict:
     params = []
@@ -111,7 +84,6 @@ def call_api(page_index=None, page_size=None, project_id=None, start_time=None, 
                 print(f"错误: {e}", file=sys.stderr)
                 sys.exit(1)
 
-
 def process_result(result):
     if isinstance(result, dict):
         return {
@@ -120,7 +92,6 @@ def process_result(result):
             "data": result.get("data"),
         }
     return result
-
 
 def main():
     import argparse
@@ -141,7 +112,6 @@ def main():
         end_time=args.end_time,
     )
     print(json.dumps(process_result(result), ensure_ascii=False))
-
 
 if __name__ == "__main__":
     main()

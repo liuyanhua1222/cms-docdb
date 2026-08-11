@@ -29,7 +29,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
+from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 
@@ -39,41 +39,12 @@ if sys.stdout.encoding != 'utf-8':
 if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
-
-class CustomRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """自定义重定向处理器，显式支持 307/308 重定向并保留请求方法和请求体"""
-    
-    def http_error_301(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_302(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_303(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_307(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-    
-    def http_error_308(self, req, fp, code, msg, headers):
-        return self.redirect_request(req, fp, code, msg, headers)
-
-
-def build_opener(ctx):
-    """构建支持 307/308 重定向的自定义 opener"""
-    handlers = [CustomRedirectHandler()]
-    if ctx:
-        handlers.append(urllib.request.HTTPSHandler(context=ctx))
-    return urllib.request.build_opener(*handlers)
-
-
 # 接口完整 URL
 API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getDownloadInfo"
 AUTH_MODE = "appKey"
 CHUNK_SIZE = 5 * 1024 * 1024
 MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = (1, 2, 4)
-
 
 def build_headers() -> dict:
     """根据鉴权模式构造请求头"""
@@ -82,7 +53,6 @@ def build_headers() -> dict:
     if AUTH_MODE == "appKey":
         headers["appKey"] = resolve_app_key()
     return headers
-
 
 def get_download_url(file_id: int) -> dict:
     """获取文件下载链接"""
@@ -108,7 +78,6 @@ def get_download_url(file_id: int) -> dict:
                 print(f"错误: 获取下载链接失败 - {e}", file=sys.stderr)
                 sys.exit(1)
 
-
 def download_file(download_url: str, output_path: str) -> str:
     """从 URL 下载文件到本地"""
     ctx = ssl_context()
@@ -131,7 +100,6 @@ def download_file(download_url: str, output_path: str) -> str:
             else:
                 print(f"错误: 下载文件失败 - {e}", file=sys.stderr)
                 sys.exit(1)
-
 
 def main():
     parser = DocdbArgumentParser(description="下载文件到本地", hint="""download-file.py 必须提供 file_id。
@@ -186,7 +154,6 @@ def main():
             'fileSize': os.path.getsize(saved_path)
         }
     }, ensure_ascii=False))
-
 
 if __name__ == "__main__":
     main()

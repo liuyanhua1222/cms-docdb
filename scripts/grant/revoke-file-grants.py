@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""POST /document-database/fileGrant/revokeGrants — 收回目录授权"""
+"""POST /document-database/fileGrant/revokeGrants — 整单收回目录授权（勿用于单项减权）"""
 import sys, os, json, urllib.request, argparse
 
 # --- cms-docdb common ---

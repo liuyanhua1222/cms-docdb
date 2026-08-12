@@ -17,7 +17,9 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 
 本文件提供能力边界与路由规则。详细说明见 `references/`，实际执行见 `scripts/`。
 
-**当前版本**: 1.3.5
+**当前版本**: 1.3.6
+
+**1.3.6 变更**：协同分享/目录授权权限策略对齐 docdb（新建合并默认位、更新可单项减权）；新增 `strip-share-permissions.py`、`strip-grant-permissions.py`、`get-file-grants.py`；区分减权 upsert 与整单 revoke；更新 SKILL 与 share/grant README。
 
 **1.3.5 变更**：修复错误的 `CustomRedirectHandler`（漏传 `newurl` 导致遇 3xx 即 TypeError）；公共 `build_opener` 正确支持 POST+307/308 保 method/body，并统一各脚本 HTTP 调用。
 
@@ -167,7 +169,7 @@ python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledg
 | `upload` | "上传到康哲资料库/法务文档/知识库"、"保存到文档数据库"、"归档"、"新建文件夹" |
 | `delete` | "删除文件"、"移除文件"、"删掉xxx" |
 | `manage` | "重命名xxx"、"移动文件"、"更新内容"、"版本管理"、"历史版本"、"定稿" |
-| `share` | "分享文件给xxx"、"协同分享"、"撤销分享"、"分享给我的"、"我的分享" |
+| `share` | "分享文件给xxx"、"协同分享"、"分享给我的"、"我的分享" |
 | `apply` | "申请权限"、"我的申请"、"待我审批"、"查询审批人" |
 | `grant` | "目录授权"、"收回目录授权" |
 
@@ -324,11 +326,25 @@ python3 -B <skill-dir>/scripts/upload/upload-content.py "报告内容" "报告.m
 | "存到康哲/玄关/德镁知识库"、"上传到知识库"、"上传xxx到知识库"、"把这份文档归档"、"帮我保存这个文件"、"在知识库里建个文件夹" | `upload` | 新建文件/文件夹（已存在文件内容更新走 manage 版本流） | `./references/upload/README.md` | `./scripts/upload/upload-content.py` 等 |
 | "帮我把xxx删了"、"删除xxx文件"、"把xxx文件移除" | `delete` | 删除指定文件（高风险，需确认） | `./references/delete/README.md` | `./scripts/delete/delete-file.py` |
 | "帮我把xxx重命名"、"把xxx改名为yyy"、"把这个文件移到xxx文件夹"、"更新一下知识库里的xxx"、"把最新内容存进去"、"这个文档有更新，存一下"、"查看xxx文件的历史版本"、"把这个版本定稿" | `manage` | 重命名/移动文件；更新已有文件内容（版本管理）；查看历史版本；版本定稿 | `./references/manage/README.md` | 见 `./references/manage/README.md`（按意图选择对应脚本） |
-| "把这个文件分享给张三"、"授权给李四预览"、"给王五开查看权限"、"协同分享这个文件夹"、"取消张三的分享"、"分享给我的文件"、"我的分享列表" | `share` | 协同分享与分享列表 | `./references/share/README.md` | `./scripts/share/upsert-file-share-grants.py` 等 |
+| "把这个文件分享给张三"、"授权给李四预览"、"给王五开查看权限"、"协同分享这个文件夹"、"取消张三的协同分享"、"从分享列表移除张三"、"分享给我的文件"、"我的分享列表" | `share` | 协同分享与分享列表 | `./references/share/README.md` | `./scripts/share/upsert-file-share-grants.py` 等 |
+| "移除张三的分享权限"、"去掉某人的分享权限"、"去掉预览/下载权限（协同分享）" | `share` | 单项减权（非 revoke） | `./references/share/README.md` | `./scripts/share/strip-share-permissions.py` |
 | "申请这个文件的权限"、"我的申请"、"待我审批的申请"、"同意/拒绝权限申请" | `apply` | 权限申请与审批 | `./references/apply/README.md` | `./scripts/apply/get-approvers.py` 等 |
 | "给空间成员开目录权限"、"目录授权"、"收回某人的目录授权" | `grant` | 目录授权（t_file_grant，须空间成员） | `./references/grant/README.md` | `./scripts/grant/upsert-file-grants.py` 等 |
+| "去掉某人的下载/预览目录权限" | `grant` | 目录授权单项减权 | `./references/grant/README.md` | `./scripts/grant/strip-grant-permissions.py` |
 
 **增量授权原则（强制）**：目录授权与协同分享均使用 upsert + 定点 revoke；**禁止**调用全量 replace 接口（`updateFileShare`、`updateFileGrantV2`）。
+
+### 分享/授权权限策略（强制）
+
+| 场景 | 规则 | 脚本 |
+|---|---|---|
+| **协同分享 · 新分享给某人** | 系统合并 `read+preview+fileshare` + 用户指定权限 | `upsert-file-share-grants.py` |
+| **协同分享 · 去掉某项权限**（如去掉 `fileshare`） | **禁止** `revoke-file-share-grants.py`；用 strip 减权，**保留 read** | `strip-share-permissions.py` |
+| **协同分享 · 完全取消协同** | 人从分享列表消失 | `revoke-file-share-grants.py` |
+| **目录授权 · 新授权** | 用户须指定 permissions；系统合并 `read+preview` | `upsert-file-grants.py` |
+| **目录授权 · 去掉某项权限** | **禁止** `revoke-file-grants.py`；用 strip，**保留 read** | `strip-grant-permissions.py` |
+| **目录授权 · 完全收回** | 授权记录删除 | `revoke-file-grants.py` |
+
 
 能力树：
 
@@ -388,6 +404,7 @@ cms-docdb/
     │   ├── search-emp-by-name.py
     │   ├── get-my-share-permissions.py
     │   ├── upsert-file-share-grants.py
+    │   ├── strip-share-permissions.py
     │   ├── get-file-shares.py
     │   ├── get-share-url.py
     │   ├── revoke-file-share-grants.py
@@ -402,6 +419,8 @@ cms-docdb/
     │   └── review-apply.py
     ├── grant/
     │   ├── upsert-file-grants.py
+    │   ├── get-file-grants.py
+    │   ├── strip-grant-permissions.py
     │   └── revoke-file-grants.py
     └── admin/
         ├── add-member.py

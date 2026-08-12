@@ -2,7 +2,9 @@
 """
 share / revokeFileShareGrants 脚本
 
-用途：撤销指定员工对文件/文件夹的协同分享（幂等；不发送钉钉通知）
+用途：整单撤销指定员工的协同分享（人从分享列表消失；幂等；不发送钉钉通知）。
+
+勿用于「去掉 fileshare/预览/下载等单项权限」——请用 strip-share-permissions.py。
 
 使用方式：
   python3 scripts/share/revoke-file-share-grants.py <file_id> --emp-ids 10002,10003

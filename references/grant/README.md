@@ -4,6 +4,14 @@
 
 **增量语义**：仅影响请求中的用户，不删除他人授权。禁止全量 replace。
 
+## 权限策略
+
+| 阶段 | 规则 |
+|---|---|
+| 新授权 | 必须指定 permissions；服务端合并 `read+preview` + 指定项（不含 `fileshare`） |
+| 编辑减权 | `read` 兜底；`preview`/`download` 等可单独去掉 → `strip-grant-permissions.py` |
+| 整单收回 | `revoke-file-grants.py`（勿用于单项减权） |
+
 运行时由小龙虾上下文注入 `appkey`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
 
 ## 脚本清单
@@ -11,7 +19,9 @@
 | 脚本 | 接口 |
 |------|------|
 | `scripts/grant/upsert-file-grants.py` | `POST .../fileGrant/upsertGrants` |
-| `scripts/grant/revoke-file-grants.py` | `POST .../fileGrant/revokeGrants` |
+| `scripts/grant/get-file-grants.py` | `GET .../fileGrant/getGrants` |
+| `scripts/grant/strip-grant-permissions.py` | 单项减权（内部 upsert） |
+| `scripts/grant/revoke-file-grants.py` | `POST .../fileGrant/revokeGrants`（整单收回） |
 | `scripts/admin/is-project-member.py` | `GET .../admin/isProjectMember`（授权前自检） |
 
 不可授予 `admin`、`permmanage`。
@@ -27,7 +37,9 @@
 ```bash
 python3 -B <skill-dir>/scripts/admin/is-project-member.py 888
 python3 -B <skill-dir>/scripts/grant/upsert-file-grants.py 123456 --emp-id 10002 --permissions "read,preview,download" --dry-run
-python3 -B <skill-dir>/scripts/grant/upsert-file-grants.py 123456 --emp-id 10002 --permissions "read,preview,download" --confirm YES
+python3 -B <skill-dir>/scripts/grant/upsert-file-grants.py 123456 --emp-id 10002 --permissions "download" --confirm YES
+python3 -B <skill-dir>/scripts/grant/get-file-grants.py 123456
+python3 -B <skill-dir>/scripts/grant/strip-grant-permissions.py 123456 --emp-id 10002 --remove download --confirm YES
 python3 -B <skill-dir>/scripts/grant/revoke-file-grants.py 123456 --emp-ids 10002 --confirm YES
 ```
 

@@ -28,10 +28,11 @@
 |---|---|---|
 | `scripts/share/search-emp-by-name.py` | `GET /open-api/cwork-user/searchEmpByName` | 按姓名搜索员工并拿到 empId |
 | `scripts/share/get-my-share-permissions.py` | `GET /open-api/document-database/share/getMySharePermissions` | 查询“调用方对指定 fileId 的可分享权限上限子集” |
-| `scripts/share/upsert-file-share-grants.py` | `POST /open-api/document-database/share/upsertFileShareGrants` | **推荐**：授权分享（存在则更新、不存在则新增；不删他人；默认发钉钉通知；默认权限为分享+预览+查看） |
+| `scripts/share/upsert-file-share-grants.py` | `POST /open-api/document-database/share/upsertFileShareGrants` | **推荐**：授权分享（存在则更新、不存在则新增；不删他人；默认发钉钉通知；新建时服务端合并 read+preview+fileshare） |
+| `scripts/share/strip-share-permissions.py` | 同上 upsert | **单项减权**：去掉 preview/fileshare/download 等，**保留 read**；**勿用于整单撤销** |
 | `scripts/share/get-file-shares.py` | `GET /open-api/document-database/share/getFileShares` | 获取文件/文件夹的协同分享记录列表（人员/部门等） |
 | `scripts/share/get-share-url.py` | `GET /open-api/document-database/share/getShareUrl` | 生成文件/文件夹的“可转发预览短链”（授权后用于链接分发） |
-| `scripts/share/revoke-file-share-grants.py` | `POST /open-api/document-database/share/revokeFileShareGrants` | 撤销指定员工的协同分享（幂等；不发送钉钉通知） |
+| `scripts/share/revoke-file-share-grants.py` | `POST /open-api/document-database/share/revokeFileShareGrants` | **整单撤销**协同分享（人从列表消失；幂等；不发送钉钉通知）。**勿用于仅去掉 fileshare 等权限位** |
 | `scripts/share/list-shared-to-me.py` | `GET /open-api/document-database/share/sharedToMe` | 分享给我的文件列表（分页；`fileName`/`sharerId` 筛选） |
 | `scripts/share/list-my-shares.py` | `GET /open-api/document-database/share/myShares` | 我的分享列表（分页；`fileName` 筛选） |
 
@@ -44,6 +45,7 @@
 | 授权分享（upsert） | fileId, empId | permissions, dueDate, name, isSendNotice, printShareUrl, source |
 | 获取分享记录 | fileId | — |
 | 获取分享短链 | fileId | source |
+| 单项减权（去掉某权限位） | fileId, empId, remove（逗号分隔，不可含 read） | dueDate |
 | 撤销分享 | fileId, empIds | — |
 
 ## 与前端「权限设置 / 分享权限管理」的对应关系（排错必读）
@@ -63,12 +65,13 @@ open-api / skill 的 **`upsertFileShareGrants` 只写 `t_file_share`**，与「�
 
 1. **权限上限约束**：被分享人的 `permissions` **不能超过调用方对该 fileId 的有效权限**。不确定时先跑 `get-my-share-permissions.py`。
 2. **自定义授权权限**：若用户明确说明要授予的权限，则 **按用户指定的 `permissions`** 发起分享；未说明时才走默认权限。
-3. **默认权限**：用户未指定权限时，默认给 `fileshare`（分享）、`preview`（在线预览）、`read`（查看）。
-4. **有效期默认永久**：默认需要传 `dueDate=20991231` 表示长期有效；如用户指定有效期，按用户提供的 `dueDate（yyyyMMdd）` 传入。
-5. **默认通知**：默认 `isSendNotice=true`（发送钉钉分享通知）。除非用户明确要求不通知，才设置为 false。
-6. **分享对象**：仅支持内部员工 empId（不支持 cpUserId / 其他第三方用户 ID）。
-7. **重复授权**：使用 `upsert-file-share-grants.py`（对接 `upsertFileShareGrants`），对已授权对象会更新权限，不会出现“返回成功但未生效”。
-8. **撤销分享**：使用 `revoke-file-share-grants.py`；无分享记录的员工进入 `notFoundEmpIds`（幂等）；**不发送**钉钉通知。
+3. **默认权限（新建）**：用户未指定时脚本传 `fileshare+preview+read`；服务端对新分享记录还会强制合并三包 + 用户指定项。
+4. **编辑减权**：去掉 `fileshare`/`preview`/`download` 等用 `strip-share-permissions.py`；`read` 必须保留；完全取消协同才用 revoke。
+5. **有效期默认永久**：默认需要传 `dueDate=20991231` 表示长期有效；如用户指定有效期，按用户提供的 `dueDate（yyyyMMdd）` 传入。
+6. **默认通知**：默认 `isSendNotice=true`（发送钉钉分享通知）。除非用户明确要求不通知，才设置为 false。
+7. **分享对象**：仅支持内部员工 empId（不支持 cpUserId / 其他第三方用户 ID）。
+8. **重复授权**：使用 `upsert-file-share-grants.py`（对接 `upsertFileShareGrants`），对已授权对象会更新权限，不会出现“返回成功但未生效”。
+9. **整单撤销协同**：使用 `revoke-file-share-grants.py`；无分享记录的员工进入 `notFoundEmpIds`（幂等）；**不发送**钉钉通知。
 
 ## 用户感知与对话输出规范（建议）
 

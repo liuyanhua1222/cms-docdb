@@ -5,7 +5,7 @@ manage / updateFileName — 同目录改名（同步 Open API）
 使用方式：
   python3 scripts/manage/update-file-name.py <file_id> --new-name "B.md" [--name-conflict-strategy 1]
 
-运行时变量：appkey
+运行时变量：CMS_CWORK_APPKEY
 """
 
 import sys

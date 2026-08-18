@@ -13,7 +13,7 @@ share / upsertFileShareGrants 脚本
   python3 scripts/share/upsert-file-share-grants.py <file_id> --emp-id <emp_id> [--permissions "read,preview,download"] [--due-date 20991231] [--name "张三"] [--no-notice] [--print-share-url] [--source "open_api"]
 
 运行时变量：
-  appkey — 由小龙虾运行时上下文注入
+  CMS_CWORK_APPKEY — 由会话用户消息上下文提供，执行时注入为进程环境变量
 """
 
 import sys

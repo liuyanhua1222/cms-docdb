@@ -44,20 +44,22 @@ def ensure_common_on_path(caller_file: str) -> str:
 
 def resolve_app_key() -> str:
     """
-    从小龙虾运行时读取 appKey。
-    优先 appkey，其次 APPKEY / AppKey（大小写别名兜底）。
+    读取 Open API 凭证。
+    优先 CMS_CWORK_APPKEY（会话用户消息上下文，由 Agent 注入本次进程环境），
+    其次 appkey / APPKEY / AppKey（本地旧习惯兜底）。
     未注入时打印可执行排障说明并 exit 1。
     """
-    for name in ("appkey", "APPKEY", "AppKey"):
+    for name in ("CMS_CWORK_APPKEY", "appkey", "APPKEY", "AppKey"):
         value = os.environ.get(name)
-        if value:
-            return value
+        if value and value.strip():
+            return value.strip()
     print(
-        "错误: 未找到 appkey（也尝试了 APPKEY / AppKey）。\n"
+        "错误: 未找到 CMS_CWORK_APPKEY（也尝试了 appkey / APPKEY / AppKey）。\n"
         "请确认：\n"
-        "1) 小龙虾运行时上下文已注入环境变量 appkey（勿手填或编造密钥）\n"
-        "2) 当前会话已登录/授权；若刚换账号请重新打开技能会话\n"
-        "3) 命令须直调 python3 <skill-dir>/scripts/... ，勿用 cd/&&/管道导致环境丢失",
+        "1) 当前会话用户消息上下文已附加 CMS_CWORK_APPKEY（勿手填或编造凭证）\n"
+        "2) 执行鉴权脚本时已将该字段注入本次进程环境；过预检时不得丢掉注入\n"
+        "3) 命令须直调 python3 <skill-dir>/scripts/... ，勿用 cd/&&/管道导致环境丢失\n"
+        "禁止向终端用户索要或复述该凭证。",
         file=sys.stderr,
     )
     sys.exit(1)

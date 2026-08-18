@@ -8,7 +8,7 @@ upload / get-file-download-info 脚本
   python3 scripts/upload/get-file-download-info.py <resource_id>
 
 运行时变量：
-  appkey — 由小龙虾运行时上下文注入
+  CMS_CWORK_APPKEY — 由会话用户消息上下文提供，执行时注入为进程环境变量
 """
 
 import sys

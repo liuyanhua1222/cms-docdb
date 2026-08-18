@@ -2,7 +2,7 @@
 """
 高危写入脚本的确认门禁与 dry-run。
 
-执行顺序（强制）：parse_args → enforce_or_dry_run →（仅真实调用）再取 appkey / 发请求。
+执行顺序（强制）：parse_args → enforce_or_dry_run →（仅真实调用）再取 CMS_CWORK_APPKEY / 发请求。
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ def enforce_or_dry_run(
     extra: Optional[Dict[str, Any]] = None,
 ) -> None:
     """
-    - --dry-run：stdout 输出 JSON 后 exit 0（不读 appkey）
+    - --dry-run：stdout 输出 JSON 后 exit 0（不读 CMS_CWORK_APPKEY）
     - 真实调用：校验 --confirm；失败 exit 2
     - extra：合并进 dry-run JSON（如 projectIdResolved=false）
     """

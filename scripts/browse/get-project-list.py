@@ -8,7 +8,7 @@ browse / getProjectList 脚本
   python3 scripts/browse/get-project-list.py [--app-code kz_doc|fw_doc|kz_knowledge_base] [--name-key "关键词"] [--biz-code pmo]
 
 运行时变量：
-  appkey — 由小龙虾运行时上下文注入
+  CMS_CWORK_APPKEY — 由会话用户消息上下文提供，执行时注入为进程环境变量
 
 说明：
   --app-code 为产品通道（t_doc_app）；不传则由后端按企业默认解析（康哲常为 kz_knowledge_base）。

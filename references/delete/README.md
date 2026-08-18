@@ -7,7 +7,7 @@
 
 ## 鉴权模式
 
-所有动作统一使用 `appKey` 鉴权，运行时从小龙虾上下文变量 `appkey` 获取。
+所有动作统一使用 `appKey` 鉴权；凭证取自会话用户消息上下文的 `CMS_CWORK_APPKEY`，Agent 执行时注入进程环境，脚本从环境读取。
 
 ## 脚本清单
 
@@ -15,7 +15,7 @@
 |---|---|---|
 | `scripts/delete/delete-file.py` | `POST /open-api/document-database/file/deleteFile` | 删除指定文件，输出 JSON 结果 |
 
-运行时由小龙虾上下文注入 `appkey`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
+凭证取自会话用户消息上下文的 `CMS_CWORK_APPKEY`，Agent 执行时注入进程环境。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
 
 ## 输入要求
 
@@ -31,7 +31,7 @@
 |------|------|------|------|---------------|----------|
 | `file_id` | Long | 是 | 文件 ID | 有效文件 ID | - |
 | `--physical` | Boolean | 否 | 物理彻底删除（不可恢复） | 无值标志，存在即为 true | - |
-| `--dry-run` | Flag | 否 | 仅打印拟发请求 JSON，不发 HTTP | - | 无需 appkey |
+| `--dry-run` | Flag | 否 | 仅打印拟发请求 JSON，不发 HTTP | - | 无需凭证 |
 | `--confirm` | String | 条件 | 真实调用必填 | 逻辑删除=`YES`；物理删除=`PHYSICAL` | 与 `--physical` 联动 |
 
 ## 动作列表

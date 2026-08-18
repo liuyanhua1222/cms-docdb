@@ -183,9 +183,9 @@ python3 -B <skill-dir>/scripts/browse/browse.py <rootFileId>
 
 | 现象 | 立刻怎么做 |
 |------|------------|
-| preflight complex interpreter | 改成单行 `python3 -B <skill-dir>/scripts/...` |
+| preflight complex interpreter | 改成单行 `python3 -B <skill-dir>/scripts/...`；**必须保留**本次进程环境中的 `CMS_CWORK_APPKEY`，禁止为过预检去掉注入 |
 | Directory nonexistent / `>` 失败 | 禁止重定向与 `mkdir &&`；只读 stdout；下载省略 `--output` |
-| 未找到 appkey | 请用户重登/授权；勿编造 key |
+| 未找到 CMS_CWORK_APPKEY | 检查会话上下文是否含该字段，并在本次 exec 注入；勿编造、勿向用户索要 |
 | `usage:` / 中文缺参 | 按 stderr hint 补齐必参 |
 | `__pycache__` Read-only | 使用 `python3 -B` |
 | 自写 `/workspace/*.py` / `/tmp/_*.py` | 改回本仓库 scripts |
@@ -205,7 +205,7 @@ python3 -B <skill-dir>/scripts/browse/browse.py <rootFileId>
 5. **多个匹配时列出完整信息**（路径、空间等）
 6. **记录上下文**，减少重复询问
 7. **递归搜索目录**，但限制深度避免性能问题
-8. **单行绝对路径执行**，命中 preflight 立即改写重试
+8. **单行绝对路径执行**，命中 preflight 立即改写重试，且不得丢掉 `CMS_CWORK_APPKEY` 环境注入
 
 ### DON'T
 1. 不要直接用分词结果搜索空间或目录

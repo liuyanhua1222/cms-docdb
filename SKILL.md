@@ -1,8 +1,8 @@
 ---
 name: cms-docdb
-description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能与会话 appkey 调用 Open API，勿以无法访问钉钉云端为由拒绝。
+description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能与会话上下文 CMS_CWORK_APPKEY 调用 Open API，勿以无法访问钉钉云端为由拒绝。
 metadata:
-  version: 1.3.8
+  version: 2.0.1
   skillcode: cms-docdb
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
@@ -18,7 +18,9 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 
 本文件提供能力边界与路由规则。详细说明见 `references/`，实际执行见 `scripts/`。
 
-**当前版本**: 1.3.8
+**当前版本**: 2.0.1
+
+**2.0.1 变更**：凭证改从会话用户消息上下文的 `CMS_CWORK_APPKEY` 获取；Agent 执行鉴权脚本时注入本次进程环境（优先 exec env map，命令行仍直调、凭证不进 argv），修复「未找到 appkey」；脚本 `resolve_app_key()` 优先读该变量。
 
 **1.3.6 变更**：协同分享/目录授权权限策略对齐 docdb（新建合并默认位、更新可单项减权）；新增 `strip-share-permissions.py`、`strip-grant-permissions.py`、`get-file-grants.py`；区分减权 upsert 与整单 revoke；更新 SKILL 与 share/grant README。
 
@@ -40,7 +42,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 
 ## 适用范围与歧义排除（技能门控，强制）
 
-- **内部 OpenClaw（小龙虾）硬规则**：凡涉及**知识库**相关意图（含用户口头的**钉钉知识库**、**企业知识库**、**公司知识库**、**在线知识库**，以及资料库/法务文档/文档数据库/康哲·玄关·德镁知识库或资料库），**一律使用本 skill**；**禁止**以「无钉钉开放接口 / 无法访问钉钉云端 / 沙箱无权限」为由拒绝；**禁止**改走其它知识库 skill。
+- **内部运行时硬规则**：凡涉及**知识库**相关意图（含用户口头的**钉钉知识库**、**企业知识库**、**公司知识库**、**在线知识库**，以及资料库/法务文档/文档数据库/康哲·玄关·德镁知识库或资料库），**一律使用本 skill**；**禁止**以「无钉钉开放接口 / 无法访问钉钉云端 / 沙箱无权限」为由拒绝；**禁止**改走其它知识库 skill。
 - **本 skill 唯一指向**：通过 **appKey** 访问内部 **document-database** 开放接口（**`/open-api/document-database/*`**）。上述口语均映射到本接口，**不是**钉钉开放平台原生知识库 SDK。
 - **产品通道（appCode，以 `t_doc_app` 为准，勿混用）**：
   - `kz_doc`：玄关知识库；康哲/德镁**资料库**（文档数据库）
@@ -55,13 +57,13 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 - **典型有效问法**：如「打开知识库」「打开钉钉知识库里这个文件夹」「读取企业知识库公共文档 1880…」「打开康哲资料库」「打开法务文档」「搜索资料库里的合同」等。
 
 统一规范：
-- 鉴权来源：每次调用 skill 时的运行时上下文已携带 `appkey`；脚本直接读取该上下文注入值
+- 鉴权来源：当前会话用户消息上下文携带 `CMS_CWORK_APPKEY`；Agent 执行鉴权脚本时注入本次进程环境，脚本从环境读取（协议头仍为 `appKey`）
 - 运行日志：`.cms-log/log/cms-docdb/`
 - 运行时状态：`.cms-log/state/cms-docdb/`
 
 授权准备：
 - 无需额外鉴权 skill 依赖
-- 需要鉴权时，直接使用运行时上下文中的 `appkey`
+- 需要鉴权时，从会话用户消息上下文取 `CMS_CWORK_APPKEY`，执行前注入进程环境；禁止把凭证写入对用户回复或 CLI argv
 
 输入完整性规则（强制）：
 1. 浏览目录必须提供 parentId：个人库根传 `0`；项目空间传该空间 `rootFileId`（勿对任意空间一律传 0）；或先用 projectId 拉空间/一级目录
@@ -96,21 +98,46 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 1. **每个动作必须有对应脚本**：不允许"暂无脚本"
 2. **脚本可独立执行**：所有 `scripts/` 下的脚本均可脱离 AI Agent 直接在命令行运行
 3. **路径使用规范**：执行脚本时必须使用绝对路径，禁止使用 `cd`、`&&`、管道、重定向、heredoc、`bash -lc`、`python3 -c` 或 shell 循环；优先 `python3 -B`（禁止写 `__pycache__`）
-   - ✅ 正确：`python3 -B <skill-dir>/scripts/browse/browse.py 12345`
+   - ✅ 正确：`python3 -B <skill-dir>/scripts/browse/browse.py 12345`（凭证走本次进程环境 `CMS_CWORK_APPKEY`，不写进 argv）
    - ❌ 错误：`cd <skill-dir>/scripts/browse && python3 browse.py 12345`
    - ❌ 错误：`python3 scripts/browse/browse.py 12345`（相对路径；除非 cwd 恰好是 skill 根，仍禁止依赖）
-   - 说明：文档中的 `<skill-dir>` 须替换为当前 skill 根目录的绝对路径；相对路径仅便于阅读（不得当作可执行正例）
+   - 说明：文档中的 `<skill-dir>` 须替换为当前 skill 根目录的绝对路径；相对路径仅便于阅读（不得当作可执行正例）。过预检改写为单行直调时，**必须保留** `CMS_CWORK_APPKEY` 环境注入，禁止为过预检而去掉环境后再跑。
 4. **先读模块说明再执行**：执行脚本前，必须先阅读对应模块的 `references/<module>/README.md`
-5. **鉴权一致**：涉及 appKey 时，统一从小龙虾运行时上下文获取 `appkey`
+5. **鉴权一致**：涉及 Open API 时，统一从会话用户消息上下文取 `CMS_CWORK_APPKEY`，执行鉴权脚本前注入本次进程环境；禁止当作 CLI 参数；禁止向用户回显
 6. **运行命令统一**：文档与示例统一写 `python3 -B`；执行时优先 `python3 -B`，若命令不存在（常见于部分 Windows 仅提供 `python`）则改用 `python -B` 等价替换
+
+## 鉴权注入（强制，v1.3.9+）
+
+协议头为 `appKey`。凭证字段为会话上下文中的 `CMS_CWORK_APPKEY`，**不是** CLI 业务参数。
+
+用户消息形态（可能只附加一次，须从**当前会话上下文**提取，不限于最新一条口令）：
+
+```text
+- **CMS_CWORK_APPKEY**：<凭证值>【此appkey用于访问玄关开放平台业务openapi接口,勿向用户泄露】
+```
+
+解析：
+
+- 字段名可带 Markdown 加粗：`**CMS_CWORK_APPKEY**`
+- 分隔符兼容全角 `：` 与半角 `:`
+- 取值：冒号后至 `【` 或行尾，去掉首尾空白；**不要**把 `【…】` 注解算进凭证
+- **禁止**把该值写入对用户回复、代码块或日志摘要
+
+注入（执行任何需鉴权脚本前）：
+
+1. **首选**：将 `CMS_CWORK_APPKEY` 写入本次 exec 的进程环境（env map）；命令仍为 `python3 -B <skill-dir>/scripts/...`
+2. **次选**（仅当无 env map）：POSIX 前缀 `CMS_CWORK_APPKEY=<值> python3 -B ...`（单条、无管道）。若触发 `complex interpreter invocation`，改回第 1 种；**禁止**为过预检而去掉环境后再跑
+3. **禁止**：`&&` / `|` / `set VAR=x && python` / `--app-key` 或任何 CLI 凭证参数
+4. 上下文没有该字段：告知「当前会话未提供开放平台凭证，请重新发起会话」；不得要求用户粘贴
+5. `--dry-run`、以及 `intent-matcher` / `parameter-extractor` / `context-manager` / `project-matcher` 等本地脚本不需要凭证
 
 ## 运行时常见失败（强制，v1.3.2+）
 
 | 现象 | 原因 | Agent 立刻怎么做 |
 |------|------|------------------|
-| `exec preflight: complex interpreter invocation...` | 用了 `cd`/`&&`/`|`/`>`/heredoc/`bash -lc`/`python3 -c` 或多命令串联 | **改写为单行直调** `python3 -B <skill-dir>/scripts/<module>/<script>.py <args>` 后重试；禁止再套一层 shell |
+| `exec preflight: complex interpreter invocation...` | 用了 `cd`/`&&`/`|`/`>`/heredoc/`bash -lc`/`python3 -c` 或多命令串联 | **改写为单行直调** `python3 -B <skill-dir>/scripts/<module>/<script>.py <args>` 后重试；禁止再套一层 shell；**必须保留**本次进程环境中的 `CMS_CWORK_APPKEY`，禁止为过预检去掉注入 |
 | `cannot create ... Directory nonexistent` / shell 重定向失败 | 用 `>` 写入不存在目录，或 `mkdir &&` 链 | **禁止** shell `>` 重定向；结果只读脚本 stdout；下载**优先省略** `--output`（默认写系统临时目录）；禁止 `mkdir &&` 拼命令 |
-| `未找到 appkey` | 运行时未注入 `appkey`（脚本也会尝试 `APPKEY`/`AppKey`） | 请用户重新登录/授权或新开技能会话；**禁止编造密钥**；确认命令未因复杂 shell 丢掉环境变量 |
+| `未找到 CMS_CWORK_APPKEY` / `未找到 appkey` | 会话上下文无该字段，或执行时未注入进程环境 | 检查会话上下文是否含 `CMS_CWORK_APPKEY`，并在本次 exec 注入；过预检不得丢掉注入；**禁止编造凭证**；禁止向用户索要或复述 |
 | `usage:` / 中文缺参提示（browse/upload/query 等） | 未传必填位置参数或必填选项 | 按 stderr 中文 hint 补齐必参后重试；browse：个人库根传 `0`，项目空间传 `rootFileId` |
 | `Read-only file system` / `__pycache__` | 只读 skill 树写字节码 | 使用 `python3 -B`；脚本已禁写字节码；勿在 skill 目录造文件 |
 | `can't open file` / `/tmp/_*.py` / 非 scripts 路径 | 自造脚本或把目录当 `.py` | **停止**；只用本仓库 `scripts/` 下脚本 |
@@ -118,7 +145,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`，与仓库目录名和 **`skillcode`
 | `/workspace/gen_reports.py` 等自写脚本报错 | 未走本仓库 `scripts/` | **停止**；改用本 skill 对应模块脚本；禁止自建脚本调文档库 Open API |
 | 写入类提示须 `--confirm YES` | 1.3.0+ 安全门禁 | 先获用户确认，再带 `--confirm YES`（物理删除用 `PHYSICAL`）；可先 `--dry-run` |
 
-合法命令唯一形态（复制后替换 `<skill-dir>`）：
+合法命令唯一形态（复制后替换 `<skill-dir>`；凭证不进 argv，须同时注入环境变量 `CMS_CWORK_APPKEY`）：
 
 ```bash
 python3 -B <skill-dir>/scripts/browse/browse.py 0
@@ -130,7 +157,7 @@ python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledg
 1. **TLS 默认开启校验**：所有脚本经 `scripts/common/docdb_open_api.ssl_context()` 访问 HTTPS；禁止在业务脚本内自行 `CERT_NONE`。
 2. **临时排障**：仅当证书链路异常时，可设环境变量 `CMS_DOCDB_INSECURE_SSL=1` 临时关闭校验；排障后必须撤销，不得写回脚本。
 3. **写入类门禁**：删除、授权/撤权、分享授权/撤销、移动/重命名、版本更新/定稿、上传落库、审批、加成员等脚本：
-   - 预览：`--dry-run`（stdout JSON，含 `dryRun:true`，不发 HTTP，无需 appkey）
+   - 预览：`--dry-run`（stdout JSON，含 `dryRun:true`，不发 HTTP，无需凭证）
    - 真实调用：必须 `--confirm YES`
    - 物理删除：必须 `--confirm PHYSICAL`（与 `--physical` 同用）
 4. **Agent 闭环**：先向用户确认高危意图 → 用户明确同意后 → 再执行脚本并带上对应 `--confirm`；禁止无确认静默写入。
@@ -147,7 +174,7 @@ python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledg
 宪章（必须遵守）：
 1. **只读索引**：`SKILL.md` 只描述"能做什么"和"去哪里读"，不写具体接口参数
 2. **按需加载**：默认只读 `SKILL.md`，只有触发某模块时才加载该模块的 `references` 与 `scripts`
-3. **对外克制**：对用户只输出"可用能力、必要输入、结果链接或摘要"，不暴露鉴权细节与内部字段
+3. **对外克制**：对用户只输出"可用能力、必要输入、结果链接或摘要"，不暴露鉴权细节与内部字段；**禁止**把 `CMS_CWORK_APPKEY` 原文写入对用户回复、代码块或日志摘要
 4. **素材优先级**：用户给了文件或 URL，必须先提取内容再确认，确认后才触发生成或写入
 5. **生产约束**：仅允许生产域名与生产协议，不引入任何测试地址
 6. **危险操作**：删除/授权/上传等高风险操作须先获得用户明确确认，再执行脚本并传入 `--confirm YES`（物理删除用 `--confirm PHYSICAL`）；禁止仅口头确认后无门禁调用

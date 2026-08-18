@@ -32,7 +32,7 @@
 - `--page-index` - 页码（从 1 开始）
 - `--page-size` - 每页数量
 
-运行时由小龙虾上下文注入 `appkey`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
+凭证取自会话用户消息上下文的 `CMS_CWORK_APPKEY`，Agent 执行时注入进程环境。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
 
 ## 禁止调用的接口
 

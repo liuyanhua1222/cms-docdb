@@ -7,8 +7,8 @@ browse / getMyRecentUsed 脚本
 使用方式：
   python3 scripts/browse/get-my-recent-used.py [--page-index 1] [--page-size 20] [--biz-code pmo]
 
-运行时变量：
-  CMS_CWORK_APPKEY — 由会话用户消息上下文提供，执行时注入为进程环境变量
+命令行参数：
+  --appkey — 必填 CLI；值取自会话用户消息上下文 CMS_CWORK_APPKEY
 """
 
 import sys
@@ -29,6 +29,7 @@ if _cms_common not in sys.path:
 sys.dont_write_bytecode = True
 from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
+from cli_args import add_appkey_argument
 
 API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/operationLog/getMyRecentUsed"
 
@@ -45,6 +46,7 @@ def main():
     p.add_argument("--page-index", type=int, default=1)
     p.add_argument("--page-size", type=int, default=20)
     p.add_argument("--biz-code", default=None)
+    add_appkey_argument(p)
     args = p.parse_args()
     q = [("pageIndex", str(args.page_index)), ("pageSize", str(args.page_size))]
     if args.biz_code:

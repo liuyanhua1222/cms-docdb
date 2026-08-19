@@ -21,7 +21,7 @@
 
 ## 鉴权模式
 
-所有动作统一使用 `appKey` 鉴权；凭证取自会话用户消息上下文的 `CMS_CWORK_APPKEY`，Agent 执行时注入进程环境，脚本从环境读取。
+所有动作统一使用 `appKey` 鉴权；凭证以命令行 `--appkey` 传入，值取自会话用户消息上下文的 `CMS_CWORK_APPKEY`。
 
 ## 脚本清单
 
@@ -38,7 +38,7 @@
 | `scripts/browse/get-my-recent-used.py` | `GET /open-api/document-database/operationLog/getMyRecentUsed` | 最近使用（预览/下载/Agent上传，与前端主页一致） |
 | `scripts/browse/get-file-basic-info.py` | `GET /open-api/document-database/file/getFileBasicInfo` | 根据 fileId 查 projectId、type 等轻量元数据 |
 
-凭证取自会话用户消息上下文的 `CMS_CWORK_APPKEY`，Agent 执行时注入进程环境。文档与示例统一写 `python3 -B`；执行时优先 `python3 -B`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python -B` 等价替换。
+凭证以命令行 `--appkey` 传入，值取自会话用户消息上下文的 `CMS_CWORK_APPKEY`。文档与示例统一写 `python3 -B`；执行时优先 `python3 -B`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python -B` 等价替换。
 
 ## 输入要求
 
@@ -268,9 +268,9 @@
 ## 运行方式速查
 
 **重要说明**：以下示例使用相对路径以便阅读，实际执行时必须替换为绝对路径。例如：
-- 文档示例：`python3 -B <skill-dir>/scripts/browse/browse.py <parent_id>`
-- 实际执行：`python3 -B <skill-dir>/scripts/browse/browse.py <parent_id>`（将 `<skill-dir>` 换成 skill 根目录绝对路径）
-- 缺参：stderr 中文提示（个人库 `0` / 空间 `rootFileId`），exit 2
+- 文档示例：`python3 -B <skill-dir>/scripts/browse/browse.py <parent_id> --appkey <CMS_CWORK_APPKEY>`
+- 实际执行：`python3 -B <skill-dir>/scripts/browse/browse.py <parent_id> --appkey <CMS_CWORK_APPKEY>`（将 `<skill-dir>` 换成 skill 根目录绝对路径；`<CMS_CWORK_APPKEY>` 从会话上下文取出，勿向用户回显）
+- 缺参：stderr 中文提示（个人库 `0` / 空间 `rootFileId`；缺 `--appkey` 时提示从上下文补传），exit 2
 
 禁止使用 `cd`、`&&`、管道等 shell 构造。每个脚本必须在单独的命令中使用绝对路径执行。
 

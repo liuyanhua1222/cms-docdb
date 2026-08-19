@@ -5,7 +5,7 @@ manage / moveFile — 移动节点（同步 Open API）
 使用方式：
   python3 scripts/manage/move-file.py <file_id> --target-parent-id <parent_id> [--new-name "X.md"]
 
-运行时变量：CMS_CWORK_APPKEY
+必填 CLI：--appkey（值取自会话上下文 CMS_CWORK_APPKEY）
 """
 
 import sys

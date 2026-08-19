@@ -7,8 +7,8 @@ share / getShareUrl 脚本
 使用方式：
   python3 scripts/share/get-share-url.py <file_id> [--source "external"]
 
-运行时变量：
-  CMS_CWORK_APPKEY — 由会话用户消息上下文提供，执行时注入为进程环境变量
+命令行参数：
+  --appkey — 必填 CLI；值取自会话用户消息上下文 CMS_CWORK_APPKEY
 """
 
 import sys

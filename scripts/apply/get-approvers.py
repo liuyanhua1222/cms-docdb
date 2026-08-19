@@ -13,6 +13,7 @@ if _cms_common not in sys.path:
 sys.dont_write_bytecode = True
 from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
+from cli_args import add_appkey_argument
 
 API_BASE = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/fileGrant/apply/approvers"
 
@@ -26,6 +27,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("file_id", type=int)
     p.add_argument("--keyword", default=None)
+    add_appkey_argument(p)
     args = p.parse_args()
     q = [("fileId", str(args.file_id))]
     if args.keyword: q.append(("keyword", args.keyword))

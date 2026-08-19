@@ -13,6 +13,7 @@ if _cms_common not in sys.path:
 sys.dont_write_bytecode = True
 from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
+from cli_args import add_appkey_argument
 
 API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/fileGrant/apply/pending"
 
@@ -29,6 +30,7 @@ def main():
     p.add_argument("--file-name", default=None)
     p.add_argument("--keyword", default=None, help="统一关键字，模糊匹配申请人姓名/文件名/申请事由")
     p.add_argument("--proposer", default=None, help="申请人姓名筛选")
+    add_appkey_argument(p)
     args = p.parse_args()
     body = {"pageIndex": args.page_index, "pageSize": args.page_size}
     if args.file_name: body["fileName"] = args.file_name

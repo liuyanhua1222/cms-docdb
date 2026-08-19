@@ -7,7 +7,7 @@
 
 ## 鉴权模式
 
-所有动作统一使用 `appKey` 鉴权；凭证取自会话用户消息上下文的 `CMS_CWORK_APPKEY`，Agent 执行时注入进程环境，脚本从环境读取。
+所有动作统一使用 `appKey` 鉴权；凭证以命令行 `--appkey` 传入，值取自会话用户消息上下文的 `CMS_CWORK_APPKEY`。
 
 ## 脚本清单
 
@@ -15,7 +15,7 @@
 |---|---|---|
 | `scripts/delete/delete-file.py` | `POST /open-api/document-database/file/deleteFile` | 删除指定文件，输出 JSON 结果 |
 
-凭证取自会话用户消息上下文的 `CMS_CWORK_APPKEY`，Agent 执行时注入进程环境。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
+凭证以命令行 `--appkey` 传入，值取自会话用户消息上下文的 `CMS_CWORK_APPKEY`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
 
 ## 输入要求
 

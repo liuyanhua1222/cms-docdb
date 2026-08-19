@@ -13,6 +13,7 @@ if _cms_common not in sys.path:
 sys.dont_write_bytecode = True
 from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
+from cli_args import add_appkey_argument
 from safety import add_safety_args, enforce_or_dry_run
 
 API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/fileGrant/apply/submit"
@@ -31,6 +32,7 @@ def main():
     p.add_argument("--approver-ids", required=True, help="逗号分隔的 employeeId")
     p.add_argument("--due-date", type=int, default=20991231)
     add_safety_args(p)
+    add_appkey_argument(p)
     args = p.parse_args()
     body = {
         "fileId": args.file_id,

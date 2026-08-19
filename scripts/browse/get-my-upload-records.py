@@ -7,8 +7,8 @@ browse / getMyUploadRecords 脚本
 使用方式：
   python3 scripts/browse/get-my-upload-records.py [--page-index 1] [--page-size 20] [--project-id <id>] [--start-time <ms>] [--end-time <ms>]
 
-运行时变量：
-  CMS_CWORK_APPKEY — 由会话用户消息上下文提供，执行时注入为进程环境变量
+命令行参数：
+  --appkey — 必填 CLI；值取自会话用户消息上下文 CMS_CWORK_APPKEY
 """
 
 import sys
@@ -29,6 +29,7 @@ if _cms_common not in sys.path:
 sys.dont_write_bytecode = True
 from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
+from cli_args import add_appkey_argument
 
 if sys.stdout.encoding != "utf-8":
     sys.stdout = open(sys.stdout.fileno(), mode="w", encoding="utf-8", buffering=1)
@@ -102,6 +103,7 @@ def main():
     parser.add_argument("--project-id", type=int, help="限定某一空间")
     parser.add_argument("--start-time", type=int, help="开始时间戳（毫秒）")
     parser.add_argument("--end-time", type=int, help="结束时间戳（毫秒）")
+    add_appkey_argument(parser)
     args = parser.parse_args()
 
     result = call_api(

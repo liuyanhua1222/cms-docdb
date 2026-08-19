@@ -42,27 +42,43 @@ def ensure_common_on_path(caller_file: str) -> str:
     raise RuntimeError(f"无法定位 scripts/common（caller={caller_file}）")
 
 
+def _appkey_from_argv(argv=None) -> Optional[str]:
+    """从命令行解析 --appkey <值> 或 --appkey=<值>。空值视为未传。"""
+    args = sys.argv[1:] if argv is None else list(argv)
+    i = 0
+    while i < len(args):
+        item = args[i]
+        if item == "--appkey":
+            if i + 1 < len(args) and not args[i + 1].startswith("-"):
+                value = args[i + 1].strip()
+                return value or None
+            return None
+        if item.startswith("--appkey="):
+            value = item.split("=", 1)[1].strip()
+            return value or None
+        i += 1
+    return None
+
+
 def resolve_app_key() -> str:
     """
-    读取 Open API 凭证。
-    优先 CMS_CWORK_APPKEY（会话用户消息上下文，由 Agent 注入本次进程环境），
-    其次 appkey / APPKEY / AppKey（本地旧习惯兜底）。
-    未注入时打印可执行排障说明并 exit 1。
+    读取 Open API 凭证：只认命令行 --appkey，不读环境变量。
+    值由 Agent 从会话用户消息上下文的 CMS_CWORK_APPKEY 取出后显式传入。
+    未传时打印模型可读 hint 并 exit 2。
     """
-    for name in ("CMS_CWORK_APPKEY", "appkey", "APPKEY", "AppKey"):
-        value = os.environ.get(name)
-        if value and value.strip():
-            return value.strip()
+    value = _appkey_from_argv()
+    if value:
+        return value
     print(
-        "错误: 未找到 CMS_CWORK_APPKEY（也尝试了 appkey / APPKEY / AppKey）。\n"
-        "请确认：\n"
-        "1) 当前会话用户消息上下文已附加 CMS_CWORK_APPKEY（勿手填或编造凭证）\n"
-        "2) 执行鉴权脚本时已将该字段注入本次进程环境；过预检时不得丢掉注入\n"
-        "3) 命令须直调 python3 <skill-dir>/scripts/... ，勿用 cd/&&/管道导致环境丢失\n"
+        "错误: 缺少 --appkey。\n"
+        "请从当前会话用户消息上下文提取 CMS_CWORK_APPKEY"
+        "（字段名可加粗；取值自全角/半角冒号后至【或行尾，不要把【…】算进凭证），"
+        "再附加 --appkey <值> 后重试。\n"
+        "该字段可能只附加一次，不限于最新一条用户口令。\n"
         "禁止向终端用户索要或复述该凭证。",
         file=sys.stderr,
     )
-    sys.exit(1)
+    sys.exit(2)
 
 
 def app_key_headers(extra: Optional[Dict] = None) -> dict:

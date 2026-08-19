@@ -10,8 +10,8 @@ upload / saveFileByParentId 脚本
   parentId != 0 时默认通过 getFileBasicInfo 自动解析 projectId（避免 projectId 与 parentId 不一致）。
   parentId == 0（空间根）时必须传 --project-id。
 
-运行时变量：
-  CMS_CWORK_APPKEY — 由会话用户消息上下文提供，执行时注入为进程环境变量
+命令行参数：
+  --appkey — 必填 CLI；值取自会话用户消息上下文 CMS_CWORK_APPKEY
 """
 
 import sys

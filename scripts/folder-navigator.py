@@ -55,6 +55,7 @@ if _cms_common not in sys.path:
 sys.dont_write_bytecode = True
 from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
+from cli_args import add_appkey_argument
 
 # 强制标准输出使用 UTF-8 编码
 if sys.stdout.encoding != 'utf-8':
@@ -282,6 +283,7 @@ def main():
     parser.add_argument("--folder-name", type=str, help="目录名称（单层匹配）")
     parser.add_argument("--folder-path", type=str, help="目录路径（多层导航，如 '产品资料/慷彼申'）")
     parser.add_argument("--max-depth", type=int, default=3, help="最大搜索深度（默认3层）")
+    add_appkey_argument(parser)
     args = parser.parse_args()
     
     try:

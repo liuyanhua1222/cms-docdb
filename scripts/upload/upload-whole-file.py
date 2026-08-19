@@ -7,8 +7,8 @@ upload / upload-whole-file 脚本
 使用方式：
   python3 scripts/upload/upload-whole-file.py <file_path>
 
-运行时变量：
-  CMS_CWORK_APPKEY — 由会话用户消息上下文提供，执行时注入为进程环境变量
+命令行参数：
+  --appkey — 必填 CLI；值取自会话用户消息上下文 CMS_CWORK_APPKEY
 """
 
 import sys
@@ -30,6 +30,7 @@ if _cms_common not in sys.path:
 sys.dont_write_bytecode = True
 from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key
 ensure_common_on_path(__file__)
+from cli_args import add_appkey_argument
 from safety import add_safety_args, enforce_or_dry_run
 
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
@@ -203,6 +204,7 @@ def main():
     parser.add_argument("file_path", type=str, nargs='?', help="文件路径（位置参数）")
     parser.add_argument("--file-path", type=str, dest="file_path_opt", help="文件路径（命名参数）")
     add_safety_args(parser)
+    add_appkey_argument(parser)
     args = parser.parse_args()
     
     file_path = args.file_path or args.file_path_opt

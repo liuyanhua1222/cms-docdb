@@ -10,8 +10,8 @@ browse / getPersonalProjectId 脚本
 说明：
   --app-code 为产品通道；不传则由后端按企业默认解析（勿理解为固定默认 kz_doc）。
 
-运行时变量：
-  CMS_CWORK_APPKEY — 由会话用户消息上下文提供，执行时注入为进程环境变量
+命令行参数：
+  --appkey — 必填 CLI；值取自会话用户消息上下文 CMS_CWORK_APPKEY
 """
 
 import sys
@@ -32,6 +32,7 @@ if _cms_common not in sys.path:
 sys.dont_write_bytecode = True
 from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
+from cli_args import add_appkey_argument
 
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
@@ -111,6 +112,7 @@ def main():
         type=str,
         help="应用通道编码：kz_doc / fw_doc / kz_knowledge_base（不传=后端按企业默认）",
     )
+    add_appkey_argument(parser)
     args = parser.parse_args()
 
     result = call_api(app_code=args.app_code)

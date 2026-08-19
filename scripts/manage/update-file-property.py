@@ -3,7 +3,7 @@
 manage / updateFileProperty — 已废弃，请改用 update-file-name.py / move-file.py
 
 本脚本保留用于兼容旧命令行：自动转发到新接口（先 move 再 rename）。
-原样转发 --dry-run / --confirm 给子脚本；自身缺 confirm 且非 dry-run 时 exit 2。
+原样转发 --dry-run / --confirm / --appkey 给子脚本；自身缺 confirm 且非 dry-run 时 exit 2。
 """
 
 import sys
@@ -25,6 +25,7 @@ sys.dont_write_bytecode = True
 from docdb_open_api import ensure_common_on_path
 ensure_common_on_path(__file__)
 from safety import add_safety_args
+from cli_args import add_appkey_argument
 
 
 def run_script(script_name: str, args: list) -> dict:
@@ -45,6 +46,7 @@ def main():
     parser.add_argument("--cover", action="store_true")
     parser.add_argument("--auto-rename", action="store_true")
     add_safety_args(parser)
+    add_appkey_argument(parser)
     args = parser.parse_args()
 
     if not args.dry_run and args.confirm != "YES":
@@ -66,6 +68,8 @@ def main():
         safety_flags.append("--dry-run")
     if args.confirm:
         safety_flags.extend(["--confirm", args.confirm])
+    if args.appkey:
+        safety_flags.extend(["--appkey", args.appkey])
 
     move_strategy = "1" if args.cover else ("0" if args.auto_rename else "2")
     rename_strategy = "0" if args.auto_rename else "1"

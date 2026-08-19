@@ -13,6 +13,7 @@ if _cms_common not in sys.path:
 sys.dont_write_bytecode = True
 from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
+from cli_args import add_appkey_argument
 
 API_BASE = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/share/myShares"
 
@@ -27,6 +28,7 @@ def main():
     p.add_argument("--page-index", type=int, default=1)
     p.add_argument("--page-size", type=int, default=20)
     p.add_argument("--file-name", default=None)
+    add_appkey_argument(p)
     args = p.parse_args()
     q = [("pageIndex", str(args.page_index)), ("pageSize", str(args.page_size))]
     if args.file_name: q.append(("fileName", args.file_name))

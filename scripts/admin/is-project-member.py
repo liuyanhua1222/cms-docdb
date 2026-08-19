@@ -13,6 +13,7 @@ if _cms_common not in sys.path:
 sys.dont_write_bytecode = True
 from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
 ensure_common_on_path(__file__)
+from cli_args import add_appkey_argument
 
 API_BASE = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/admin/isProjectMember"
 
@@ -25,6 +26,7 @@ def headers():
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("project_id", type=int)
+    add_appkey_argument(p)
     args = p.parse_args()
     url = f"{API_BASE}?{urllib.parse.urlencode({'projectId': str(args.project_id)})}"
     ctx = ssl_context()

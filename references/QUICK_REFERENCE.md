@@ -1,6 +1,6 @@
 # 快速参考卡 - 智能导航（空间+目录）
 
-执行约定（强制）：所有命令必须是**单行直调**，使用绝对路径与 `python3 -B`。将 `<skill-dir>` 换成当前 skill 根目录绝对路径。禁止 `cd`、`&&`、管道、重定向、`bash -lc`、`python3 -c`、自建 venv。详见 `SKILL.md`「运行时常见失败」。
+执行约定（强制）：所有命令必须是**单行直调**，使用绝对路径与 `python3 -B`。将 `<skill-dir>` 换成当前 skill 根目录绝对路径。鉴权脚本必须带 `--appkey <CMS_CWORK_APPKEY>`（值从会话上下文取出，勿向用户回显）；`--dry-run` 与本地脚本 `intent-matcher` / `parameter-extractor` / `context-manager` / `project-matcher` 可不传。禁止 `cd`、`&&`、管道、重定向、`bash -lc`、`python3 -c`、自建 venv。详见 `SKILL.md`「运行时常见失败」。
 
 ## 何时使用智能导航？
 
@@ -21,7 +21,7 @@
 
 ### 步骤0️⃣：企业应用先筛（通道不明时必做）
 ```bash
-python3 -B <skill-dir>/scripts/browse/get-app-list.py
+python3 -B <skill-dir>/scripts/browse/get-app-list.py --appkey <CMS_CWORK_APPKEY>
 python3 -B <skill-dir>/scripts/common/app_code_router.py "打开知识库" --apps '[{"name":"康哲知识库","appCode":"kz_knowledge_base"}]'
 # 或多个选项时追问用户后：
 python3 -B <skill-dir>/scripts/context-manager.py set_app_code --app-code kz_doc --app-name 康哲资料库
@@ -36,10 +36,10 @@ python3 -B <skill-dir>/scripts/parameter-extractor.py "保存到康哲知识库�
 ### 步骤2️⃣：匹配空间（如果 needs_project_list）
 ```bash
 # 上传场景（务必带 app-code）
-python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py --app-code kz_knowledge_base
+python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py --app-code kz_knowledge_base --appkey <CMS_CWORK_APPKEY>
 
 # 查询/浏览场景
-python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledge_base
+python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledge_base --appkey <CMS_CWORK_APPKEY>
 # 资料库/法务：--app-code kz_doc 或 fw_doc
 
 # 智能匹配（--project-list 传入上一步 JSON 字符串，勿用管道）
@@ -49,10 +49,10 @@ python3 -B <skill-dir>/scripts/project-matcher.py --candidates "康哲知识库"
 ### 步骤3️⃣：导航目录（如果 needs_folder_navigation）
 ```bash
 # 按目录名搜索
-python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料"
+python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料" --appkey <CMS_CWORK_APPKEY>
 
 # 或按路径导航
-python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-path "产品资料/慷彼申"
+python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-path "产品资料/慷彼申" --appkey <CMS_CWORK_APPKEY>
 ```
 
 ### 步骤4️⃣：执行操作
@@ -156,36 +156,36 @@ needs_folder_navigation?
 
 ```bash
 # 空间列表（上传场景）— 单独执行，勿管道
-python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py --app-code kz_knowledge_base
+python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py --app-code kz_knowledge_base --appkey <CMS_CWORK_APPKEY>
 
 # 空间匹配（将上一步输出作为 --project-list 字符串传入）
 python3 -B <skill-dir>/scripts/project-matcher.py --candidates "康哲,知识库" --project-list '[...]'
 
 # 空间列表（查询场景）
-python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledge_base
+python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledge_base --appkey <CMS_CWORK_APPKEY>
 python3 -B <skill-dir>/scripts/project-matcher.py --candidates "玄关" --project-list '[...]'
 
 # 目录搜索（单层）
-python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料" --max-depth 3
+python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料" --max-depth 3 --appkey <CMS_CWORK_APPKEY>
 
 # 目录导航（多层）
-python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-path "产品资料/慷彼申"
+python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-path "产品资料/慷彼申" --appkey <CMS_CWORK_APPKEY>
 
 # 跨空间搜索目录
-python3 -B <skill-dir>/scripts/folder-navigator.py --project-ids "10001,10002,10003" --folder-name "AI生成"
+python3 -B <skill-dir>/scripts/folder-navigator.py --project-ids "10001,10002,10003" --folder-name "AI生成" --appkey <CMS_CWORK_APPKEY>
 
 # 浏览：个人库根用 0；项目空间用 rootFileId
-python3 -B <skill-dir>/scripts/browse/browse.py 0
-python3 -B <skill-dir>/scripts/browse/browse.py <rootFileId>
+python3 -B <skill-dir>/scripts/browse/browse.py 0 --appkey <CMS_CWORK_APPKEY>
+python3 -B <skill-dir>/scripts/browse/browse.py <rootFileId> --appkey <CMS_CWORK_APPKEY>
 ```
 
 ## 运行时常见失败（摘要）
 
 | 现象 | 立刻怎么做 |
 |------|------------|
-| preflight complex interpreter | 改成单行 `python3 -B <skill-dir>/scripts/...`；**必须保留**本次进程环境中的 `CMS_CWORK_APPKEY`，禁止为过预检去掉注入 |
+| preflight complex interpreter | 改成单行 `python3 -B <skill-dir>/scripts/... --appkey <CMS_CWORK_APPKEY>`；**必须仍带 `--appkey`** |
 | Directory nonexistent / `>` 失败 | 禁止重定向与 `mkdir &&`；只读 stdout；下载省略 `--output` |
-| 未找到 CMS_CWORK_APPKEY | 检查会话上下文是否含该字段，并在本次 exec 注入；勿编造、勿向用户索要 |
+| 缺少 --appkey / 未找到 CMS_CWORK_APPKEY | 从会话上下文取 `CMS_CWORK_APPKEY`，补 `--appkey` 后重试；勿编造、勿向用户索要 |
 | `usage:` / 中文缺参 | 按 stderr hint 补齐必参 |
 | `__pycache__` Read-only | 使用 `python3 -B` |
 | 自写 `/workspace/*.py` / `/tmp/_*.py` | 改回本仓库 scripts |
@@ -205,7 +205,7 @@ python3 -B <skill-dir>/scripts/browse/browse.py <rootFileId>
 5. **多个匹配时列出完整信息**（路径、空间等）
 6. **记录上下文**，减少重复询问
 7. **递归搜索目录**，但限制深度避免性能问题
-8. **单行绝对路径执行**，命中 preflight 立即改写重试，且不得丢掉 `CMS_CWORK_APPKEY` 环境注入
+8. **单行绝对路径执行**，命中 preflight 立即改写重试，且必须仍带 `--appkey`
 
 ### DON'T
 1. 不要直接用分词结果搜索空间或目录

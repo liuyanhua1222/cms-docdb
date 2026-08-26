@@ -5,18 +5,13 @@ query / downloadFile 脚本
 用途：下载文件到本地（先获取下载链接，再下载文件）
 
 使用方式：
-  python3 scripts/query/download-file.py <file_id> [--output /path/to/save.pdf]
 
-命令行参数：
-  --appkey — 必填 CLI；值取自会话用户消息上下文 CMS_CWORK_APPKEY
 """
 
 import sys
+import urllib.parse
 import os
 import json
-import urllib.request
-import urllib.parse
-import urllib.error
 import tempfile
 import time
 
@@ -29,7 +24,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
+from docdb_open_api import ensure_common_on_path, request_open_api
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 
@@ -40,71 +35,46 @@ if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
 # 接口完整 URL
-API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getDownloadInfo"
-AUTH_MODE = "appKey"
+API_PATH = "/document-database/file/getDownloadInfo"
 CHUNK_SIZE = 5 * 1024 * 1024
 MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = (1, 2, 4)
 
-def build_headers() -> dict:
-    """根据鉴权模式构造请求头"""
-    headers = {"Content-Type": "application/json"}
-
-    if AUTH_MODE == "appKey":
-        headers["appKey"] = resolve_app_key()
-    return headers
 
 def get_download_url(file_id: int) -> dict:
     """获取文件下载链接"""
-    headers = build_headers()
     params = [("fileId", str(file_id)), ("forceDownload", "true")]
-    url = f"{API_URL}?{urllib.parse.urlencode(params)}"
+    url = f"{API_PATH}?{urllib.parse.urlencode(params)}"
 
-    req = urllib.request.Request(url, headers=headers, method="GET")
-
-    ctx = ssl_context()
-
-    opener = build_opener(ctx)
-
-    for attempt in range(3):
-        try:
-            with opener.open(req, timeout=60) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except Exception as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                print(f"错误: 获取下载链接失败 - {e}", file=sys.stderr)
-                sys.exit(1)
+    return request_open_api(url, method="GET")
 
 def download_file(download_url: str, output_path: str) -> str:
-    """从 URL 下载文件到本地"""
-    ctx = ssl_context()
-
-    opener = build_opener(ctx)
-
-    for attempt in range(MAX_RETRIES):
+    """下载已签发的 URL（无需 OpenAPI 鉴权头）。"""
+    import urllib.request
+    for attempt in range(3):
         try:
             req = urllib.request.Request(download_url, method="GET")
-            with opener.open(req, timeout=120) as resp, open(output_path, 'wb') as f:
+            with urllib.request.urlopen(req, timeout=120) as resp, open(output_path, "wb") as f:
                 while True:
-                    chunk = resp.read(CHUNK_SIZE)
+                    chunk = resp.read(1024 * 1024)
                     if not chunk:
                         break
                     f.write(chunk)
             return output_path
         except Exception as e:
-            if attempt < MAX_RETRIES - 1:
-                time.sleep(RETRY_BACKOFF_SECONDS[attempt])
+            if attempt < 2:
+                import time
+                time.sleep(1)
             else:
-                print(f"错误: 下载文件失败 - {e}", file=sys.stderr)
+                print(f"错误: 下载失败 - {e}", file=sys.stderr)
                 sys.exit(1)
 
 def main():
     parser = DocdbArgumentParser(description="下载文件到本地", hint="""download-file.py 必须提供 file_id。
 优先省略 --output（默认写系统临时目录，读 stdout 路径）；禁止 shell 重定向。
-示例: python3 -B <skill-dir>/scripts/query/download-file.py 12345""")
+示例: openapi_skill_exec skillCode=cms-docdb toolName=download-file argv=["12345"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""",
+    )
     parser.add_argument("file_id", type=int, help="文件 ID")
     parser.add_argument("--output", type=str, help="输出文件路径（可选，默认保存到临时目录）")
     args = parser.parse_args()

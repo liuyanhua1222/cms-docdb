@@ -10,18 +10,13 @@ share / upsertFileShareGrants 脚本
   - isSendNotice 默认：true（默认发送钉钉分享通知）
 
 使用方式：
-  python3 scripts/share/upsert-file-share-grants.py <file_id> --emp-id <emp_id> [--permissions "read,preview,download"] [--due-date 20991231] [--name "张三"] [--no-notice] [--print-share-url] [--source "open_api"]
 
-命令行参数：
-  --appkey — 必填 CLI；值取自会话用户消息上下文 CMS_CWORK_APPKEY
 """
 
 import sys
+import urllib.parse
 import os
 import json
-import urllib.request
-import urllib.parse
-import urllib.error
 
 # --- cms-docdb common ---
 _cms_here = os.path.dirname(os.path.abspath(__file__))
@@ -32,7 +27,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
+from docdb_open_api import ensure_common_on_path, request_open_api
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 from safety import add_safety_args, enforce_or_dry_run
@@ -42,57 +37,16 @@ if sys.stdout.encoding != "utf-8":
 if sys.stderr.encoding != "utf-8":
     sys.stderr = open(sys.stderr.fileno(), mode="w", encoding="utf-8", buffering=1)
 
-BASE = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/share"
+BASE = "/document-database/share"
 URL_UPSERT = f"{BASE}/upsertFileShareGrants"
 URL_GET_SHARE_URL = f"{BASE}/getShareUrl"
 
 DEFAULT_PERMISSIONS = ["fileshare", "preview", "read"]
 DEFAULT_DUE_DATE = 20991231
 
-def build_headers() -> dict:
-    headers = {"Content-Type": "application/json"}
-    app_key = resolve_app_key()
-    headers["appKey"] = app_key
-    return headers
 
 def call_json(method: str, url: str, body: dict = None, params: list = None) -> dict:
-    headers = build_headers()
-    if params:
-        url = f"{url}?{urllib.parse.urlencode(params)}"
-
-    data = None
-    if body is not None:
-        data = json.dumps(body, ensure_ascii=False).encode("utf-8")
-
-    req = urllib.request.Request(url, data=data, headers=headers, method=method)
-
-    ctx = ssl_context()
-    opener = build_opener(ctx)
-
-    for attempt in range(3):
-        try:
-            with opener.open(req, timeout=60) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            if attempt < 2:
-                import time
-
-                time.sleep(1)
-            else:
-                try:
-                    err_body = e.read().decode("utf-8")
-                    print(f"错误: HTTP {e.code} - {e.reason} - {err_body}", file=sys.stderr)
-                except Exception:
-                    print(f"错误: HTTP {e.code} - {e.reason}", file=sys.stderr)
-                sys.exit(1)
-        except Exception as e:
-            if attempt < 2:
-                import time
-
-                time.sleep(1)
-            else:
-                print(f"错误: {e}", file=sys.stderr)
-                sys.exit(1)
+    return request_open_api(url, method=method, body=body, params=params)
 
 def parse_permissions(raw: str):
     if not raw:
@@ -113,13 +67,8 @@ def process_result(result):
 def main():
     parser = DocdbArgumentParser(description="增量授予协同分享", hint="""upsert-file-share-grants.py 必须提供 file_id，且必须带 --emp-id。
 真实写入还需 --confirm YES。
-示例: python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py 12345 --emp-id 1 --confirm YES""")
-    parser.add_argument("file_id", type=int, help="文件/文件夹 ID")
-    parser.add_argument("--emp-id", type=int, required=True, help="被分享对象的员工 empId（必填）")
-    parser.add_argument(
-        "--permissions",
-        type=str,
-        help='权限列表，逗号分隔；不传则默认 "fileshare,preview,read"',
+示例: openapi_skill_exec skillCode=cms-docdb toolName=upsert-file-share-grants argv=["12345", "--emp-id", "1", "--confirm", "YES"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+"""
     )
     parser.add_argument("--due-date", type=int, help="到期日期（yyyyMMdd）；不传默认 20991231（长期有效）")
     parser.add_argument("--name", type=str, help="被分享人姓名（可选，用于展示/通知）")

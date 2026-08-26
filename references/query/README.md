@@ -1,5 +1,8 @@
 # query — 模块说明
 
+> **调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`，`toolName` 为下表/示例中的工具名；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
+
+
 ## 目录
 
 - 适用场景
@@ -21,8 +24,6 @@
 
 ## 鉴权模式
 
-所有动作统一使用 `appKey` 鉴权；凭证以命令行 `--appkey` 传入，值取自会话用户消息上下文的 `CMS_CWORK_APPKEY`。
-
 ## 脚本清单
 
 | 脚本 | 对应接口 | 用途 |
@@ -34,7 +35,6 @@
 | `scripts/query/get-file-content.py` | `GET /open-api/document-database/file/getFileContent` | 分页获取文件文本内容 |
 | `scripts/query/batch-get-content.py` | `POST /open-api/document-database/ai/batchGetContent` | 批量获取多个文件全文，建议≤10个 |
 
-凭证以命令行 `--appkey` 传入，值取自会话用户消息上下文的 `CMS_CWORK_APPKEY`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
 
 ## 输入要求
 
@@ -158,7 +158,6 @@
 
 ## 标准流程
 
-1. 鉴权预检（命令行必须带 `--appkey`，值从会话用户消息上下文 `CMS_CWORK_APPKEY` 取出）
 2. 调用 `search.py` 搜索文件
 3. 根据搜索结果数量处理：
    - 多个结果：返回文件列表，告知用户可以进一步操作
@@ -179,18 +178,15 @@
 
 ## 运行方式速查
 
-**重要说明**：以下示例使用相对路径以便阅读，实际执行时必须替换为绝对路径。例如：
-- 文档示例：`python3 -B <skill-dir>/scripts/query/search.py "关键词"`
-- 实际执行：`python3 -B <skill-dir>/scripts/query/search.py "关键词"`（将 `<skill-dir>` 换成 skill 根目录绝对路径）
+**调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
 
-禁止使用 `cd`、`&&`、管道等 shell 构造。每个脚本必须在单独的命令中使用绝对路径执行。
 
 ```bash
-python3 -B <skill-dir>/scripts/query/search.py "关键词" --project-id <project_id> [--root-file-id <root_id>] [--start-time <ts>] [--end-time <ts>] [--exclude-file-types "work_report,huiji"]
-python3 -B <skill-dir>/scripts/query/get-full-content.py <file_id> [--relation-id <relation_id>] [--file-type <file_type>]
-python3 -B <skill-dir>/scripts/query/get-download-info.py <file_id>
-python3 -B <skill-dir>/scripts/query/get-download-info.py <file_id> --force-download
-python3 -B <skill-dir>/scripts/query/download-file.py <file_id> [--output /path/to/save.pdf]
-python3 -B <skill-dir>/scripts/query/get-file-content.py <file_id> [--page-number 1]
-python3 -B <skill-dir>/scripts/query/batch-get-content.py '[{"fileId":123},{"fileId":456}]' [--max-chars 60000] [--max-chars-per-file 20000]
+`openapi_skill_exec` `toolName`=`search`，argv: "关键词" --project-id <project_id> [--root-file-id <root_id>] [--start-time <ts>] [--end-time <ts>] [--exclude-file-types "work_report,huiji"]
+`openapi_skill_exec` `toolName`=`get-full-content`，argv: <file_id> [--relation-id <relation_id>] [--file-type <file_type>]
+`openapi_skill_exec` `toolName`=`get-download-info`，argv: <file_id>
+`openapi_skill_exec` `toolName`=`get-download-info`，argv: <file_id> --force-download
+`openapi_skill_exec` `toolName`=`download-file`，argv: <file_id> [--output /path/to/save.pdf]
+`openapi_skill_exec` `toolName`=`get-file-content`，argv: <file_id> [--page-number 1]
+`openapi_skill_exec` `toolName`=`batch-get-content`，argv: '[{"fileId":123},{"fileId":456}]' [--max-chars 60000] [--max-chars-per-file 20000]
 ```

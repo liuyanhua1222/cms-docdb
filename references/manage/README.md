@@ -1,5 +1,8 @@
 # manage — 模块说明
 
+> **调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`，`toolName` 为下表/示例中的工具名；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
+
+
 ## 目录
 
 - 适用场景
@@ -22,8 +25,6 @@
 
 ## 鉴权模式
 
-所有动作统一使用 `appKey` 鉴权；凭证以命令行 `--appkey` 传入，值取自会话用户消息上下文的 `CMS_CWORK_APPKEY`。
-
 ## 脚本清单
 
 | 脚本 | 对应接口 | 用途 |
@@ -36,8 +37,7 @@
 | `scripts/manage/get-last-version.py` | `GET /open-api/document-database/file/getLastVersion` | 获取文件最新版本信息 |
 | `scripts/manage/finalize-version.py` | `POST /open-api/document-database/file/finalizeVersion` | 将指定版本标记为定稿 |
 
-纯文本内容的版本更新使用 `scripts/upload/upload-content.py --update-file-id`。凭证以命令行 `--appkey` 传入，值取自会话用户消息上下文的 `CMS_CWORK_APPKEY`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
-
+纯文本内容的版本更新使用 `scripts/upload/upload-content.py --update-file-id`。
 ## 输入要求
 
 | 动作 | 必填输入 | 可选输入 |
@@ -113,10 +113,10 @@
 **示例**：
 ```bash
 # 推荐：省略 projectId（v2.5 自动补全）
-python3 -B <skill-dir>/scripts/manage/update-file-version.py --file-id 12345 --resource-id 987654321 --version-status 3 --version-name "V2.0" --version-remark "修正了第三章内容" --confirm YES
+`openapi_skill_exec` `toolName`=`update-file-version`，argv: --file-id 12345 --resource-id 987654321 --version-status 3 --version-name "V2.0" --version-remark "修正了第三章内容" --confirm YES
 
 # 旧方式（仍然支持，但非必需）
-python3 -B <skill-dir>/scripts/manage/update-file-version.py --file-id 12345 --project-id 2025001 --resource-id 987654321 --confirm YES
+`openapi_skill_exec` `toolName`=`update-file-version`，argv: --file-id 12345 --project-id 2025001 --resource-id 987654321 --confirm YES
 ```
 
 ### 5–7. 版本历史 / 最新版本 / 定稿
@@ -154,22 +154,19 @@ python3 -B <skill-dir>/scripts/manage/update-file-version.py --file-id 12345 --p
 
 ## 运行方式速查
 
-**重要说明**：以下示例使用相对路径以便阅读，实际执行时必须替换为绝对路径。例如：
-- 文档示例：`python3 -B <skill-dir>/scripts/manage/update-file-name.py <file_id>`
-- 实际执行：`python3 -B <skill-dir>/scripts/manage/update-file-name.py <file_id>`（将 `<skill-dir>` 换成 skill 根目录绝对路径）
+**调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
 
-禁止使用 `cd`、`&&`、管道等 shell 构造。每个脚本必须在单独的命令中使用绝对路径执行。
 
 ```bash
 # 推荐：新接口（写入须 --confirm YES；可先 --dry-run）
-python3 -B <skill-dir>/scripts/manage/update-file-name.py <file_id> --new-name "B.md" --confirm YES [--project-id <pid>]
-python3 -B <skill-dir>/scripts/manage/move-file.py <file_id> --target-parent-id <parent_id> --confirm YES [--new-name "X.md"]
+`openapi_skill_exec` `toolName`=`update-file-name`，argv: <file_id> --new-name "B.md" --confirm YES [--project-id <pid>]
+`openapi_skill_exec` `toolName`=`move-file`，argv: <file_id> --target-parent-id <parent_id> --confirm YES [--new-name "X.md"]
 
 # 兼容：旧命令（stderr 警告后转发；须带 --confirm YES）
-python3 -B <skill-dir>/scripts/manage/update-file-property.py <file_id> --new-name "新文件名.pdf" --confirm YES
-python3 -B <skill-dir>/scripts/manage/update-file-property.py <file_id> --target-parent-id <parent_id> --cover --confirm YES
+`openapi_skill_exec` `toolName`=`update-file-property`，argv: <file_id> --new-name "新文件名.pdf" --confirm YES
+`openapi_skill_exec` `toolName`=`update-file-property`，argv: <file_id> --target-parent-id <parent_id> --cover --confirm YES
 
-python3 -B <skill-dir>/scripts/manage/update-file-version.py <file_id> <project_id> <resource_id> --version-status 3 --confirm YES
-python3 -B <skill-dir>/scripts/manage/get-version-list.py <file_id>
-python3 -B <skill-dir>/scripts/manage/finalize-version.py <file_id> --confirm YES
+`openapi_skill_exec` `toolName`=`update-file-version`，argv: <file_id> <project_id> <resource_id> --version-status 3 --confirm YES
+`openapi_skill_exec` `toolName`=`get-version-list`，argv: <file_id>
+`openapi_skill_exec` `toolName`=`finalize-version`，argv: <file_id> --confirm YES
 ```

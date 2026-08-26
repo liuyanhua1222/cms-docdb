@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """POST /document-database/fileGrant/apply/processed — 我已处理的申请"""
-import sys, os, json, urllib.request, argparse
+import sys, os, json
 
 # --- cms-docdb common ---
 _cms_here = os.path.dirname(os.path.abspath(__file__))
@@ -11,36 +11,28 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
+from docdb_open_api import ensure_common_on_path, request_open_api
 ensure_common_on_path(__file__)
-from cli_args import add_appkey_argument
+from cli_args import DocdbArgumentParser
 
-API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/fileGrant/apply/processed"
+API_PATH = "/document-database/fileGrant/apply/processed"
 
-def headers():
-    h = {"Content-Type": "application/json"}
-    k = resolve_app_key()
-    h["appKey"] = k
-    return h
 
 def main():
-    p = argparse.ArgumentParser()
+    p = DocdbArgumentParser(hint="""list-processed-applies.py list-processed-applies 按业务参数调用（无必填时可传空 argv）。
+示例: openapi_skill_exec skillCode=cms-docdb toolName=list-processed-applies argv=["--page-index", "1"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""")
     p.add_argument("--page-index", type=int, default=1)
     p.add_argument("--page-size", type=int, default=20)
     p.add_argument("--file-name", default=None)
     p.add_argument("--keyword", default=None, help="统一关键字，模糊匹配申请人姓名/文件名/申请事由")
     p.add_argument("--status", type=int, default=None, help="2=通过 3=拒绝")
-    add_appkey_argument(p)
     args = p.parse_args()
     body = {"pageIndex": args.page_index, "pageSize": args.page_size}
     if args.file_name: body["fileName"] = args.file_name
     if args.keyword: body["keyword"] = args.keyword
     if args.status is not None: body["status"] = args.status
-    data = json.dumps(body).encode("utf-8")
-    ctx = ssl_context()
-    req = urllib.request.Request(API_URL, data=data, headers=headers(), method="POST")
-    with build_opener(ctx).open(req, timeout=60) as resp:
-        print(json.dumps(json.loads(resp.read().decode()), ensure_ascii=False))
-
+    result = request_open_api(API_PATH, method="POST", body=body)
+    print(json.dumps(result, ensure_ascii=False))
 if __name__ == "__main__":
     main()

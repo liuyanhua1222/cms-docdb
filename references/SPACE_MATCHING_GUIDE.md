@@ -1,5 +1,8 @@
 # 空间智能匹配使用指南
 
+> **调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`，`toolName` 为下表/示例中的工具名；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
+
+
 ## 应用通道（必读）
 
 拉空间列表前必须确定 **appCode**（产品通道，来自 `t_doc_app`）：
@@ -42,7 +45,7 @@
 
 #### 步骤1：意图识别
 ```bash
-python3 -B <skill-dir>/scripts/intent-matcher.py "保存到康哲知识库"
+`openapi_skill_exec` `toolName`=`intent-matcher`，argv: "保存到康哲知识库"
 ```
 
 输出：
@@ -58,7 +61,7 @@ python3 -B <skill-dir>/scripts/intent-matcher.py "保存到康哲知识库"
 
 #### 步骤2：参数提取（识别空间名候选词）
 ```bash
-python3 -B <skill-dir>/scripts/parameter-extractor.py "保存到康哲知识库"
+`openapi_skill_exec` `toolName`=`parameter-extractor`，argv: "保存到康哲知识库"
 ```
 
 输出：
@@ -86,19 +89,16 @@ python3 -B <skill-dir>/scripts/parameter-extractor.py "保存到康哲知识库"
 **上传场景（upload）**：
 ```bash
 # 获取有上传权限的空间
-python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py
-```
+`openapi_skill_exec` `toolName`=`get-uploadable-list`，argv: ```
 
 **查询/浏览场景（query/browse）**：
 ```bash
 # 先企业可用应用（意图不明时必做）
-python3 -B <skill-dir>/scripts/browse/get-app-list.py
-
-# 获取所有可访问的空间（必须带 appCode）
-python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledge_base
+`openapi_skill_exec` `toolName`=`get-app-list`，argv: # 获取所有可访问的空间（必须带 appCode）
+`openapi_skill_exec` `toolName`=`get-project-list`，argv: --app-code kz_knowledge_base
 # 资料库 / 法务示例：
-# python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_doc
-# python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code fw_doc
+# `openapi_skill_exec` `toolName`=`get-project-list`，argv: --app-code kz_doc
+# `openapi_skill_exec` `toolName`=`get-project-list`，argv: --app-code fw_doc
 ```
 
 输出示例：
@@ -117,7 +117,7 @@ python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledg
 #### 步骤4：智能匹配
 
 ```bash
-python3 -B <skill-dir>/scripts/project-matcher.py --candidates "康哲,知识库" --project-list '[{"id":10001,"name":"康哲知识库"},{"id":10002,"name":"玄关知识库"}]'
+`openapi_skill_exec` `toolName`=`project-matcher`，argv: --candidates "康哲,知识库" --project-list '[{"id":10001,"name":"康哲知识库"},{"id":10002,"name":"玄关知识库"}]'
 ```
 
 输出示例：
@@ -247,15 +247,14 @@ candidates=["康哲", "知识库"]
 needs_project_list=true
 
 # 3. 获取可上传空间
-python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py
-# 返回：[{"id":10001,"name":"康哲知识库"}, {"id":10002,"name":"玄关知识库"}, ...]
+`openapi_skill_exec` `toolName`=`get-uploadable-list`，argv: # 返回：[{"id":10001,"name":"康哲知识库"}, {"id":10002,"name":"玄关知识库"}, ...]
 
 # 4. 智能匹配
-python3 -B <skill-dir>/scripts/project-matcher.py --candidates "康哲,知识库" --project-list '[...]'
+`openapi_skill_exec` `toolName`=`project-matcher`，argv: --candidates "康哲,知识库" --project-list '[...]'
 # 返回：match_type="exact", matched_projects=[{"id":10001,"name":"康哲知识库"}]
 
 # 5. 直接使用匹配结果
-python3 -B <skill-dir>/scripts/upload/upload-content.py "报告内容" "报告.md" --project-id 10001 --confirm YES
+`openapi_skill_exec` `toolName`=`upload-content`，argv: "报告内容" "报告.md" --project-id 10001 --confirm YES
 ```
 
 **AI 输出**：
@@ -288,11 +287,10 @@ keywords=["政策文件"]
 needs_project_list=true
 
 # 3. 获取可访问空间
-python3 -B <skill-dir>/scripts/browse/get-project-list.py
-# 返回：[{"id":10001,"name":"康哲知识库"}, {"id":10003,"name":"康哲研发中心"}, ...]
+`openapi_skill_exec` `toolName`=`get-project-list`，argv: # 返回：[{"id":10001,"name":"康哲知识库"}, {"id":10003,"name":"康哲研发中心"}, ...]
 
 # 4. 智能匹配
-python3 -B <skill-dir>/scripts/project-matcher.py --candidates "康哲" --project-list '[...]'
+`openapi_skill_exec` `toolName`=`project-matcher`，argv: --candidates "康哲" --project-list '[...]'
 # 返回：match_type="multiple", matched_projects=[
 #   {"id":10001,"name":"康哲知识库","match_score":85},
 #   {"id":10003,"name":"康哲研发中心","match_score":82}
@@ -329,81 +327,28 @@ keywords=["政策文件"]
 needs_project_list=false
 
 # 3. 直接在指定空间搜索（必须带 --project-id）
-python3 -B <skill-dir>/scripts/query/search.py "政策文件" --project-id 10001
+`openapi_skill_exec` `toolName`=`search`，argv: "政策文件" --project-id 10001
 ```
 
 ## 代码集成示例
 
-### Python 示例
+### 推荐调用链（强制经 `openapi_skill_exec`）
 
-```python
-import json
-import subprocess
+禁止 `subprocess` / `python3 -B` / 脚本绝对路径。Agent 应按下列 `toolName` 依次调用（`skillCode`=`cms-docdb`，`argv` 只含业务参数）：
 
-SKILL_DIR = "<skill-dir>"  # 替换为 skill 根目录绝对路径
+1. `parameter-extractor` — argv: `<用户原话>`
+2. 若需要空间匹配：`get-uploadable-list` — argv:（可空）
+3. `project-matcher` — argv: `--candidates <候选名逗号分隔> --project-list <上一步 JSON>`
+4. 唯一命中后：`upload-content` — argv: `<content> <filename> --confirm YES [--project-id <id>]`
+5. 多命中 / 无命中：把候选空间列表展示给用户选择，再带 `--project-id` 调用 `upload-content`
 
-def smart_upload_to_project(user_input, content, filename):
-    """智能上传文件到用户指定的空间"""
-    
-    # 1. 参数提取
-    result = subprocess.run(
-        ['python3', '-B', f'{SKILL_DIR}/scripts/parameter-extractor.py', user_input],
-        capture_output=True, text=True
-    )
-    params = json.loads(result.stdout)['data']['parameters']
-    
-    # 2. 检查是否需要空间匹配
-    if not params.get('needs_project_list'):
-        # 没有指定空间，使用个人库
-        return upload_content(content, filename)
-    
-    # 3. 获取可上传空间列表
-    result = subprocess.run(
-        ['python3', '-B', f'{SKILL_DIR}/scripts/browse/get-uploadable-list.py'],
-        capture_output=True, text=True
-    )
-    project_list = json.loads(result.stdout)['data']
-    
-    # 4. 智能匹配
-    candidates = ','.join(params['project_name_candidates'])
-    result = subprocess.run(
-        ['python3', '-B', f'{SKILL_DIR}/scripts/project-matcher.py',
-         '--candidates', candidates,
-         '--project-list', json.dumps(project_list)],
-        capture_output=True, text=True
-    )
-    match_result = json.loads(result.stdout)['data']
-    
-    # 5. 根据匹配结果处理
-    if match_result['match_type'] in ['exact', 'best_match'] and match_result['match_count'] == 1:
-        # 唯一匹配，直接使用
-        project = match_result['matched_projects'][0]
-        return upload_content(content, filename, project_id=project['id'])
-    
-    elif match_result['match_type'] == 'multiple':
-        # 多个匹配，返回让用户选择
-        return {
-            'status': 'need_selection',
-            'message': '找到多个匹配的空间，请选择：',
-            'projects': match_result['matched_projects']
-        }
-    
-    else:
-        # 无匹配，列出所有空间
-        return {
-            'status': 'need_selection',
-            'message': '未找到匹配的空间。你有上传权限的空间：',
-            'projects': project_list
-        }
+伪代码（仅说明顺序，**不可**在运行时改用标准 exec）：
 
-def upload_content(content, filename, project_id=None):
-    """执行实际上传"""
-    cmd = ['python3', '-B', f'{SKILL_DIR}/scripts/upload/upload-content.py', content, filename, '--confirm', 'YES']
-    if project_id:
-        cmd.extend(['--project-id', str(project_id)])
-    
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    return json.loads(result.stdout)
+```text
+openapi_skill_exec toolName=parameter-extractor argv=["保存到康哲知识库"]
+openapi_skill_exec toolName=get-uploadable-list argv=[]
+openapi_skill_exec toolName=project-matcher argv=["--candidates", "康哲知识库", "--project-list", "<json>"]
+openapi_skill_exec toolName=upload-content argv=["正文", "报告.md", "--project-id", "10001", "--confirm", "YES"]
 ```
 
 ## 注意事项
@@ -423,8 +368,8 @@ matched = match_projects(["康哲", "知识库"], projects)
 ```
 
 ### 2. 根据意图选择合适的空间列表接口
-- **上传/新建** → `get-uploadable-list.py`（仅可写空间）
-- **搜索/浏览/下载** → `get-project-list.py`（所有可访问空间）
+- **上传/新建** → `get-uploadable-list`（仅可写空间）
+- **搜索/浏览/下载** → `get-project-list`（所有可访问空间）
 
 ### 3. 处理匹配结果时的建议
 - 精确匹配（exact）→ 直接使用，无需确认

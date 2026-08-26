@@ -5,20 +5,14 @@ manage / getVersionList 脚本
 用途：获取指定文件的完整版本历史列表。
 
 使用方式：
-  python3 scripts/manage/get-version-list.py <file_id>
 
-命令行参数：
-  --appkey — 必填 CLI；值取自会话用户消息上下文 CMS_CWORK_APPKEY
 """
 
 import sys
+import urllib.parse
 import os
 import json
 import time
-import argparse
-import urllib.request
-import urllib.error
-import urllib.parse
 
 # --- cms-docdb common ---
 _cms_here = os.path.dirname(os.path.abspath(__file__))
@@ -29,7 +23,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
+from docdb_open_api import ensure_common_on_path, request_open_api
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 
@@ -39,47 +33,20 @@ if sys.stdout.encoding != 'utf-8':
 if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
-API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getVersionList"
-AUTH_MODE = "appKey"
+API_PATH = "/document-database/file/getVersionList"
 TIMEOUT = 60
 MAX_RETRIES = 3
 RETRY_INTERVAL = 1
 
-def build_headers() -> dict:
-    headers = {"Content-Type": "application/json"}
-    app_key = resolve_app_key()
-    headers["appKey"] = app_key
-    return headers
 
 def call_api(file_id: int) -> dict:
-    headers = build_headers()
-    params = urllib.parse.urlencode({"fileId": file_id})
-    url = f"{API_URL}?{params}"
-    req = urllib.request.Request(url, headers=headers, method="GET")
-    ctx = ssl_context()
-
-    opener = build_opener(ctx)
-
-    for attempt in range(MAX_RETRIES):
-        try:
-            with opener.open(req, timeout=TIMEOUT) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            if attempt < MAX_RETRIES - 1:
-                time.sleep(RETRY_INTERVAL)
-            else:
-                print(f"错误: HTTP {e.code} - {e.reason}", file=sys.stderr)
-                sys.exit(1)
-        except Exception as e:
-            if attempt < MAX_RETRIES - 1:
-                time.sleep(RETRY_INTERVAL)
-            else:
-                print(f"错误: {e}", file=sys.stderr)
-                sys.exit(1)
+    return request_open_api(API_PATH, method="GET", params={"fileId": file_id})
 
 def main() -> None:
     parser = DocdbArgumentParser(description="查看版本列表", hint="""get-version-list.py 必须提供 file_id。
-示例: python3 -B <skill-dir>/scripts/manage/get-version-list.py 12345""")
+示例: openapi_skill_exec skillCode=cms-docdb toolName=get-version-list argv=["12345"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""",
+    )
     parser.add_argument("file_id", type=int, help="文件 ID")
     args = parser.parse_args()
 

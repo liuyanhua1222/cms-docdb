@@ -1,5 +1,8 @@
 # delete — 模块说明
 
+> **调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`，`toolName` 为下表/示例中的工具名；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
+
+
 ## 适用场景
 
 - 用户说"帮我把 xxx 文件删了"、"删除这个文件"
@@ -7,15 +10,12 @@
 
 ## 鉴权模式
 
-所有动作统一使用 `appKey` 鉴权；凭证以命令行 `--appkey` 传入，值取自会话用户消息上下文的 `CMS_CWORK_APPKEY`。
-
 ## 脚本清单
 
 | 脚本 | 对应接口 | 用途 |
 |---|---|---|
 | `scripts/delete/delete-file.py` | `POST /open-api/document-database/file/deleteFile` | 删除指定文件，输出 JSON 结果 |
 
-凭证以命令行 `--appkey` 传入，值取自会话用户消息上下文的 `CMS_CWORK_APPKEY`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
 
 ## 输入要求
 
@@ -71,14 +71,11 @@
 
 ## 运行方式速查
 
-**重要说明**：以下示例使用相对路径以便阅读,实际执行时必须替换为绝对路径。例如：
-- 文档示例：`python3 -B <skill-dir>/scripts/delete/delete-file.py <file_id>`
-- 实际执行：`python3 -B <skill-dir>/scripts/delete/delete-file.py <file_id>`（将 `<skill-dir>` 换成 skill 根目录绝对路径）
+**调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
 
-禁止使用 `cd`、`&&`、管道等 shell 构造。每个脚本必须在单独的命令中使用绝对路径执行。
 
 ```bash
-python3 -B <skill-dir>/scripts/delete/delete-file.py <file_id> --dry-run
-python3 -B <skill-dir>/scripts/delete/delete-file.py <file_id> --confirm YES
-python3 -B <skill-dir>/scripts/delete/delete-file.py <file_id> --physical --confirm PHYSICAL
+`openapi_skill_exec` `toolName`=`delete-file`，argv: <file_id> --dry-run
+`openapi_skill_exec` `toolName`=`delete-file`，argv: <file_id> --confirm YES
+`openapi_skill_exec` `toolName`=`delete-file`，argv: <file_id> --physical --confirm PHYSICAL
 ```

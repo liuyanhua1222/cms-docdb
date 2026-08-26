@@ -5,18 +5,12 @@ upload / uploadContent 脚本
 用途：一键快速保存纯文本内容到个人知识库（AI 内容入库首选）
 
 使用方式：
-  python3 scripts/upload/upload-content.py
 
-命令行参数：
-  --appkey — 必填 CLI；值取自会话用户消息上下文 CMS_CWORK_APPKEY
 """
 
 import sys
 import os
 import json
-import urllib.request
-import urllib.parse
-import urllib.error
 
 # --- cms-docdb common ---
 _cms_here = os.path.dirname(os.path.abspath(__file__))
@@ -27,7 +21,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
+from docdb_open_api import ensure_common_on_path, request_open_api
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 from safety import add_safety_args, enforce_or_dry_run
@@ -39,16 +33,8 @@ if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
 # 接口完整 URL（与 openapi/upload/upload-content.md 中声明的一致）
-API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/uploadContent"
-AUTH_MODE = "appKey"
+API_PATH = "/document-database/file/uploadContent"
 
-def build_headers() -> dict:
-    """根据鉴权模式构造请求头"""
-    headers = {"Content-Type": "application/json"}
-
-    if AUTH_MODE == "appKey":
-        headers["appKey"] = resolve_app_key()
-    return headers
 
 def call_api(content: str, file_name: str,
              file_suffix: str = None, folder_name: str = None,
@@ -56,8 +42,7 @@ def call_api(content: str, file_name: str,
              update_file_id: int = None, version_name: str = None,
              version_remark: str = None) -> dict:
     """调用一键上传接口，返回原始 JSON 响应"""
-    headers = build_headers()
-
+    
     body = {
         "content": content,
         "fileName": file_name
@@ -75,35 +60,7 @@ def call_api(content: str, file_name: str,
     if version_remark:
         body["versionRemark"] = version_remark
 
-    req = urllib.request.Request(
-        API_URL,
-        data=json.dumps(body).encode("utf-8"),
-        headers=headers,
-        method="POST"
-    )
-
-    ctx = ssl_context()
-
-    opener = build_opener(ctx)
-
-    for attempt in range(3):
-        try:
-            with opener.open(req, timeout=60) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                print(f"错误: HTTP {e.code} - {e.reason}", file=sys.stderr)
-                sys.exit(1)
-        except Exception as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                print(f"错误: {e}", file=sys.stderr)
-                sys.exit(1)
+    return request_open_api(API_PATH, method="POST", body=body)
 
 def process_result(result):
     """处理 API 响应结果，优先按 resultCode、resultMsg、data 读取"""
@@ -125,7 +82,8 @@ def process_result(result):
 def main():
     parser = DocdbArgumentParser(description="一键保存纯文本内容到个人知识库或指定项目空间", hint="""upload-content.py 必须提供 content 与 file_name。
 真实写入还需 --confirm YES（可先 --dry-run）。
-示例: python3 -B <skill-dir>/scripts/upload/upload-content.py "正文" "报告.md" --confirm YES""")
+示例: openapi_skill_exec skillCode=cms-docdb toolName=upload-content argv=["正文", "报告.md", "--confirm", "YES"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""")
     parser.add_argument("content", type=str, help="文件内容")
     parser.add_argument("file_name", type=str, help="文件名（建议带扩展名）")
     parser.add_argument("--file-suffix", type=str, help="文件后缀（md/html/txt/json）")
@@ -153,7 +111,7 @@ def main():
         body["versionName"] = args.version_name
     if args.version_remark:
         body["versionRemark"] = args.version_remark
-    enforce_or_dry_run(args, method="POST", url=API_URL, body=body)
+    enforce_or_dry_run(args, method="POST", url=API_PATH, body=body)
 
     result = call_api(
         content=args.content,

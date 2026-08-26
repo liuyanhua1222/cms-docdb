@@ -5,18 +5,13 @@ share / searchEmpByName 脚本
 用途：按姓名/关键词搜索员工，获取 empId（inside.empList[].id）
 
 使用方式：
-  python3 scripts/share/search-emp-by-name.py "张三"
 
-命令行参数：
-  --appkey — 必填 CLI；值取自会话用户消息上下文 CMS_CWORK_APPKEY
 """
 
 import sys
+import urllib.parse
 import os
 import json
-import urllib.request
-import urllib.parse
-import urllib.error
 
 # --- cms-docdb common ---
 _cms_here = os.path.dirname(os.path.abspath(__file__))
@@ -27,7 +22,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
+from docdb_open_api import ensure_common_on_path, request_open_api
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 
@@ -36,45 +31,14 @@ if sys.stdout.encoding != "utf-8":
 if sys.stderr.encoding != "utf-8":
     sys.stderr = open(sys.stderr.fileno(), mode="w", encoding="utf-8", buffering=1)
 
-API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/cwork-user/searchEmpByName"
-AUTH_MODE = "appKey"
+API_PATH = "/cwork-user/searchEmpByName"
 
-def build_headers() -> dict:
-    headers = {"Content-Type": "application/json"}
-    if AUTH_MODE == "appKey":
-        headers["appKey"] = resolve_app_key()
-    return headers
 
 def call_api(search_key: str) -> dict:
-    headers = build_headers()
-
+    
     params = [("searchKey", search_key)]
-    url = f"{API_URL}?{urllib.parse.urlencode(params)}"
-    req = urllib.request.Request(url, headers=headers, method="GET")
-
-    ctx = ssl_context()
-
-    opener = build_opener(ctx)
-    for attempt in range(3):
-        try:
-            with opener.open(req, timeout=60) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            if attempt < 2:
-                import time
-
-                time.sleep(1)
-            else:
-                print(f"错误: HTTP {e.code} - {e.reason}", file=sys.stderr)
-                sys.exit(1)
-        except Exception as e:
-            if attempt < 2:
-                import time
-
-                time.sleep(1)
-            else:
-                print(f"错误: {e}", file=sys.stderr)
-                sys.exit(1)
+    url = f"{API_PATH}?{urllib.parse.urlencode(params)}"
+    return request_open_api(url, method="GET")
 
 def process_result(result):
     if isinstance(result, dict):
@@ -90,7 +54,7 @@ def main():
         description="按姓名搜索员工",
         hint=(
             "search-emp-by-name.py 必须提供 search_key。\n"
-            "示例: python3 -B <skill-dir>/scripts/share/search-emp-by-name.py 张三"
+            "示例: openapi_skill_exec skillCode=cms-docdb toolName=search-emp-by-name argv=[\"张三\"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec"
         ),
     )
     parser.add_argument("search_key", type=str, help="搜索关键词（姓名等；中文会自动 URL 编码）")

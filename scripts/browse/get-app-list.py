@@ -6,18 +6,12 @@ browse / listAllApps 脚本
 用于意图不明时先按企业收敛选项，再决定 project/list 的 appCode。
 
 使用方式：
-  python3 scripts/browse/get-app-list.py --appkey <CMS_CWORK_APPKEY>
 
-命令行参数：
-  --appkey — 必填 CLI；值取自会话用户消息上下文 CMS_CWORK_APPKEY
 """
 
 import sys
 import os
 import json
-import argparse
-import urllib.request
-import urllib.error
 
 
 # --- cms-docdb common ---
@@ -29,9 +23,9 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
+from docdb_open_api import ensure_common_on_path, request_open_api
 ensure_common_on_path(__file__)
-from cli_args import add_appkey_argument
+from cli_args import DocdbArgumentParser
 
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
@@ -39,40 +33,13 @@ if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
 
-API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/app/listAll"
-AUTH_MODE = "appKey"
+API_PATH = "/document-database/app/listAll"
 
 
-def build_headers() -> dict:
-    headers = {"Content-Type": "application/json"}
-    if AUTH_MODE == "appKey":
-        headers["appKey"] = resolve_app_key()
-    return headers
 
 
 def call_api() -> dict:
-    headers = build_headers()
-    req = urllib.request.Request(API_URL, headers=headers, method="GET")
-    ctx = ssl_context()
-
-    for attempt in range(3):
-        try:
-            with build_opener(ctx).open(req, timeout=60) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                print(f"错误: HTTP {e.code} - {e.reason}", file=sys.stderr)
-                sys.exit(1)
-        except Exception as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                print(f"错误: {e}", file=sys.stderr)
-                sys.exit(1)
+    return request_open_api(API_PATH, method="GET")
 
 
 def process_result(result):
@@ -86,8 +53,10 @@ def process_result(result):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="获取当前企业可用知识库应用通道")
-    add_appkey_argument(parser)
+    parser = DocdbArgumentParser(description="获取当前企业可用知识库应用通道",
+        hint="""get-app-list.py get-app-list 按业务参数调用（无必填时可传空 argv）。
+示例: openapi_skill_exec skillCode=cms-docdb toolName=get-app-list argv=[]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""")
     parser.parse_args()
     result = call_api()
     print(json.dumps(process_result(result), ensure_ascii=False))

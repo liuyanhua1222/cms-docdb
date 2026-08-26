@@ -8,7 +8,6 @@ project-matcher.py - 智能空间名称匹配器
   避免因分词错误导致的匹配失败
 
 使用方式：
-  python3 scripts/project-matcher.py --candidates "康哲,知识库" --project-list '[{"id":123,"name":"康哲知识库"},...]'
   
 返回格式：
   {
@@ -170,8 +169,21 @@ def determine_match_type(matched_projects):
 
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="智能空间名称匹配器")
+    import os
+    import sys
+    _cms_here = os.path.dirname(os.path.abspath(__file__))
+    _cms_common = os.path.join(_cms_here, "common")
+    if _cms_common not in sys.path:
+        sys.path.insert(0, _cms_common)
+    sys.dont_write_bytecode = True
+    from cli_args import DocdbArgumentParser
+
+    parser = DocdbArgumentParser(
+        description="智能空间名称匹配器",
+        hint="""project-matcher.py 必须提供 --candidates 与 --project-list。
+示例: openapi_skill_exec skillCode=cms-docdb toolName=project-matcher argv=["--candidates", "康哲知识库", "--project-list", "[{\"id\":1}]"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""",
+    )
     parser.add_argument("--candidates", type=str, required=True,
                         help="候选词列表（逗号分隔），如 '康哲,知识库'")
     parser.add_argument("--project-list", type=str, required=True,

@@ -5,21 +5,16 @@ browse / getPersonalProjectId 脚本
 用途：获取当前用户的个人知识库空间 ID
 
 使用方式：
-  python3 scripts/browse/get-personal-project-id.py [--app-code kz_doc|fw_doc|kz_knowledge_base]
 
 说明：
   --app-code 为产品通道；不传则由后端按企业默认解析（勿理解为固定默认 kz_doc）。
 
-命令行参数：
-  --appkey — 必填 CLI；值取自会话用户消息上下文 CMS_CWORK_APPKEY
 """
 
 import sys
+import urllib.parse
 import os
 import json
-import urllib.request
-import urllib.parse
-import urllib.error
 
 # --- cms-docdb common ---
 _cms_here = os.path.dirname(os.path.abspath(__file__))
@@ -30,9 +25,9 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
+from docdb_open_api import ensure_common_on_path, request_open_api
 ensure_common_on_path(__file__)
-from cli_args import add_appkey_argument
+from cli_args import DocdbArgumentParser
 
 # 强制标准输出使用 UTF-8 编码，解决 Windows PowerShell 中文乱码问题
 if sys.stdout.encoding != 'utf-8':
@@ -41,51 +36,19 @@ if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
 # 接口完整 URL（与 openapi/browse/get-personal-project-id.md 中声明的一致）
-API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/project/personal/getProjectId"
-AUTH_MODE = "appKey"
+API_PATH = "/document-database/project/personal/getProjectId"
 
-def build_headers() -> dict:
-    """根据鉴权模式构造请求头"""
-    headers = {"Content-Type": "application/json"}
-
-    if AUTH_MODE == "appKey":
-        headers["appKey"] = resolve_app_key()
-    return headers
 
 def call_api(app_code: str = None) -> dict:
     """调用获取个人空间 ID 接口，返回原始 JSON 响应"""
-    headers = build_headers()
-
+    
     params = []
     if app_code:
         params.append(("appCode", app_code))
 
-    url = f"{API_URL}?{urllib.parse.urlencode(params)}"
+    url = f"{API_PATH}?{urllib.parse.urlencode(params)}"
 
-    req = urllib.request.Request(url, headers=headers, method="GET")
-
-    ctx = ssl_context()
-
-    opener = build_opener(ctx)
-
-    for attempt in range(3):
-        try:
-            with opener.open(req, timeout=60) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                print(f"错误: HTTP {e.code} - {e.reason}", file=sys.stderr)
-                sys.exit(1)
-        except Exception as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                print(f"错误: {e}", file=sys.stderr)
-                sys.exit(1)
+    return request_open_api(url, method="GET")
 
 def process_result(result):
     """处理 API 响应结果，优先按 resultCode、resultMsg、data 读取"""
@@ -106,13 +69,15 @@ def process_result(result):
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="获取当前用户的个人知识库空间 ID")
+    parser = DocdbArgumentParser(description="获取当前用户的个人知识库空间 ID",
+        hint="""get-personal-project-id.py get-personal-project-id 按业务参数调用（无必填时可传空 argv）。
+示例: openapi_skill_exec skillCode=cms-docdb toolName=get-personal-project-id argv=[]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""")
     parser.add_argument(
         "--app-code",
         type=str,
         help="应用通道编码：kz_doc / fw_doc / kz_knowledge_base（不传=后端按企业默认）",
     )
-    add_appkey_argument(parser)
     args = parser.parse_args()
 
     result = call_api(app_code=args.app_code)

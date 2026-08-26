@@ -5,18 +5,12 @@ query / batchGetContent 脚本
 用途：批量获取多个文件的全文内容，减少 RAG 场景交互次数
 
 使用方式：
-  python3 scripts/query/batch-get-content.py "[{\"fileId\":123},{\"fileId\":456}]"
 
-命令行参数：
-  --appkey — 必填 CLI；值取自会话用户消息上下文 CMS_CWORK_APPKEY
 """
 
 import sys
 import os
 import json
-import urllib.request
-import urllib.parse
-import urllib.error
 
 # --- cms-docdb common ---
 _cms_here = os.path.dirname(os.path.abspath(__file__))
@@ -27,7 +21,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
+from docdb_open_api import ensure_common_on_path, request_open_api
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 
@@ -38,56 +32,18 @@ if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
 # 接口完整 URL（与 openapi/query/batch-get-content.md 中声明的一致）
-API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/ai/batchGetContent"
-AUTH_MODE = "appKey"
+API_PATH = "/document-database/ai/batchGetContent"
 DEFAULT_MAX_CHARS = 0
 DEFAULT_MAX_CHARS_PER_FILE = 0
 CONTENT_KEYS = {"content", "text", "markdown", "fullContent", "fileContent"}
 
-def build_headers() -> dict:
-    """根据鉴权模式构造请求头"""
-    headers = {"Content-Type": "application/json"}
-
-    if AUTH_MODE == "appKey":
-        headers["appKey"] = resolve_app_key()
-    return headers
 
 def call_api(files: list) -> dict:
     """调用批量获取文件内容接口，返回原始 JSON 响应"""
-    headers = build_headers()
-
+    
     body = json.dumps({"files": files}).encode("utf-8")
 
-    req = urllib.request.Request(
-        API_URL,
-        data=body,
-        headers=headers,
-        method="POST"
-    )
-
-    ctx = ssl_context()
-
-    opener = build_opener(ctx)
-
-    for attempt in range(3):
-        try:
-            with opener.open(req, timeout=60) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                print(f"错误: HTTP {e.code} - {e.reason}", file=sys.stderr)
-                sys.exit(1)
-        except Exception as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                print(f"错误: {e}", file=sys.stderr)
-                sys.exit(1)
-
+    return request_open_api(API_PATH, method="POST", body=body)
 def truncate_content_fields(value, state, max_chars: int, max_chars_per_file: int):
     """截断内容字段，避免批量全文结果撑爆上层上下文或传输链路。"""
     if isinstance(value, dict):
@@ -144,7 +100,9 @@ def process_result(result, max_chars: int, max_chars_per_file: int):
 
 def main():
     parser = DocdbArgumentParser(description="批量获取文件内容", hint="""batch-get-content.py 必须提供 files_json。
-示例: python3 -B <skill-dir>/scripts/query/batch-get-content.py '[{"fileId":123}]'""")
+示例: openapi_skill_exec skillCode=cms-docdb toolName=batch-get-content argv=["[{\"fileId\":123}]"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""",
+    )
     parser.add_argument("files_json", type=str, help='文件列表 JSON，如 [{"fileId":123},{"fileId":456}]')
     parser.add_argument("--max-chars", type=int, default=DEFAULT_MAX_CHARS, help="内容字段总字符上限，<=0 表示不限制")
     parser.add_argument("--max-chars-per-file", type=int, default=DEFAULT_MAX_CHARS_PER_FILE, help="单个内容字段字符上限，<=0 表示不限制")

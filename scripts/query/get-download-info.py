@@ -5,18 +5,13 @@ query / getDownloadInfo 脚本
 用途：获取文件的下载链接或在线预览凭据
 
 使用方式：
-  python3 scripts/query/get-download-info.py <file_id> [--force-download] [--see-original]
 
-命令行参数：
-  --appkey — 必填 CLI；值取自会话用户消息上下文 CMS_CWORK_APPKEY
 """
 
 import sys
+import urllib.parse
 import os
 import json
-import urllib.request
-import urllib.parse
-import urllib.error
 
 # --- cms-docdb common ---
 _cms_here = os.path.dirname(os.path.abspath(__file__))
@@ -27,7 +22,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
+from docdb_open_api import ensure_common_on_path, request_open_api
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 
@@ -38,22 +33,13 @@ if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
 # 接口完整 URL（与 openapi/query/get-download-info.md 中声明的一致）
-API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getDownloadInfo"
-AUTH_MODE = "appKey"
+API_PATH = "/document-database/file/getDownloadInfo"
 
-def build_headers() -> dict:
-    """根据鉴权模式构造请求头"""
-    headers = {"Content-Type": "application/json"}
-
-    if AUTH_MODE == "appKey":
-        headers["appKey"] = resolve_app_key()
-    return headers
 
 def call_api(file_id: int, force_download: bool = False, see_original: bool = None,
              source: str = None, version_number: int = None, bypass_risk: bool = None) -> dict:
     """调用获取下载/预览凭据接口，返回原始 JSON 响应"""
-    headers = build_headers()
-
+    
     params = [("fileId", str(file_id)), ("forceDownload", "true" if force_download else "false")]
     if see_original is not None:
         params.append(("seeOriginal", "true" if see_original else "false"))
@@ -64,32 +50,9 @@ def call_api(file_id: int, force_download: bool = False, see_original: bool = No
     if bypass_risk is not None:
         params.append(("bypassRisk", "true" if bypass_risk else "false"))
 
-    url = f"{API_URL}?{urllib.parse.urlencode(params)}"
+    url = f"{API_PATH}?{urllib.parse.urlencode(params)}"
 
-    req = urllib.request.Request(url, headers=headers, method="GET")
-
-    ctx = ssl_context()
-
-    opener = build_opener(ctx)
-
-    for attempt in range(3):
-        try:
-            with opener.open(req, timeout=60) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                print(f"错误: HTTP {e.code} - {e.reason}", file=sys.stderr)
-                sys.exit(1)
-        except Exception as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                print(f"错误: {e}", file=sys.stderr)
-                sys.exit(1)
+    return request_open_api(url, method="GET")
 
 def process_result(result):
     """处理 API 响应结果，优先按 resultCode、resultMsg、data 读取"""
@@ -110,7 +73,8 @@ def process_result(result):
 
 def main():
     parser = DocdbArgumentParser(description="获取下载或预览凭据", hint="""get-download-info.py 必须提供 file_id。
-示例: python3 -B <skill-dir>/scripts/query/get-download-info.py 12345""")
+示例: openapi_skill_exec skillCode=cms-docdb toolName=get-download-info argv=["12345"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""")
     parser.add_argument("file_id", type=int, help="文件 ID")
     parser.add_argument("--force-download", action="store_true", help="true 则返回下载链接，false 则返回预览凭据")
     parser.add_argument("--see-original", action="store_true", help="预览是否查看原文")

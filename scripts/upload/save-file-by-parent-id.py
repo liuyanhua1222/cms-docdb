@@ -5,20 +5,15 @@ upload / saveFileByParentId 脚本
 用途：已知目标文件夹 ID 时，将物理文件保存到项目目录（比 saveFileByPath 少一次路径解析）
 
 使用方式：
-  python3 scripts/upload/save-file-by-parent-id.py <parent_id> <resource_id> "文件名.pdf" [--project-id <id>] [--suffix pdf] [--size 12345]
 
   parentId != 0 时默认通过 getFileBasicInfo 自动解析 projectId（避免 projectId 与 parentId 不一致）。
   parentId == 0（空间根）时必须传 --project-id。
 
-命令行参数：
-  --appkey — 必填 CLI；值取自会话用户消息上下文 CMS_CWORK_APPKEY
 """
 
 import sys
 import os
 import json
-import urllib.request
-import urllib.error
 
 # --- cms-docdb common ---
 _cms_here = os.path.dirname(os.path.abspath(__file__))
@@ -29,7 +24,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_project_id_for_parent, resolve_app_key, build_opener
+from docdb_open_api import ensure_common_on_path, request_open_api, resolve_project_id_for_parent
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 from safety import add_safety_args, enforce_or_dry_run
@@ -41,22 +36,13 @@ if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
 # 接口完整 URL（与 openapi/upload/save-file-by-parent-id.md 中声明的一致）
-API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/saveFileByParentId"
-AUTH_MODE = "appKey"
+API_PATH = "/document-database/file/saveFileByParentId"
 
-def build_headers() -> dict:
-    """根据鉴权模式构造请求头"""
-    headers = {"Content-Type": "application/json"}
-
-    if AUTH_MODE == "appKey":
-        headers["appKey"] = resolve_app_key()
-    return headers
 
 def call_api(project_id: int, parent_id: int, resource_id: int, name: str,
              suffix: str = None, size: int = None, is_sensitive: int = None) -> dict:
     """调用按父ID保存文件接口，返回原始 JSON 响应"""
-    headers = build_headers()
-
+    
     body = {
         "projectId": project_id,
         "parentId": parent_id,
@@ -71,35 +57,7 @@ def call_api(project_id: int, parent_id: int, resource_id: int, name: str,
     if is_sensitive is not None:
         body["isSensitive"] = is_sensitive
 
-    req = urllib.request.Request(
-        API_URL,
-        data=json.dumps(body).encode("utf-8"),
-        headers=headers,
-        method="POST"
-    )
-
-    ctx = ssl_context()
-
-    opener = build_opener(ctx)
-
-    for attempt in range(3):
-        try:
-            with opener.open(req, timeout=60) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                print(f"错误: HTTP {e.code} - {e.reason}", file=sys.stderr)
-                sys.exit(1)
-        except Exception as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                print(f"错误: {e}", file=sys.stderr)
-                sys.exit(1)
+    return request_open_api(API_PATH, method="POST", body=body)
 
 def process_result(result):
     """处理 API 响应结果，优先按 resultCode、resultMsg、data 读取"""
@@ -121,7 +79,8 @@ def process_result(result):
 def main():
     parser = DocdbArgumentParser(description="将物理文件保存到指定父目录", hint="""save-file-by-parent-id.py 必须提供 parent_id resource_id name。
 真实写入还需 --confirm YES（可先 --dry-run）。
-示例: python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py 0 999 报告.pdf --confirm YES""")
+示例: openapi_skill_exec skillCode=cms-docdb toolName=save-file-by-parent-id argv=["0", "999", "报告.pdf", "--confirm", "YES"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""")
     parser.add_argument("parent_id", type=int, help="目标文件夹 ID（根目录传 0）")
     parser.add_argument("resource_id", type=int, help="资源 ID（必须）")
     parser.add_argument("name", type=str, help="保存的文件名")
@@ -150,7 +109,7 @@ def main():
     enforce_or_dry_run(
         args,
         method="POST",
-        url=API_URL,
+        url=API_PATH,
         body=body_preview,
         extra={"projectIdResolved": False},
     )

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """GET /document-database/fileGrant/apply/approvers — 查询可申请的管理员"""
-import sys, os, json, urllib.request, urllib.parse, argparse
+import sys, os, json
 
 # --- cms-docdb common ---
 _cms_here = os.path.dirname(os.path.abspath(__file__))
@@ -11,31 +11,24 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
+from docdb_open_api import ensure_common_on_path, request_open_api
 ensure_common_on_path(__file__)
-from cli_args import add_appkey_argument
+from cli_args import DocdbArgumentParser
 
-API_BASE = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/fileGrant/apply/approvers"
+API_PATH = "/document-database/fileGrant/apply/approvers"
 
-def headers():
-    h = {"Content-Type": "application/json"}
-    k = resolve_app_key()
-    h["appKey"] = k
-    return h
 
 def main():
-    p = argparse.ArgumentParser()
+    p = DocdbArgumentParser(hint="""get-approvers.py 必须提供 file_id。
+示例: openapi_skill_exec skillCode=cms-docdb toolName=get-approvers argv=["12345"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""")
     p.add_argument("file_id", type=int)
     p.add_argument("--keyword", default=None)
-    add_appkey_argument(p)
     args = p.parse_args()
     q = [("fileId", str(args.file_id))]
     if args.keyword: q.append(("keyword", args.keyword))
-    url = f"{API_BASE}?{urllib.parse.urlencode(q)}"
-    ctx = ssl_context()
-    req = urllib.request.Request(url, headers=headers(), method="GET")
-    with build_opener(ctx).open(req, timeout=60) as resp:
-        print(json.dumps(json.loads(resp.read().decode()), ensure_ascii=False))
-
+    url = f"{API_PATH}?{urllib.parse.urlencode(q)}"
+    result = request_open_api(url, method="GET")
+    print(json.dumps(result, ensure_ascii=False))
 if __name__ == "__main__":
     main()

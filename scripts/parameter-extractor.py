@@ -241,8 +241,14 @@ def generate_missing_params_hint(params):
 
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="参数提取和缺失提示生成")
+    from cli_args import DocdbArgumentParser
+
+    parser = DocdbArgumentParser(
+        description="参数提取和缺失提示生成",
+        hint="""parameter-extractor.py 必须提供 user_input。
+示例: openapi_skill_exec skillCode=cms-docdb toolName=parameter-extractor argv=["保存到康哲知识库"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""",
+    )
     parser.add_argument("user_input", type=str, nargs='?', help="用户输入（位置参数）")
     parser.add_argument("--user-input", type=str, dest="user_input_opt", help="用户输入（命名参数）")
     parser.add_argument("--context", type=str, help="上下文 JSON（可选）")
@@ -253,7 +259,7 @@ def main():
         print(
             "错误: 缺少用户输入。\n"
             "parameter-extractor.py 需要位置参数或 --user-input。\n"
-            '示例: python3 -B <skill-dir>/scripts/parameter-extractor.py "保存到康哲知识库"',
+            "示例: openapi_skill_exec skillCode=cms-docdb toolName=parameter-extractor argv=[\"保存到康哲知识库\"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec",
             file=sys.stderr,
         )
         print(json.dumps({

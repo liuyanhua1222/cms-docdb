@@ -105,8 +105,20 @@ def get_context(user_id="default"):
 
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="上下文管理和状态维护")
+    import os
+    _cms_here = os.path.dirname(os.path.abspath(__file__))
+    _cms_common = os.path.join(_cms_here, "common")
+    if _cms_common not in sys.path:
+        sys.path.insert(0, _cms_common)
+    sys.dont_write_bytecode = True
+    from cli_args import DocdbArgumentParser
+
+    parser = DocdbArgumentParser(
+        description="上下文管理和状态维护",
+        hint="""context-manager.py 须提供 cmd（get/update/set_folder/...）。
+示例: openapi_skill_exec skillCode=cms-docdb toolName=context-manager argv=["get"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""",
+    )
     parser.add_argument("cmd", type=str, nargs='?', help="命令：get/update/set_folder/set_file/set_project/set_app_code/clear")
     parser.add_argument("--cmd", type=str, dest="cmd_opt", help="命令（命名参数）")
     parser.add_argument("--user-id", type=str, default="default", help="用户 ID（可选）")

@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 """
-manage / updateFileProperty — 已废弃，请改用 update-file-name.py / move-file.py
+manage / updateFileProperty — 已废弃
 
-本脚本保留用于兼容旧命令行：自动转发到新接口（先 move 再 rename）。
-原样转发 --dry-run / --confirm / --appkey 给子脚本；自身缺 confirm 且非 dry-run 时 exit 2。
+请优先直接调用：
+  - openapi_skill_exec toolName=update-file-name
+  - openapi_skill_exec toolName=move-file
+
+本工具仅兼容旧入口：在同一工具子进程内转发到上述脚本（继承运行时注入的环境变量），
+原样转发 --dry-run / --confirm；自身缺 confirm 且非 dry-run 时 exit 2。
 """
 
 import sys
 import os
 import json
-import argparse
 import subprocess
 
 if sys.stdout.encoding != 'utf-8':
@@ -25,7 +28,7 @@ sys.dont_write_bytecode = True
 from docdb_open_api import ensure_common_on_path
 ensure_common_on_path(__file__)
 from safety import add_safety_args
-from cli_args import add_appkey_argument
+from cli_args import DocdbArgumentParser
 
 
 def run_script(script_name: str, args: list) -> dict:
@@ -38,15 +41,16 @@ def run_script(script_name: str, args: list) -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="[已废弃] 转发到 update-file-name / move-file")
+    parser = DocdbArgumentParser(description="[已废弃] 转发到 update-file-name / move-file",
+        hint="""update-file-property.py 已废弃；优先直接调用 update-file-name / move-file。若仍用本工具须提供 file_id。
+示例: openapi_skill_exec skillCode=cms-docdb toolName=update-file-property argv=["12345", "--new-name", "新名.pdf", "--confirm", "YES"]（已废弃，优先 update-file-name / move-file）；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""")
     parser.add_argument("file_id", type=int)
     parser.add_argument("--new-name", type=str)
     parser.add_argument("--target-parent-id", type=int)
     parser.add_argument("--cover", action="store_true")
     parser.add_argument("--auto-rename", action="store_true")
     add_safety_args(parser)
-    add_appkey_argument(parser)
     args = parser.parse_args()
 
     if not args.dry_run and args.confirm != "YES":
@@ -57,7 +61,7 @@ def main():
         )
         sys.exit(2)
 
-    print("警告: update-file-property 已废弃，正在转发到 updateFileName/moveFile", file=sys.stderr)
+    print("警告: update-file-property 已废弃；请优先直接调用 update-file-name / move-file", file=sys.stderr)
 
     if not args.new_name and not args.target_parent_id:
         print("错误: 必须提供 --new-name 或 --target-parent-id", file=sys.stderr)
@@ -68,8 +72,6 @@ def main():
         safety_flags.append("--dry-run")
     if args.confirm:
         safety_flags.extend(["--confirm", args.confirm])
-    if args.appkey:
-        safety_flags.extend(["--appkey", args.appkey])
 
     move_strategy = "1" if args.cover else ("0" if args.auto_rename else "2")
     rename_strategy = "0" if args.auto_rename else "1"

@@ -5,14 +5,11 @@ grant / strip-grant-permissions 脚本
 用途：从目录授权中去掉指定权限位（保留 read）；勿用于整单收回授权。
 
 使用方式：
-  python3 scripts/grant/strip-grant-permissions.py <file_id> --emp-id <emp_id> --remove download,preview --confirm YES
 """
 
 import sys
 import os
 import json
-import urllib.request
-import urllib.error
 
 _cms_here = os.path.dirname(os.path.abspath(__file__))
 _cms_common = os.path.join(_cms_here, "common")
@@ -22,7 +19,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
+from docdb_open_api import ensure_common_on_path, request_open_api
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 from safety import add_safety_args, enforce_or_dry_run
@@ -32,42 +29,21 @@ if sys.stdout.encoding != "utf-8":
 if sys.stderr.encoding != "utf-8":
     sys.stderr = open(sys.stderr.fileno(), mode="w", encoding="utf-8", buffering=1)
 
-URL_GET = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/fileGrant/getGrants"
-URL_UPSERT = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/fileGrant/upsertGrants"
+URL_GET = "/document-database/fileGrant/getGrants"
+URL_UPSERT = "/document-database/fileGrant/upsertGrants"
 DEFAULT_DUE_DATE = 20991231
 READ_PERM = "read"
 
 
-def headers():
-    return {"Content-Type": "application/json", "appKey": resolve_app_key()}
-
-
-def call_json(method: str, url: str, body: dict = None) -> dict:
-    data = json.dumps(body, ensure_ascii=False).encode("utf-8") if body is not None else None
-    req = urllib.request.Request(url, data=data, headers=headers(), method=method)
-    ctx = ssl_context()
-    with build_opener(ctx).open(req, timeout=60) as resp:
-        return json.loads(resp.read().decode("utf-8"))
-
-
-def parse_csv(raw: str) -> list:
-    return [p.strip() for p in raw.split(",") if p.strip()]
-
-
-def current_permissions(grant_entry: dict) -> set:
-    perms = set()
-    for p in grant_entry.get("permissions") or []:
-        if not isinstance(p, dict):
-            continue
-        if p.get("status") == 0 and p.get("type"):
-            perms.add(str(p.get("type")).strip())
-    return perms
-
+def call_json(method: str, url: str, body: dict = None, params: list = None) -> dict:
+    return request_open_api(url, method=method, body=body, params=params)
 
 def main():
     parser = DocdbArgumentParser(
         description="去掉目录授权中的指定权限位（保留 read）",
-        hint="strip-grant-permissions.py 示例: ... 12345 --emp-id 1 --remove download --confirm YES",
+        hint="""strip-grant-permissions.py 必须提供 file_id、--emp-id、--remove；真实写入还需 --confirm YES。
+示例: openapi_skill_exec skillCode=cms-docdb toolName=strip-grant-permissions argv=["12345", "--emp-id", "1", "--remove", "download", "--confirm", "YES"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""",
     )
     parser.add_argument("file_id", type=int)
     parser.add_argument("--emp-id", type=int, required=True)

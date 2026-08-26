@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """GET /document-database/admin/isProjectMember — 判断当前用户是否空间成员"""
-import sys, os, json, urllib.request, urllib.parse, argparse
+import sys, os, json
 
 # --- cms-docdb common ---
 _cms_here = os.path.dirname(os.path.abspath(__file__))
@@ -11,28 +11,21 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
+from docdb_open_api import ensure_common_on_path, request_open_api
 ensure_common_on_path(__file__)
-from cli_args import add_appkey_argument
+from cli_args import DocdbArgumentParser
 
-API_BASE = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/admin/isProjectMember"
+API_PATH = "/document-database/admin/isProjectMember"
 
-def headers():
-    h = {"Content-Type": "application/json"}
-    k = resolve_app_key()
-    h["appKey"] = k
-    return h
 
 def main():
-    p = argparse.ArgumentParser()
+    p = DocdbArgumentParser(hint="""is-project-member.py 必须提供 project_id。
+示例: openapi_skill_exec skillCode=cms-docdb toolName=is-project-member argv=["10001"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""")
     p.add_argument("project_id", type=int)
-    add_appkey_argument(p)
     args = p.parse_args()
-    url = f"{API_BASE}?{urllib.parse.urlencode({'projectId': str(args.project_id)})}"
-    ctx = ssl_context()
-    req = urllib.request.Request(url, headers=headers(), method="GET")
-    with build_opener(ctx).open(req, timeout=60) as resp:
-        print(json.dumps(json.loads(resp.read().decode()), ensure_ascii=False))
-
+    url = f"{API_PATH}?{urllib.parse.urlencode({'projectId': str(args.project_id)})}"
+    result = request_open_api(url, method="GET")
+    print(json.dumps(result, ensure_ascii=False))
 if __name__ == "__main__":
     main()

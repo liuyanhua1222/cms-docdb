@@ -5,18 +5,13 @@ query / search 脚本
 用途：根据关键词搜索文件或目录
 
 使用方式：
-  python3 scripts/query/search.py "搜索关键词"
 
-命令行参数：
-  --appkey — 必填 CLI；值取自会话用户消息上下文 CMS_CWORK_APPKEY
 """
 
 import sys
+import urllib.parse
 import os
 import json
-import urllib.request
-import urllib.parse
-import urllib.error
 
 # --- cms-docdb common ---
 _cms_here = os.path.dirname(os.path.abspath(__file__))
@@ -27,7 +22,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
+from docdb_open_api import ensure_common_on_path, request_open_api
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 
@@ -38,24 +33,15 @@ if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
 # 接口完整 URL（与 openapi/query/search.md 中声明的一致）
-API_URL = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/searchFile"
-AUTH_MODE = "appKey"
+API_PATH = "/document-database/file/searchFile"
 
-def build_headers() -> dict:
-    """根据鉴权模式构造请求头"""
-    headers = {"Content-Type": "application/json"}
-
-    if AUTH_MODE == "appKey":
-        headers["appKey"] = resolve_app_key()
-    return headers
 
 def call_api(name_key: str, project_id: int = None, root_file_id: int = None,
              start_time: int = None, end_time: int = None,
              is_file_storage: bool = None, permission_query: str = None,
              exclude_file_types: str = None, exclude_folder_names: str = None) -> dict:
     """调用文件搜索接口，返回原始 JSON 响应"""
-    headers = build_headers()
-
+    
     # nameKey 必须 URL 编码
     params = [("nameKey", name_key)]
     if project_id is not None:
@@ -75,32 +61,9 @@ def call_api(name_key: str, project_id: int = None, root_file_id: int = None,
     if exclude_folder_names:
         params.append(("excludeFolderNames", exclude_folder_names))
 
-    url = f"{API_URL}?{urllib.parse.urlencode(params)}"
+    url = f"{API_PATH}?{urllib.parse.urlencode(params)}"
 
-    req = urllib.request.Request(url, headers=headers, method="GET")
-
-    ctx = ssl_context()
-
-    opener = build_opener(ctx)
-
-    for attempt in range(3):
-        try:
-            with opener.open(req, timeout=60) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                print(f"错误: HTTP {e.code} - {e.reason}", file=sys.stderr)
-                sys.exit(1)
-        except Exception as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                print(f"错误: {e}", file=sys.stderr)
-                sys.exit(1)
+    return request_open_api(url, method="GET")
 
 def process_result(result):
     """处理 API 响应结果，优先按 resultCode、resultMsg、data 读取"""
@@ -121,7 +84,8 @@ def process_result(result):
 
 def main():
     parser = DocdbArgumentParser(description="按关键词搜索文件", hint="""search.py 必须提供 name_key，且必须带 --project-id。
-示例: python3 -B <skill-dir>/scripts/query/search.py "合同" --project-id 10001""")
+示例: openapi_skill_exec skillCode=cms-docdb toolName=search argv=["合同", "--project-id", "10001"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""")
     parser.add_argument("name_key", type=str, help="搜索关键词（必填）")
     parser.add_argument("--project-id", type=int, required=True, help="项目/空间 ID（必填，用于限定搜索范围）")
     parser.add_argument("--root-file-id", type=int, help="指定根目录 ID（可选）")

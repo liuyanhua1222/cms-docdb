@@ -9,17 +9,14 @@ folder-navigator.py - 智能目录导航器
 
 使用方式：
   # 方式1: 在指定空间查找目录
-  python3 scripts/folder-navigator.py \
     --project-id 10001 \
     --folder-name "产品资料"
   
   # 方式2: 在多个空间查找目录
-  python3 scripts/folder-navigator.py \
     --project-ids "10001,10002" \
     --folder-name "AI生成"
   
   # 方式3: 路径导航（支持层级）
-  python3 scripts/folder-navigator.py \
     --project-id 10001 \
     --folder-path "产品资料/慷彼申"
 
@@ -39,9 +36,6 @@ folder-navigator.py - 智能目录导航器
 import sys
 import json
 import os
-import urllib.request
-import urllib.parse
-import urllib.error
 from difflib import SequenceMatcher
 
 # --- cms-docdb common ---
@@ -53,9 +47,9 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
+from docdb_open_api import ensure_common_on_path, request_open_api
 ensure_common_on_path(__file__)
-from cli_args import add_appkey_argument
+from cli_args import DocdbArgumentParser
 
 # 强制标准输出使用 UTF-8 编码
 if sys.stdout.encoding != 'utf-8':
@@ -63,50 +57,33 @@ if sys.stdout.encoding != 'utf-8':
 if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
-def build_headers():
-    """构造请求头"""
-    app_key = resolve_app_key()
-    return {
-        "Content-Type": "application/json",
-        "appKey": app_key
-    }
 
 def get_level1_folders(project_id):
     """获取项目根目录下的所有文件夹"""
-    url = f"https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getLevel1Folders?projectId={project_id}"
-    headers = build_headers()
-    req = urllib.request.Request(url, headers=headers, method="GET")
-    
-    ctx = ssl_context()
-    opener = build_opener(ctx)
-    
+    url = f"/document-database/file/getLevel1Folders?projectId={project_id}"
     try:
-        with opener.open(req, timeout=60) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
-            if result.get('resultCode') == 1:
-                folders = result.get('data', {}).get('folders', [])
-                return folders
-            return []
+        result = request_open_api(url, method="GET")
+        if result.get('resultCode') == 1:
+            folders = result.get('data', {}).get('folders', [])
+            return folders
+        return []
     except Exception as e:
         print(f"警告: 获取项目 {project_id} 根目录失败: {e}", file=sys.stderr)
         return []
 
 def get_child_folders(parent_id):
     """获取指定目录下的子文件夹"""
-    url = f"https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/file/getChildFiles?parentId={parent_id}&type=1"
-    headers = build_headers()
-    req = urllib.request.Request(url, headers=headers, method="GET")
-    
-    ctx = ssl_context()
-    opener = build_opener(ctx)
-    
+    url = f"/document-database/file/getChildFiles?parentId={parent_id}&type=1"
     try:
-        with opener.open(req, timeout=60) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
-            if result.get('resultCode') == 1:
-                folders = result.get('data', {}).get('folders', [])
-                return folders
-            return []
+        result = request_open_api(url, method="GET")
+        if result.get('resultCode') == 1:
+            # folders only
+            data = result.get('data') or {}
+            folders = data.get('folders')
+            if folders is None and isinstance(data.get('files'), list):
+                folders = [x for x in data['files'] if x.get('type') == 1 or x.get('isFolder')]
+            return folders or []
+        return []
     except Exception as e:
         print(f"警告: 获取目录 {parent_id} 的子文件夹失败: {e}", file=sys.stderr)
         return []
@@ -276,14 +253,17 @@ def determine_match_type(matched_folders):
         return "multiple"
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="智能目录导航器")
+    parser = DocdbArgumentParser(
+        description="智能目录导航器",
+        hint="""folder-navigator.py 须提供 --project-id（或 --project-ids）以及 --folder-name 或 --folder-path。
+示例: openapi_skill_exec skillCode=cms-docdb toolName=folder-navigator argv=["--project-id", "10001", "--folder-name", "产品资料"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""",
+    )
     parser.add_argument("--project-id", type=int, help="项目空间 ID")
     parser.add_argument("--project-ids", type=str, help="多个项目空间 ID（逗号分隔）")
     parser.add_argument("--folder-name", type=str, help="目录名称（单层匹配）")
     parser.add_argument("--folder-path", type=str, help="目录路径（多层导航，如 '产品资料/慷彼申'）")
     parser.add_argument("--max-depth", type=int, default=3, help="最大搜索深度（默认3层）")
-    add_appkey_argument(parser)
     args = parser.parse_args()
     
     try:

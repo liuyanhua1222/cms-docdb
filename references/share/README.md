@@ -1,5 +1,8 @@
 # share — 模块说明（授权分享）
 
+> **调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`，`toolName` 为下表/示例中的工具名；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
+
+
 ## 适用场景
 
 - 用户要把某个知识库文件/文件夹 **分享给某个人**（协同分享/授权）
@@ -8,8 +11,6 @@
 - 用户在授权后还需要：**分享预览短链** 或 **查看分享记录**
 
 ## 鉴权模式
-
-所有动作统一使用 `appKey` 鉴权；凭证以命令行 `--appkey` 传入，值取自会话用户消息上下文的 `CMS_CWORK_APPKEY`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
 
 ## 员工 ID（empId）获取方式（必须遵循用户服务文档）
 
@@ -171,40 +172,37 @@ open-api / skill 的 **`upsertFileShareGrants` 只写 `t_file_share`**，与「�
 
 
 
-**重要说明**：以下示例使用相对路径以便阅读，实际执行时必须替换为绝对路径。例如：
-- 文档示例：`python3 -B <skill-dir>/scripts/share/search-emp-by-name.py "张三"`
-- 实际执行：`python3 -B <skill-dir>/scripts/share/search-emp-by-name.py "张三"`（将 `<skill-dir>` 换成 skill 根目录绝对路径）
+**调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
 
-禁止使用 `cd`、`&&`、管道等 shell 构造。每个脚本必须在单独的命令中使用绝对路径执行。
 
 ```bash
 # 1) 通过姓名搜索员工，拿到 empId
-python3 -B <skill-dir>/scripts/share/search-emp-by-name.py "张三"
+`openapi_skill_exec` `toolName`=`search-emp-by-name`，argv: "张三"
 
 # 2)（可选）查询调用方对 fileId 的可分享权限上限（用于防止超额授权）
-python3 -B <skill-dir>/scripts/share/get-my-share-permissions.py 2029019008342265857
+`openapi_skill_exec` `toolName`=`get-my-share-permissions`，argv: 2029019008342265857
 
 # 3) 分享给某员工（upsert；默认权限：fileshare,preview,read；默认发送钉钉通知）
-python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py 2029019008342265857 --emp-id 10001 --confirm YES
+`openapi_skill_exec` `toolName`=`upsert-file-share-grants`，argv: 2029019008342265857 --emp-id 10001 --confirm YES
 
 # 3.1) 分享成功后一并输出短链
-python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py 2029019008342265857 --emp-id 10001 --confirm YES --print-share-url --source "open_api"
+`openapi_skill_exec` `toolName`=`upsert-file-share-grants`，argv: 2029019008342265857 --emp-id 10001 --confirm YES --print-share-url --source "open_api"
 
 # 4) 显式指定权限（逗号分隔）
-python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py 2029019008342265857 --emp-id 10001 --permissions "read,preview,download" --confirm YES
+`openapi_skill_exec` `toolName`=`upsert-file-share-grants`，argv: 2029019008342265857 --emp-id 10001 --permissions "read,preview,download" --confirm YES
 
 # 4.1) 显式指定到期日（yyyyMMdd）；不传时默认会按长期有效处理（dueDate=20991231）
-python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py 2029019008342265857 --emp-id 10001 --permissions "read,preview" --due-date 20991231 --confirm YES
+`openapi_skill_exec` `toolName`=`upsert-file-share-grants`，argv: 2029019008342265857 --emp-id 10001 --permissions "read,preview" --due-date 20991231 --confirm YES
 
 # 5) 不发送钉钉通知（用户明确要求时才用）
-python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py 2029019008342265857 --emp-id 10001 --no-notice --confirm YES
+`openapi_skill_exec` `toolName`=`upsert-file-share-grants`，argv: 2029019008342265857 --emp-id 10001 --no-notice --confirm YES
 
 # 6) 授权后生成可转发的预览短链接（用于分发给他人打开）
-python3 -B <skill-dir>/scripts/share/get-share-url.py 2029019008342265857 --source "external"
+`openapi_skill_exec` `toolName`=`get-share-url`，argv: 2029019008342265857 --source "external"
 
 # 7) 查看该文件/文件夹当前协同分享列表（谁被授权了哪些权限、有效期等）
-python3 -B <skill-dir>/scripts/share/get-file-shares.py 2029019008342265857
+`openapi_skill_exec` `toolName`=`get-file-shares`，argv: 2029019008342265857
 
 # 8) 撤销指定员工的分享（empId 逗号分隔）
-python3 -B <skill-dir>/scripts/share/revoke-file-share-grants.py 2029019008342265857 --emp-ids 10002,10003 --confirm YES
+`openapi_skill_exec` `toolName`=`revoke-file-share-grants`，argv: 2029019008342265857 --emp-ids 10002,10003 --confirm YES
 ```

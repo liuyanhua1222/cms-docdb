@@ -5,15 +5,12 @@ share / strip-share-permissions 脚本
 用途：从已有协同分享记录中去掉指定权限位（保留 read）；勿用于整单撤销协同。
 
 使用方式：
-  python3 scripts/share/strip-share-permissions.py <file_id> --emp-id <emp_id> --remove fileshare,preview --confirm YES
 """
 
 import sys
+import urllib.parse
 import os
 import json
-import urllib.request
-import urllib.parse
-import urllib.error
 
 _cms_here = os.path.dirname(os.path.abspath(__file__))
 _cms_common = os.path.join(_cms_here, "common")
@@ -23,7 +20,7 @@ _cms_common = os.path.abspath(_cms_common)
 if _cms_common not in sys.path:
     sys.path.insert(0, _cms_common)
 sys.dont_write_bytecode = True
-from docdb_open_api import ensure_common_on_path, ssl_context, resolve_app_key, build_opener
+from docdb_open_api import ensure_common_on_path, request_open_api
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 from safety import add_safety_args, enforce_or_dry_run
@@ -33,48 +30,17 @@ if sys.stdout.encoding != "utf-8":
 if sys.stderr.encoding != "utf-8":
     sys.stderr = open(sys.stderr.fileno(), mode="w", encoding="utf-8", buffering=1)
 
-BASE = "https://sg-al-cwork-web.mediportal.com.cn/open-api/document-database/share"
+BASE = "/document-database/share"
 URL_GET_SHARES = f"{BASE}/getFileShares"
 URL_UPSERT = f"{BASE}/upsertFileShareGrants"
 DEFAULT_DUE_DATE = 20991231
 READ_PERM = "read"
 
 
-def build_headers() -> dict:
-    return {"Content-Type": "application/json", "appKey": resolve_app_key()}
 
 
 def call_json(method: str, url: str, body: dict = None, params: list = None) -> dict:
-    headers = build_headers()
-    if params:
-        url = f"{url}?{urllib.parse.urlencode(params)}"
-    data = json.dumps(body, ensure_ascii=False).encode("utf-8") if body is not None else None
-    req = urllib.request.Request(url, data=data, headers=headers, method=method)
-    ctx = ssl_context()
-    opener = build_opener(ctx)
-    for attempt in range(3):
-        try:
-            with opener.open(req, timeout=60) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                try:
-                    err_body = e.read().decode("utf-8")
-                    print(f"错误: HTTP {e.code} - {e.reason} - {err_body}", file=sys.stderr)
-                except Exception:
-                    print(f"错误: HTTP {e.code} - {e.reason}", file=sys.stderr)
-                sys.exit(1)
-        except Exception as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
-            else:
-                print(f"错误: {e}", file=sys.stderr)
-                sys.exit(1)
-
+    return request_open_api(url, method=method, body=body, params=params)
 
 def parse_csv(raw: str) -> list:
     return [p.strip() for p in raw.split(",") if p.strip()]
@@ -91,7 +57,9 @@ def normalize_permissions(raw) -> set:
 def main():
     parser = DocdbArgumentParser(
         description="去掉协同分享中的指定权限位（保留 read）",
-        hint="strip-share-permissions.py 示例: ... 12345 --emp-id 1 --remove fileshare --confirm YES",
+        hint="""strip-share-permissions.py 必须提供 file_id、--emp-id、--remove；真实写入还需 --confirm YES。
+示例: openapi_skill_exec skillCode=cms-docdb toolName=strip-share-permissions argv=["12345", "--emp-id", "1", "--remove", "fileshare", "--confirm", "YES"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+""",
     )
     parser.add_argument("file_id", type=int, help="文件/文件夹 ID")
     parser.add_argument("--emp-id", type=int, required=True, help="被分享员工 empId")

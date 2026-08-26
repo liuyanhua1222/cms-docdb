@@ -1,5 +1,8 @@
 # apply — 权限申请与审批
 
+> **调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`，`toolName` 为下表/示例中的工具名；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
+
+
 ## 流程（提交申请）
 
 1. `get-approvers.py <file_id>` — 获取可选审批人（支持 `--keyword`）
@@ -32,7 +35,6 @@
 - `--page-index` - 页码（从 1 开始）
 - `--page-size` - 每页数量
 
-凭证以命令行 `--appkey` 传入，值取自会话用户消息上下文的 `CMS_CWORK_APPKEY`。文档与示例统一写 `python3`；执行时优先 `python3`，若不可用（常见于部分 Windows 仅有 `python` 命令）则改用 `python` 等价替换。
 
 ## 禁止调用的接口
 
@@ -76,20 +78,17 @@
 
 ## 示例
 
-**重要说明**：以下示例使用相对路径以便阅读，实际执行时必须替换为绝对路径。例如：
-- 文档示例：`python3 -B <skill-dir>/scripts/apply/get-approvers.py 123456`
-- 实际执行：`python3 -B <skill-dir>/scripts/apply/get-approvers.py 123456`（将 `<skill-dir>` 换成 skill 根目录绝对路径）
+**调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
 
-禁止使用 `cd`、`&&`、管道等 shell 构造。每个脚本必须在单独的命令中使用绝对路径执行。
 
 ```bash
-python3 -B <skill-dir>/scripts/apply/get-approvers.py 123456 --keyword "张"
-python3 -B <skill-dir>/scripts/apply/submit-apply.py 123456 --permissions "read,preview" --reason "查阅方案" --approver-ids 1001 --confirm YES
-python3 -B <skill-dir>/scripts/apply/list-my-applies.py --page-index 1 --page-size 20
-python3 -B <skill-dir>/scripts/apply/list-my-applies.py --keyword "技术方案" --page-index 1 --page-size 20
-python3 -B <skill-dir>/scripts/apply/list-pending-applies.py --page-index 1 --page-size 20
-python3 -B <skill-dir>/scripts/apply/list-pending-applies.py --keyword "张三" --status 1
-python3 -B <skill-dir>/scripts/apply/review-apply.py 99 --action pass --permissions "read,preview" --confirm YES
-python3 -B <skill-dir>/scripts/apply/review-apply.py 99 --action refuse --reason "理由不充分" --confirm YES
-python3 -B <skill-dir>/scripts/admin/add-member.py 888 --employee-id 10002 --confirm YES
+`openapi_skill_exec` `toolName`=`get-approvers`，argv: 123456 --keyword "张"
+`openapi_skill_exec` `toolName`=`submit-apply`，argv: 123456 --permissions "read,preview" --reason "查阅方案" --approver-ids 1001 --confirm YES
+`openapi_skill_exec` `toolName`=`list-my-applies`，argv: --page-index 1 --page-size 20
+`openapi_skill_exec` `toolName`=`list-my-applies`，argv: --keyword "技术方案" --page-index 1 --page-size 20
+`openapi_skill_exec` `toolName`=`list-pending-applies`，argv: --page-index 1 --page-size 20
+`openapi_skill_exec` `toolName`=`list-pending-applies`，argv: --keyword "张三" --status 1
+`openapi_skill_exec` `toolName`=`review-apply`，argv: 99 --action pass --permissions "read,preview" --confirm YES
+`openapi_skill_exec` `toolName`=`review-apply`，argv: 99 --action refuse --reason "理由不充分" --confirm YES
+`openapi_skill_exec` `toolName`=`add-member`，argv: 888 --employee-id 10002 --confirm YES
 ```

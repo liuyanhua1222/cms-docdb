@@ -21,7 +21,7 @@ API_PATH = "/document-database/fileGrant/upsertGrants"
 
 def main():
     p = DocdbArgumentParser(hint="""upsert-file-grants.py 必须提供 file_id、--emp-id、--permissions；真实写入还需 --confirm YES。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=upsert-file-grants argv=["12345", "--emp-id", "1", "--permissions", "read,preview", "--confirm", "YES"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/grant/upsert-file-grants.py 12345 --emp-id 1 --permissions "read,preview" --confirm YES；缺参补齐后用同一 python 命令重试
 """)
     p.add_argument("file_id", type=int)
     p.add_argument("--emp-id", type=int, required=True)

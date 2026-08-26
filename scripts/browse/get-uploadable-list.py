@@ -72,7 +72,7 @@ def main():
     import argparse
     parser = DocdbArgumentParser(description="获取当前账号有上传/编辑权限的空间列表",
         hint="""get-uploadable-list.py get-uploadable-list 按业务参数调用（无必填时可传空 argv）。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=get-uploadable-list argv=["--app-code", "kz_knowledge_base"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py --app-code "kz_knowledge_base"；缺参补齐后用同一 python 命令重试
 """)
     parser.add_argument("--app-code", type=str, help="应用编码")
     parser.add_argument("--name-key", type=str, help="空间名称模糊搜索关键词")

@@ -1,6 +1,6 @@
 # upload — 模块说明
 
-> **调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`，`toolName` 为下表/示例中的工具名；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
+> **调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令只含业务参数。
 
 
 ## 目录
@@ -207,10 +207,10 @@ docdb 后端已实现智能 `projectId` 补全，以下脚本受益：
 **示例**：
 ```text
 # 推荐：省略 projectId（parentId > 0 时）；位置参数：parent_id resource_id name
-`openapi_skill_exec` `toolName`=`save-file-by-parent-id`，argv: 10086 987654321 "技术方案.pdf" --confirm YES
+python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py 10086 987654321 "技术方案.pdf" --confirm YES
 
 # 必填：parentId=0 时必须传 --project-id
-`openapi_skill_exec` `toolName`=`save-file-by-parent-id`，argv: 0 987654321 "根目录文件.pdf" --project-id 2025001 --confirm YES
+python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py 0 987654321 "根目录文件.pdf" --project-id 2025001 --confirm YES
 ```
 
 ### 2. create-folder.py
@@ -221,10 +221,10 @@ docdb 后端已实现智能 `projectId` 补全，以下脚本受益：
 **示例**：
 ```text
 # 推荐：省略 projectId（parentId > 0 时）；位置参数：parent_id name
-`openapi_skill_exec` `toolName`=`create-folder`，argv: 10086 "新建文件夹" --confirm YES
+python3 -B <skill-dir>/scripts/upload/create-folder.py 10086 "新建文件夹" --confirm YES
 
 # 必填：parentId=0 时必须传 --project-id
-`openapi_skill_exec` `toolName`=`create-folder`，argv: 0 "空间根文件夹" --project-id 2025001 --confirm YES
+python3 -B <skill-dir>/scripts/upload/create-folder.py 0 "空间根文件夹" --project-id 2025001 --confirm YES
 ```
 
 ### 3. save-file-by-path.py
@@ -235,10 +235,10 @@ docdb 后端已实现智能 `projectId` 补全，以下脚本受益：
 **示例**：
 ```text
 # 位置参数：project_id name resource_id；目录用 --path
-`openapi_skill_exec` `toolName`=`save-file-by-path`，argv: 2025001 "方案.pdf" 987654321 --path "工程档案/设计图纸" --confirm YES
+python3 -B <skill-dir>/scripts/upload/save-file-by-path.py 2025001 "方案.pdf" 987654321 --path "工程档案/设计图纸" --confirm YES
 
 # 指定空间根（无 path）
-`openapi_skill_exec` `toolName`=`save-file-by-path`，argv: 2025001 "笔记.pdf" 987654321 --confirm YES
+python3 -B <skill-dir>/scripts/upload/save-file-by-path.py 2025001 "笔记.pdf" 987654321 --confirm YES
 ```
 
 ### 4. upload-content.py
@@ -320,19 +320,19 @@ docdb 后端已实现智能 `projectId` 补全，以下脚本受益：
 
 ## 运行方式速查
 
-**调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
+**调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令只含业务参数。
 
 ```bash
-`openapi_skill_exec` `toolName`=`upload-content`，argv: "内容" "文件名.md" --confirm YES [--file-suffix md] [--folder-name "AI生成/周报"] [--project-id <project_id>]
-`openapi_skill_exec` `toolName`=`upload-content`，argv: "新内容" "文件名.md" --update-file-id <file_id> --confirm YES [--version-name "V2.0"] [--version-remark "修订说明"]
-`openapi_skill_exec` `toolName`=`upload-whole-file`，argv: <file_path> --confirm YES
-`openapi_skill_exec` `toolName`=`check-slice`，argv: <md5> --confirm YES [--size <size>] [--suffix <suffix>]
-`openapi_skill_exec` `toolName`=`register-slice`，argv: <full_path> <md5> <size> MINIO --confirm YES
-`openapi_skill_exec` `toolName`=`merge-resource`，argv: "文件名.pdf" "sliceId1,sliceId2,..." --confirm YES [--suffix pdf] [--size <size>]
-`openapi_skill_exec` `toolName`=`save-file-by-parent-id`，argv: <parent_id> <resource_id> "文件名.pdf" --confirm YES [--project-id <id>] [--suffix pdf]
-`openapi_skill_exec` `toolName`=`save-file-by-path`，argv: <project_id> "文件名.pdf" <resource_id> --confirm YES [--path "目录"] [--suffix pdf]
-`openapi_skill_exec` `toolName`=`create-folder`，argv: <parent_id> "文件夹名" --confirm YES [--project-id <id>] [--cover] [--auto-rename]
+python3 -B <skill-dir>/scripts/upload/upload-content.py "内容" "文件名.md" --confirm YES [--file-suffix md] [--folder-name "AI生成/周报"] [--project-id <project_id>]
+python3 -B <skill-dir>/scripts/upload/upload-content.py "新内容" "文件名.md" --update-file-id <file_id> --confirm YES [--version-name "V2.0"] [--version-remark "修订说明"]
+python3 -B <skill-dir>/scripts/upload/upload-whole-file.py <file_path> --confirm YES
+python3 -B <skill-dir>/scripts/upload/check-slice.py <md5> --confirm YES [--size <size>] [--suffix <suffix>]
+python3 -B <skill-dir>/scripts/upload/register-slice.py <full_path> <md5> <size> MINIO --confirm YES
+python3 -B <skill-dir>/scripts/upload/merge-resource.py "文件名.pdf" "sliceId1,sliceId2,..." --confirm YES [--suffix pdf] [--size <size>]
+python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py <parent_id> <resource_id> "文件名.pdf" --confirm YES [--project-id <id>] [--suffix pdf]
+python3 -B <skill-dir>/scripts/upload/save-file-by-path.py <project_id> "文件名.pdf" <resource_id> --confirm YES [--path "目录"] [--suffix pdf]
+python3 -B <skill-dir>/scripts/upload/create-folder.py <parent_id> "文件夹名" --confirm YES [--project-id <id>] [--cover] [--auto-rename]
 # 预览：把 --confirm YES 换成 --dry-run
 ```
 
-禁止使用标准 `exec` / Shell / 直接 Python。一律通过 `openapi_skill_exec` 调用。
+使用标准 `exec` 调用本 skill 目录下脚本；命令只含业务参数。

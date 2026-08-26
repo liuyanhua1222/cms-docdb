@@ -3,8 +3,8 @@
 manage / updateFileProperty — 已废弃
 
 请优先直接调用：
-  - openapi_skill_exec toolName=update-file-name
-  - openapi_skill_exec toolName=move-file
+  - python3 -B <skill-dir>/scripts/manage/update-file-name.py …
+  - python3 -B <skill-dir>/scripts/manage/move-file.py …
 
 本工具仅兼容旧入口：在同一工具子进程内转发到上述脚本（继承运行时注入的环境变量），
 原样转发 --dry-run / --confirm；自身缺 confirm 且非 dry-run 时 exit 2。
@@ -43,7 +43,7 @@ def run_script(script_name: str, args: list) -> dict:
 def main():
     parser = DocdbArgumentParser(description="[已废弃] 转发到 update-file-name / move-file",
         hint="""update-file-property.py 已废弃；优先直接调用 update-file-name / move-file。若仍用本工具须提供 file_id。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=update-file-property argv=["12345", "--new-name", "新名.pdf", "--confirm", "YES"]（已废弃，优先 update-file-name / move-file）；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/manage/update-file-property.py 12345 --new-name "新名.pdf" --confirm YES（已废弃，优先 update-file-name / move-file）；缺参补齐后用同一 python 命令重试
 """)
     parser.add_argument("file_id", type=int)
     parser.add_argument("--new-name", type=str)

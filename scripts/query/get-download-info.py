@@ -73,7 +73,7 @@ def process_result(result):
 
 def main():
     parser = DocdbArgumentParser(description="获取下载或预览凭据", hint="""get-download-info.py 必须提供 file_id。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=get-download-info argv=["12345"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/query/get-download-info.py 12345；缺参补齐后用同一 python 命令重试
 """)
     parser.add_argument("file_id", type=int, help="文件 ID")
     parser.add_argument("--force-download", action="store_true", help="true 则返回下载链接，false 则返回预览凭据")

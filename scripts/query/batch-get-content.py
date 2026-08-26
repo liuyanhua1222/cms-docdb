@@ -100,7 +100,7 @@ def process_result(result, max_chars: int, max_chars_per_file: int):
 
 def main():
     parser = DocdbArgumentParser(description="批量获取文件内容", hint="""batch-get-content.py 必须提供 files_json。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=batch-get-content argv=["[{\"fileId\":123}]"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/query/batch-get-content.py"]；缺参补齐后用同一 python 命令重试
 """,
     )
     parser.add_argument("files_json", type=str, help='文件列表 JSON，如 [{"fileId":123},{"fileId":456}]')

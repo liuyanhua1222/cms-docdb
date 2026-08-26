@@ -46,7 +46,7 @@ def main():
 
     parser = DocdbArgumentParser(description="上传完整文件到知识库",
         hint="""upload-whole-file.py 必须提供 file_path；真实写入还需 --confirm YES。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=upload-whole-file argv=["/tmp/a.pdf", "--confirm", "YES"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/upload/upload-whole-file.py "/tmp/a.pdf" --confirm YES；缺参补齐后用同一 python 命令重试
 """)
     parser.add_argument("file_path", type=str, nargs="?", help="文件路径（位置参数）")
     parser.add_argument("--file-path", type=str, dest="file_path_opt", help="文件路径（命名参数）")

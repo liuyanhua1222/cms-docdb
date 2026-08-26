@@ -42,7 +42,7 @@ def main():
     parser = DocdbArgumentParser(
         description="去掉目录授权中的指定权限位（保留 read）",
         hint="""strip-grant-permissions.py 必须提供 file_id、--emp-id、--remove；真实写入还需 --confirm YES。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=strip-grant-permissions argv=["12345", "--emp-id", "1", "--remove", "download", "--confirm", "YES"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/grant/strip-grant-permissions.py 12345 --emp-id 1 --remove "download" --confirm YES；缺参补齐后用同一 python 命令重试
 """,
     )
     parser.add_argument("file_id", type=int)

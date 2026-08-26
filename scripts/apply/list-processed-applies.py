@@ -20,7 +20,7 @@ API_PATH = "/document-database/fileGrant/apply/processed"
 
 def main():
     p = DocdbArgumentParser(hint="""list-processed-applies.py list-processed-applies 按业务参数调用（无必填时可传空 argv）。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=list-processed-applies argv=["--page-index", "1"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/apply/list-processed-applies.py --page-index 1；缺参补齐后用同一 python 命令重试
 """)
     p.add_argument("--page-index", type=int, default=1)
     p.add_argument("--page-size", type=int, default=20)

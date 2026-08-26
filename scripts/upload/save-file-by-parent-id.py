@@ -79,7 +79,7 @@ def process_result(result):
 def main():
     parser = DocdbArgumentParser(description="将物理文件保存到指定父目录", hint="""save-file-by-parent-id.py 必须提供 parent_id resource_id name。
 真实写入还需 --confirm YES（可先 --dry-run）。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=save-file-by-parent-id argv=["0", "999", "报告.pdf", "--confirm", "YES"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py 0 999 "报告.pdf" --confirm YES；缺参补齐后用同一 python 命令重试
 """)
     parser.add_argument("parent_id", type=int, help="目标文件夹 ID（根目录传 0）")
     parser.add_argument("resource_id", type=int, help="资源 ID（必须）")

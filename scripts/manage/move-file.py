@@ -40,7 +40,7 @@ def post_json(body: dict) -> dict:
 def main():
     parser = DocdbArgumentParser(description="移动文件或文件夹", hint="""move-file.py 必须提供 file_id，且必须带 --target-parent-id。
 真实写入还需 --confirm YES。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=move-file argv=["12345", "--target-parent-id", "0", "--confirm", "YES"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/manage/move-file.py 12345 --target-parent-id 0 --confirm YES；缺参补齐后用同一 python 命令重试
 """,
     )
     parser.add_argument("file_id", type=int, help="被移动节点 ID")

@@ -20,7 +20,7 @@ API_PATH = "/document-database/admin/isProjectMember"
 
 def main():
     p = DocdbArgumentParser(hint="""is-project-member.py 必须提供 project_id。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=is-project-member argv=["10001"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/admin/is-project-member.py 10001；缺参补齐后用同一 python 命令重试
 """)
     p.add_argument("project_id", type=int)
     args = p.parse_args()

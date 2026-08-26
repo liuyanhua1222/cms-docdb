@@ -21,7 +21,7 @@ API_PATH = "/document-database/admin/addMember"
 
 def main():
     p = DocdbArgumentParser(hint="""add-member.py 必须提供 project_id 与 --employee-id；真实写入还需 --confirm YES。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=add-member argv=["10001", "--employee-id", "1", "--confirm", "YES"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/admin/add-member.py 10001 --employee-id 1 --confirm YES；缺参补齐后用同一 python 命令重试
 """)
     p.add_argument("project_id", type=int)
     p.add_argument("--employee-id", type=int, required=True)

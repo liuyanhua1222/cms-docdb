@@ -78,7 +78,7 @@ def process_result(result):
 def main():
     parser = DocdbArgumentParser(description="按逻辑路径保存物理文件", hint="""save-file-by-path.py 必须提供 project_id name resource_id。
 真实写入还需 --confirm YES（可先 --dry-run）。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=save-file-by-path argv=["10001", "报告.pdf", "999", "--confirm", "YES"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/upload/save-file-by-path.py 10001 "报告.pdf" 999 --confirm YES；缺参补齐后用同一 python 命令重试
 """)
     parser.add_argument("project_id", type=int, help="目标项目空间 ID")
     parser.add_argument("name", type=str, help="保存的文件名")

@@ -20,7 +20,7 @@ API_PATH = "/document-database/share/sharedToMe"
 
 def main():
     p = DocdbArgumentParser(hint="""list-shared-to-me.py list-shared-to-me 按业务参数调用（无必填时可传空 argv）。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=list-shared-to-me argv=["--page-index", "1"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/share/list-shared-to-me.py --page-index 1；缺参补齐后用同一 python 命令重试
 """)
     p.add_argument("--page-index", type=int, default=1)
     p.add_argument("--page-size", type=int, default=20)

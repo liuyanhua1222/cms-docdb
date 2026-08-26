@@ -1,6 +1,6 @@
 # query — 模块说明
 
-> **调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`，`toolName` 为下表/示例中的工具名；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
+> **调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令只含业务参数。
 
 
 ## 目录
@@ -178,15 +178,15 @@
 
 ## 运行方式速查
 
-**调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
+**调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令只含业务参数。
 
 
 ```bash
-`openapi_skill_exec` `toolName`=`search`，argv: "关键词" --project-id <project_id> [--root-file-id <root_id>] [--start-time <ts>] [--end-time <ts>] [--exclude-file-types "work_report,huiji"]
-`openapi_skill_exec` `toolName`=`get-full-content`，argv: <file_id> [--relation-id <relation_id>] [--file-type <file_type>]
-`openapi_skill_exec` `toolName`=`get-download-info`，argv: <file_id>
-`openapi_skill_exec` `toolName`=`get-download-info`，argv: <file_id> --force-download
-`openapi_skill_exec` `toolName`=`download-file`，argv: <file_id> [--output /path/to/save.pdf]
-`openapi_skill_exec` `toolName`=`get-file-content`，argv: <file_id> [--page-number 1]
-`openapi_skill_exec` `toolName`=`batch-get-content`，argv: '[{"fileId":123},{"fileId":456}]' [--max-chars 60000] [--max-chars-per-file 20000]
+python3 -B <skill-dir>/scripts/query/search.py "关键词" --project-id <project_id> [--root-file-id <root_id>] [--start-time <ts>] [--end-time <ts>] [--exclude-file-types "work_report,huiji"]
+python3 -B <skill-dir>/scripts/query/get-full-content.py <file_id> [--relation-id <relation_id>] [--file-type <file_type>]
+python3 -B <skill-dir>/scripts/query/get-download-info.py <file_id>
+python3 -B <skill-dir>/scripts/query/get-download-info.py <file_id> --force-download
+python3 -B <skill-dir>/scripts/query/download-file.py <file_id> [--output /path/to/save.pdf]
+python3 -B <skill-dir>/scripts/query/get-file-content.py <file_id> [--page-number 1]
+python3 -B <skill-dir>/scripts/query/batch-get-content.py '[{"fileId":123},{"fileId":456}]' [--max-chars 60000] [--max-chars-per-file 20000]
 ```

@@ -80,7 +80,7 @@ def main():
         hint="""browse.py 必须提供 parent_id：
 - 个人库根目录传 0
 - 项目空间请传该空间 rootFileId（勿对任意空间一律传 0）
-示例: openapi_skill_exec skillCode=cms-docdb toolName=browse argv=["0"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/browse/browse.py 0；缺参补齐后用同一 python 命令重试
 """
     )
     parser.add_argument(

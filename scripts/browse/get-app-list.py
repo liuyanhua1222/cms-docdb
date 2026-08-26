@@ -55,7 +55,7 @@ def process_result(result):
 def main():
     parser = DocdbArgumentParser(description="获取当前企业可用知识库应用通道",
         hint="""get-app-list.py get-app-list 按业务参数调用（无必填时可传空 argv）。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=get-app-list argv=[]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/browse/get-app-list.py；缺参补齐后用同一 python 命令重试
 """)
     parser.parse_args()
     result = call_api()

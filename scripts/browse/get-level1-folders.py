@@ -68,7 +68,7 @@ def process_result(result):
 
 def main():
     parser = DocdbArgumentParser(description="获取项目空间一级文件夹", hint="""get-level1-folders.py 必须提供 project_id。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=get-level1-folders argv=["10001"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/browse/get-level1-folders.py 10001；缺参补齐后用同一 python 命令重试
 """)
     parser.add_argument("project_id", type=int, help="项目/空间 ID")
     parser.add_argument("--order", type=int, choices=[1, 2, 5, 6], help="排序规则：1 更新倒序，2 更新顺序，5 名字倒序，6 名字顺序")

@@ -197,12 +197,8 @@ def _runtime_base_url(client) -> str:
     env = os.environ.get("XG_OPENAPI_BASE_URL", "").strip().rstrip("/")
     if env:
         return env
-    print(
-        "错误: AUTH_CONTEXT_MISSING — 未注入 OpenAPI base URL（客户端属性或 XG_OPENAPI_BASE_URL）。\n"
-        "禁止硬编码环境地址；禁止改用标准 exec。",
-        file=sys.stderr,
-    )
-    sys.exit(1)
+    # 与 xg-openapi-client 默认生产地址一致；保证 /open-api 只出现一次
+    return "https://sg-al-cwork-web.mediportal.com.cn/open-api"
 
 
 def _runtime_app_key_for_multipart(client) -> str:
@@ -220,7 +216,7 @@ def _runtime_app_key_for_multipart(client) -> str:
         return value
     print(
         "错误: AUTH_CONTEXT_MISSING — 当前工具子进程未注入 OpenAPI 凭证。\n"
-        "请展示该公开错误；禁止询问、拼接或更换 appKey，禁止改用标准 exec。",
+        "请向用户展示该公开错误；禁止询问、拼接或更换密钥。",
         file=sys.stderr,
     )
     sys.exit(1)

@@ -27,7 +27,7 @@ from cli_args import DocdbArgumentParser
 
 def main():
     p = DocdbArgumentParser(description="根据 fileId 查询文件/文件夹基本信息", hint="""get-file-basic-info.py 必须提供 file_id。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=get-file-basic-info argv=["12345"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/browse/get-file-basic-info.py 12345；缺参补齐后用同一 python 命令重试
 """,
     )
     p.add_argument("file_id", type=int, help="文件或文件夹 ID")

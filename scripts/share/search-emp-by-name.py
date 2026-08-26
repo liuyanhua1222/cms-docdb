@@ -54,7 +54,7 @@ def main():
         description="按姓名搜索员工",
         hint=(
             "search-emp-by-name.py 必须提供 search_key。\n"
-            "示例: openapi_skill_exec skillCode=cms-docdb toolName=search-emp-by-name argv=[\"张三\"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec"
+            "示例: python3 -B <skill-dir>/scripts/share/search-emp-by-name.py；缺参补齐后用同一 python 命令重试"
         ),
     )
     parser.add_argument("search_key", type=str, help="搜索关键词（姓名等；中文会自动 URL 编码）")

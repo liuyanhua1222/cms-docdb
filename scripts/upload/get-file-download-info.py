@@ -48,7 +48,7 @@ def main():
     import argparse
     parser = DocdbArgumentParser(description="获取文件下载信息（临时下载 URL）",
         hint="""get-file-download-info.py 必须提供 resource_id。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=get-file-download-info argv=["999"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/upload/get-file-download-info.py 999；缺参补齐后用同一 python 命令重试
 """)
     parser.add_argument("resource_id", type=int, nargs='?', help="资源 ID（位置参数）")
     parser.add_argument("--resource-id", type=int, dest="resource_id_opt", help="资源 ID（命名参数）")

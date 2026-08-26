@@ -1,6 +1,6 @@
 # browse — 模块说明
 
-> **调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`，`toolName` 为下表/示例中的工具名；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
+> **调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令只含业务参数。
 
 
 ## 目录
@@ -267,23 +267,23 @@
 
 ## 运行方式速查
 
-**调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`，`toolName` 为下表工具名；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
+**调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令只含业务参数。
 
 ```text
-`openapi_skill_exec` `toolName`=`get-project-list`，argv:（无业务参可传空数组）
-`openapi_skill_exec` `toolName`=`get-personal-project-id`，argv:（无业务参可传空数组）
-`openapi_skill_exec` `toolName`=`get-uploadable-list`，argv:（无业务参可传空数组）
-`openapi_skill_exec` `toolName`=`get-level1-folders`，argv: <project_id> [--order 1|2|5|6] [--permission-query <query>]
+python3 -B <skill-dir>/scripts/browse/get-project-list.py （无业务参可传空数组）
+python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py （无业务参可传空数组）
+python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py （无业务参可传空数组）
+python3 -B <skill-dir>/scripts/browse/get-level1-folders.py <project_id> [--order 1|2|5|6] [--permission-query <query>]
 # 个人库根：
-`openapi_skill_exec` `toolName`=`browse`，argv: 0
+python3 -B <skill-dir>/scripts/browse/browse.py 0
 # 项目空间根：先取空间 rootFileId，再：
-`openapi_skill_exec` `toolName`=`browse`，argv: <rootFileId> [--type 1|2] [--order 1|2|3|4|5|6] [--exclude-file-types "work_report,huiji"] [--exclude-folder-names "临时文件"]
-`openapi_skill_exec` `toolName`=`get-recent-files`，argv: [--limit 10] [--search-key "关键词"]
-`openapi_skill_exec` `toolName`=`get-my-upload-records`，argv: [--page-index 1] [--page-size 20] [--project-id <id>]
-`openapi_skill_exec` `toolName`=`get-my-recent-used`，argv: [--page-index 1] [--page-size 20] [--biz-code pmo]
-`openapi_skill_exec` `toolName`=`get-app-list`，argv:（无业务参可传空数组）
-`openapi_skill_exec` `toolName`=`get-project-list`，argv: --app-code fw_doc
-`openapi_skill_exec` `toolName`=`get-project-list`，argv: --app-code kz_doc
-`openapi_skill_exec` `toolName`=`get-project-list`，argv: --app-code kz_knowledge_base
-`openapi_skill_exec` `toolName`=`get-file-basic-info`，argv: <file_id>
+python3 -B <skill-dir>/scripts/browse/browse.py <rootFileId> [--type 1|2] [--order 1|2|3|4|5|6] [--exclude-file-types "work_report,huiji"] [--exclude-folder-names "临时文件"]
+python3 -B <skill-dir>/scripts/browse/get-recent-files.py [--limit 10] [--search-key "关键词"]
+python3 -B <skill-dir>/scripts/browse/get-my-upload-records.py [--page-index 1] [--page-size 20] [--project-id <id>]
+python3 -B <skill-dir>/scripts/browse/get-my-recent-used.py [--page-index 1] [--page-size 20] [--biz-code pmo]
+python3 -B <skill-dir>/scripts/browse/get-app-list.py （无业务参可传空数组）
+python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code fw_doc
+python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_doc
+python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledge_base
+python3 -B <skill-dir>/scripts/browse/get-file-basic-info.py <file_id>
 ```

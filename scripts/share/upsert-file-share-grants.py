@@ -67,7 +67,7 @@ def process_result(result):
 def main():
     parser = DocdbArgumentParser(description="增量授予协同分享", hint="""upsert-file-share-grants.py 必须提供 file_id，且必须带 --emp-id。
 真实写入还需 --confirm YES。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=upsert-file-share-grants argv=["12345", "--emp-id", "1", "--confirm", "YES"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py 12345 --emp-id 1 --confirm YES；缺参补齐后用同一 python 命令重试
 """
     )
     parser.add_argument("--due-date", type=int, help="到期日期（yyyyMMdd）；不传默认 20991231（长期有效）")

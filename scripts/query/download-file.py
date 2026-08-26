@@ -72,7 +72,7 @@ def download_file(download_url: str, output_path: str) -> str:
 def main():
     parser = DocdbArgumentParser(description="下载文件到本地", hint="""download-file.py 必须提供 file_id。
 优先省略 --output（默认写系统临时目录，读 stdout 路径）；禁止 shell 重定向。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=download-file argv=["12345"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/query/download-file.py 12345；缺参补齐后用同一 python 命令重试
 """,
     )
     parser.add_argument("file_id", type=int, help="文件 ID")

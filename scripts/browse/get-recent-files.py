@@ -67,7 +67,7 @@ def main():
     import argparse
     parser = DocdbArgumentParser(description="获取当前用户最近上传的文件列表",
         hint="""get-recent-files.py get-recent-files 按业务参数调用（无必填时可传空 argv）。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=get-recent-files argv=["--limit", "10"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/browse/get-recent-files.py --limit 10；缺参补齐后用同一 python 命令重试
 """)
     parser.add_argument("--limit", type=int, help="返回数量限制")
     parser.add_argument("--search-key", type=str, help="搜索关键词")

@@ -63,7 +63,7 @@ def parse_emp_ids(raw: str) -> list:
 def main():
     parser = DocdbArgumentParser(description="撤销协同分享", hint="""revoke-file-share-grants.py 必须提供 file_id，且必须带 --emp-ids。
 真实写入还需 --confirm YES。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=revoke-file-share-grants argv=["12345", "--emp-ids", "1,2", "--confirm", "YES"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/share/revoke-file-share-grants.py 12345 --emp-ids "1,2" --confirm YES；缺参补齐后用同一 python 命令重试
 """,
     )
     parser.add_argument("file_id", type=int, help="文件/文件夹 ID")

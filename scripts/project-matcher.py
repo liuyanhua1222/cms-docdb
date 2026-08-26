@@ -181,7 +181,7 @@ def main():
     parser = DocdbArgumentParser(
         description="智能空间名称匹配器",
         hint="""project-matcher.py 必须提供 --candidates 与 --project-list。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=project-matcher argv=["--candidates", "康哲知识库", "--project-list", "[{\"id\":1}]"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/project-matcher.py"]；缺参补齐后用同一 python 命令重试
 """,
     )
     parser.add_argument("--candidates", type=str, required=True,

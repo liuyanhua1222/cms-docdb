@@ -116,7 +116,7 @@ def main():
     parser = DocdbArgumentParser(
         description="上下文管理和状态维护",
         hint="""context-manager.py 须提供 cmd（get/update/set_folder/...）。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=context-manager argv=["get"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/context-manager.py "get"；缺参补齐后用同一 python 命令重试
 """,
     )
     parser.add_argument("cmd", type=str, nargs='?', help="命令：get/update/set_folder/set_file/set_project/set_app_code/clear")

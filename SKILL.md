@@ -1,129 +1,8 @@
 ---
 name: cms-docdb
 description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能调用 Open API，勿以无法访问钉钉云端为由拒绝。
-skillcode: cms-docdb
-openapi_auth: appKey
-tools_provided:
-  - name: add-member
-    entry: scripts/admin/add-member.py
-  - name: is-project-member
-    entry: scripts/admin/is-project-member.py
-  - name: get-approvers
-    entry: scripts/apply/get-approvers.py
-  - name: list-my-applies
-    entry: scripts/apply/list-my-applies.py
-  - name: list-pending-applies
-    entry: scripts/apply/list-pending-applies.py
-  - name: list-processed-applies
-    entry: scripts/apply/list-processed-applies.py
-  - name: review-apply
-    entry: scripts/apply/review-apply.py
-  - name: submit-apply
-    entry: scripts/apply/submit-apply.py
-  - name: browse
-    entry: scripts/browse/browse.py
-  - name: get-app-list
-    entry: scripts/browse/get-app-list.py
-  - name: get-file-basic-info
-    entry: scripts/browse/get-file-basic-info.py
-  - name: get-level1-folders
-    entry: scripts/browse/get-level1-folders.py
-  - name: get-my-recent-used
-    entry: scripts/browse/get-my-recent-used.py
-  - name: get-my-upload-records
-    entry: scripts/browse/get-my-upload-records.py
-  - name: get-personal-project-id
-    entry: scripts/browse/get-personal-project-id.py
-  - name: get-project-list
-    entry: scripts/browse/get-project-list.py
-  - name: get-recent-files
-    entry: scripts/browse/get-recent-files.py
-  - name: get-uploadable-list
-    entry: scripts/browse/get-uploadable-list.py
-  - name: context-manager
-    entry: scripts/context-manager.py
-  - name: delete-file
-    entry: scripts/delete/delete-file.py
-  - name: folder-navigator
-    entry: scripts/folder-navigator.py
-  - name: get-file-grants
-    entry: scripts/grant/get-file-grants.py
-  - name: revoke-file-grants
-    entry: scripts/grant/revoke-file-grants.py
-  - name: strip-grant-permissions
-    entry: scripts/grant/strip-grant-permissions.py
-  - name: upsert-file-grants
-    entry: scripts/grant/upsert-file-grants.py
-  - name: intent-matcher
-    entry: scripts/intent-matcher.py
-  - name: finalize-version
-    entry: scripts/manage/finalize-version.py
-  - name: get-last-version
-    entry: scripts/manage/get-last-version.py
-  - name: get-version-list
-    entry: scripts/manage/get-version-list.py
-  - name: move-file
-    entry: scripts/manage/move-file.py
-  - name: update-file-name
-    entry: scripts/manage/update-file-name.py
-  - name: update-file-property
-    entry: scripts/manage/update-file-property.py
-  - name: update-file-version
-    entry: scripts/manage/update-file-version.py
-  - name: parameter-extractor
-    entry: scripts/parameter-extractor.py
-  - name: project-matcher
-    entry: scripts/project-matcher.py
-  - name: batch-get-content
-    entry: scripts/query/batch-get-content.py
-  - name: download-file
-    entry: scripts/query/download-file.py
-  - name: get-download-info
-    entry: scripts/query/get-download-info.py
-  - name: get-file-content
-    entry: scripts/query/get-file-content.py
-  - name: get-full-content
-    entry: scripts/query/get-full-content.py
-  - name: search
-    entry: scripts/query/search.py
-  - name: get-file-shares
-    entry: scripts/share/get-file-shares.py
-  - name: get-my-share-permissions
-    entry: scripts/share/get-my-share-permissions.py
-  - name: get-share-url
-    entry: scripts/share/get-share-url.py
-  - name: list-my-shares
-    entry: scripts/share/list-my-shares.py
-  - name: list-shared-to-me
-    entry: scripts/share/list-shared-to-me.py
-  - name: revoke-file-share-grants
-    entry: scripts/share/revoke-file-share-grants.py
-  - name: search-emp-by-name
-    entry: scripts/share/search-emp-by-name.py
-  - name: strip-share-permissions
-    entry: scripts/share/strip-share-permissions.py
-  - name: upsert-file-share-grants
-    entry: scripts/share/upsert-file-share-grants.py
-  - name: check-slice
-    entry: scripts/upload/check-slice.py
-  - name: create-folder
-    entry: scripts/upload/create-folder.py
-  - name: get-file-download-info
-    entry: scripts/upload/get-file-download-info.py
-  - name: merge-resource
-    entry: scripts/upload/merge-resource.py
-  - name: register-slice
-    entry: scripts/upload/register-slice.py
-  - name: save-file-by-parent-id
-    entry: scripts/upload/save-file-by-parent-id.py
-  - name: save-file-by-path
-    entry: scripts/upload/save-file-by-path.py
-  - name: upload-content
-    entry: scripts/upload/upload-content.py
-  - name: upload-whole-file
-    entry: scripts/upload/upload-whole-file.py
 metadata:
-  version: 3.0.0
+  version: 3.1.0
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
     requires:
@@ -134,13 +13,15 @@ metadata:
 
 # cms-docdb — 索引
 
-OpenClaw 技能 **`name` / `skillcode`** 均为 `cms-docdb`。用于公司内部 **企业知识库 / 资料库 / 法务文档**（康哲、德镁、玄关等）的目录浏览、搜索、读写与归档。接口侧用 `appCode` 区分产品。
+OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识库 / 资料库 / 法务文档**（康哲、德镁、玄关等）的目录浏览、搜索、读写与归档。接口侧用 `appCode` 区分产品。
 
-本文件提供能力边界与路由规则。详细说明见 `references/`；执行一律通过 `openapi_skill_exec`。
+本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令只含业务参数。
 
-**当前版本**: 3.0.0
+**当前版本**: 3.1.0
 
-**3.0.0 变更**：迁移为已迁移 OpenAPI Skill。调用改为 `openapi_skill_exec`；凭证由运行时注入；删除命令行凭证参数、上下文读凭证与标准 exec 直调脚本；旧凭证路径已废止。
+**3.1.0 变更**：按 SessionKey 方案改回标准 `exec` 直调脚本；命令与文档不再出现鉴权参数或鉴权环境说明；脚本内部仍从运行时取得调用所需配置（对 Agent 透明）。
+
+**3.0.0 变更（历史）**：去掉命令行凭证参数与从上下文读凭证。
 
 **能力概览（8 块能力）**：
 - `browse`：发现可用应用通道与空间、个人空间、目录结构、最近使用/上传
@@ -154,65 +35,37 @@ OpenClaw 技能 **`name` / `skillcode`** 均为 `cms-docdb`。用于公司内部
 
 ## 调用方法（强制）
 
-只调用 `openapi_skill_exec`。`skillCode` 固定为 Frontmatter 的 `skillcode`（`cms-docdb`）；`toolName` 必须是 `tools_provided` 中的 `name`。
+将 `<skill-dir>` 换成本 skill 根目录绝对路径。每个脚本单独一条命令执行；只传业务参数。
 
-```json
-{
-  "skillCode": "cms-docdb",
-  "toolName": "browse",
-  "argv": ["0"]
-}
+```bash
+python3 -B <skill-dir>/scripts/browse/browse.py 0
+python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledge_base
+python3 -B <skill-dir>/scripts/query/search.py "合同" --project-id 10001
+python3 -B <skill-dir>/scripts/upload/upload-content.py "报告内容" "报告.md" --project-id 10001 --folder-name "产品资料" --confirm YES
 ```
 
-更多示例：
-
-```json
-{
-  "skillCode": "cms-docdb",
-  "toolName": "get-project-list",
-  "argv": ["--app-code", "kz_knowledge_base"]
-}
-```
-
-```json
-{
-  "skillCode": "cms-docdb",
-  "toolName": "search",
-  "argv": ["合同", "--project-id", "10001"]
-}
-```
-
-```json
-{
-  "skillCode": "cms-docdb",
-  "toolName": "upload-content",
-  "argv": ["报告内容", "报告.md", "--project-id", "10001", "--folder-name", "产品资料", "--confirm", "YES"]
-}
-```
+更多模块示例见 `references/*/README.md` 与 `references/QUICK_REFERENCE.md`。
 
 **禁止**：
-- 读取、询问、生成、缓存或传递 任何形式的开放平台凭证参数或字段
-- 提供脚本路径，或改用标准 `exec`、Shell、直接 `python`/`python3`
-- 在参数、JSON、示例中出现凭证字段
-- 遇到 `OPENAPI_SKILL_TOOL_NOT_FOUND` 或 `retryable: false` 时改路径重试；必须立即停止
-- 401 / 鉴权失败时更换凭证或重试其他 Key；将错误返回当前对话
+- 在命令行、JSON 或对话中要求用户提供、拼接或更换任何开放平台凭证
+- 缺业务参数时改跑无关脚本；应按 stderr 中文提示补齐业务参数后，用**同一 python 命令**重试
 
-`--dry-run` 不发起真实 HTTP；真实写入仍须 `--confirm YES`（物理删除 `--confirm PHYSICAL`）。缺运行时凭证时展示工具/脚本公开错误，禁止向用户索要密钥。
+`--dry-run` 不发起真实 HTTP；真实写入仍须 `--confirm YES`（物理删除 `--confirm PHYSICAL`）。脚本返回公开错误时原样展示给用户，不要引导用户提供密钥。
 
 ## 适用范围与歧义排除（技能门控，强制）
 
 - 凡涉及**知识库**相关意图（钉钉知识库、企业知识库、公司知识库、在线知识库、资料库、法务文档、文档数据库、康哲·玄关·德镁知识库或资料库），**一律使用本 skill**；禁止以「无钉钉开放接口」为由拒绝；禁止改走其它知识库 skill。
-- **本 skill 唯一指向**：内部 **document-database** 开放接口（`/open-api/document-database/*`），不是钉钉开放平台原生知识库 SDK。
+- **本 skill 唯一指向**：内部 **document-database** 开放接口（路径相对 `/open-api` 的 `document-database/*`），不是钉钉开放平台原生知识库 SDK。
 - **产品通道（appCode）**：
   - `kz_doc`：玄关知识库；康哲/德镁**资料库**
   - `kz_knowledge_base`：康哲/德镁**知识库**
   - `fw_doc`：法务文档
 - **不使用本 skill**：钉盘、企微微盘、飞书云文档、语雀、Notion、Confluence、SharePoint、石墨等。
-- 用户给出数字文件夹/文件 ID 时，必须用本 skill 的 browse / get-file-basic-info / query 等工具执行。
-- 通道不明：先 `get-app-list` → 唯一则直用，多个则追问；拉空间必须带 `--app-code`。
+- 用户给出数字文件夹/文件 ID 时，必须用本 skill 的 browse / get-file-basic-info / query 等脚本执行。
+- 通道不明：先跑 `get-app-list` → 唯一则直用，多个则追问；拉空间必须带 `--app-code`。
 
 统一规范：
-- 调用：仅 `openapi_skill_exec`
+- 调用：标准 `exec` + 上表 `python3 -B <skill-dir>/scripts/...`
 - 运行日志：`.cms-log/log/cms-docdb/`
 - 运行时状态：`.cms-log/state/cms-docdb/`
 
@@ -233,16 +86,15 @@ OpenClaw 技能 **`name` / `skillcode`** 均为 `cms-docdb`。用于公司内部
 1. 读本文件确认边界
 2. 按意图加载 `references/<module>/README.md`
 3. 确定 appCode（parameter-extractor / get-app-list / 追问）
-4. 用 `openapi_skill_exec` 调用对应 `toolName`
+4. 用标准 `exec` 执行对应脚本与业务参数
 5. 保存前做存在性检查
 
 ## 运行时常见失败（强制）
 
 | 现象 | Agent 立刻怎么做 |
 |------|------------------|
-| `OPENAPI_SKILL_TOOL_NOT_FOUND` / `retryable: false` | **立即停止**；不猜路径、不改用 exec |
-| 鉴权失败 / 401 / `AUTH_CONTEXT_MISSING` | 向用户说明当前会话无法完成鉴权调用；禁止索要或更换 Key；禁止改用 exec |
-| 中文缺参提示 | 按 stderr hint 补齐业务参数后，仍用 `openapi_skill_exec` 重试 |
+| 脚本公开错误（含无法完成调用） | 向用户展示脚本返回的公开错误；不要索要或更换密钥；不要改跑无关命令 |
+| 中文缺参提示（exit 2） | 按 stderr hint 补齐业务参数后，用**同一 python 命令**重试 |
 | 写入类提示须 `--confirm YES` | 先获用户确认，再带对应 confirm |
 
 ## 安全基线（强制）
@@ -251,21 +103,21 @@ OpenClaw 技能 **`name` / `skillcode`** 均为 `cms-docdb`。用于公司内部
    - 预览：`--dry-run`
    - 真实调用：`--confirm YES`
    - 物理删除：`--confirm PHYSICAL`（与 `--physical` 同用）
-2. Agent 闭环：先向用户确认高危意图 → 同意后再调用工具
-3. 对用户不暴露内部鉴权细节；禁止在回复中复述凭证
+2. Agent 闭环：先向用户确认高危意图 → 同意后再执行脚本
+3. 对用户不暴露内部鉴权细节；禁止在回复中复述任何凭证原文
 
 意图路由：
 1. 先判定模块，再读该模块 README
-2. 所有接口调用必须通过 `openapi_skill_exec` + 本 skill 的 toolName
+2. 所有接口调用必须通过本 skill 目录下对应脚本（标准 `exec`）
 3. 意图不明必须追问
 4. 企业先筛：先 `get-app-list`，再决定 appCode
 
 宪章：
-1. `SKILL.md` 只描述能做什么与如何调用工具
+1. `SKILL.md` 只描述能做什么与如何调用脚本
 2. 按需加载 references
 3. 对用户只输出可用能力、必要输入、结果摘要/链接
 4. 危险操作须确认
-5. 鉴权失败不换 Key 重试；传输层错误由工具返回后由 Agent 决定是否用**相同** toolName/业务参数重试（最多有限次），不得改 exec
+5. 传输层或业务错误由脚本返回后，Agent 可用**相同**脚本与业务参数有限次重试；不得改去无关路径
 
 ## 触发配置
 
@@ -286,7 +138,14 @@ OpenClaw 技能 **`name` / `skillcode`** 均为 `cms-docdb`。用于公司内部
 
 ### 本地辅助工具（无 HTTP）
 
-`intent-matcher`、`parameter-extractor`、`context-manager`、`project-matcher` 同样经 `openapi_skill_exec` 调用，argv 只含业务参数。
+同样用标准 `exec` 调用，例如：
+
+```bash
+python3 -B <skill-dir>/scripts/intent-matcher.py "打开康哲知识库"
+python3 -B <skill-dir>/scripts/parameter-extractor.py "保存到康哲知识库"
+python3 -B <skill-dir>/scripts/project-matcher.py --candidates "康哲知识库" --project-list '[{"id":1}]'
+python3 -B <skill-dir>/scripts/context-manager.py get
+```
 
 ### 智能导航
 
@@ -308,6 +167,6 @@ OpenClaw 技能 **`name` / `skillcode`** 均为 `cms-docdb`。用于公司内部
 | share | 协同分享 | `references/share/README.md` |
 | apply | 权限申请 | `references/apply/README.md` |
 | grant | 目录授权 | `references/grant/README.md` |
-| 速查 | 常用 argv | `references/QUICK_REFERENCE.md` |
+| 速查 | 常用命令 | `references/QUICK_REFERENCE.md` |
 
-admin 工具（`add-member` / `is-project-member`）无独立 README，遵循安全基线。
+admin 脚本（`add-member` / `is-project-member`）无独立 README，遵循安全基线。

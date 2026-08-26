@@ -67,7 +67,7 @@ def main():
 
     parser = DocdbArgumentParser(description="分页查询当前用户全空间上传记录（默认近90天）",
         hint="""get-my-upload-records.py get-my-upload-records 按业务参数调用（无必填时可传空 argv）。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=get-my-upload-records argv=["--page-index", "1"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/browse/get-my-upload-records.py --page-index 1；缺参补齐后用同一 python 命令重试
 """)
     parser.add_argument("--page-index", type=int, help="页码，从1开始")
     parser.add_argument("--page-size", type=int, help="每页条数，最大100")

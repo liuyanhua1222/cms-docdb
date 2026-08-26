@@ -82,7 +82,7 @@ def process_result(result):
 def main():
     parser = DocdbArgumentParser(description="一键保存纯文本内容到个人知识库或指定项目空间", hint="""upload-content.py 必须提供 content 与 file_name。
 真实写入还需 --confirm YES（可先 --dry-run）。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=upload-content argv=["正文", "报告.md", "--confirm", "YES"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/upload/upload-content.py "正文" "报告.md" --confirm YES；缺参补齐后用同一 python 命令重试
 """)
     parser.add_argument("content", type=str, help="文件内容")
     parser.add_argument("file_name", type=str, help="文件名（建议带扩展名）")

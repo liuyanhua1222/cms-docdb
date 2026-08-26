@@ -1,6 +1,6 @@
 # manage — 模块说明
 
-> **调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`，`toolName` 为下表/示例中的工具名；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
+> **调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令只含业务参数。
 
 
 ## 目录
@@ -113,10 +113,10 @@
 **示例**：
 ```bash
 # 推荐：省略 projectId（v2.5 自动补全）
-`openapi_skill_exec` `toolName`=`update-file-version`，argv: --file-id 12345 --resource-id 987654321 --version-status 3 --version-name "V2.0" --version-remark "修正了第三章内容" --confirm YES
+python3 -B <skill-dir>/scripts/manage/update-file-version.py --file-id 12345 --resource-id 987654321 --version-status 3 --version-name "V2.0" --version-remark "修正了第三章内容" --confirm YES
 
 # 旧方式（仍然支持，但非必需）
-`openapi_skill_exec` `toolName`=`update-file-version`，argv: --file-id 12345 --project-id 2025001 --resource-id 987654321 --confirm YES
+python3 -B <skill-dir>/scripts/manage/update-file-version.py --file-id 12345 --project-id 2025001 --resource-id 987654321 --confirm YES
 ```
 
 ### 5–7. 版本历史 / 最新版本 / 定稿
@@ -154,19 +154,19 @@
 
 ## 运行方式速查
 
-**调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
+**调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令只含业务参数。
 
 
 ```bash
 # 推荐：新接口（写入须 --confirm YES；可先 --dry-run）
-`openapi_skill_exec` `toolName`=`update-file-name`，argv: <file_id> --new-name "B.md" --confirm YES [--project-id <pid>]
-`openapi_skill_exec` `toolName`=`move-file`，argv: <file_id> --target-parent-id <parent_id> --confirm YES [--new-name "X.md"]
+python3 -B <skill-dir>/scripts/manage/update-file-name.py <file_id> --new-name "B.md" --confirm YES [--project-id <pid>]
+python3 -B <skill-dir>/scripts/manage/move-file.py <file_id> --target-parent-id <parent_id> --confirm YES [--new-name "X.md"]
 
 # 兼容：旧命令（stderr 警告后转发；须带 --confirm YES）
-`openapi_skill_exec` `toolName`=`update-file-property`，argv: <file_id> --new-name "新文件名.pdf" --confirm YES
-`openapi_skill_exec` `toolName`=`update-file-property`，argv: <file_id> --target-parent-id <parent_id> --cover --confirm YES
+python3 -B <skill-dir>/scripts/manage/update-file-property.py <file_id> --new-name "新文件名.pdf" --confirm YES
+python3 -B <skill-dir>/scripts/manage/update-file-property.py <file_id> --target-parent-id <parent_id> --cover --confirm YES
 
-`openapi_skill_exec` `toolName`=`update-file-version`，argv: <file_id> <project_id> <resource_id> --version-status 3 --confirm YES
-`openapi_skill_exec` `toolName`=`get-version-list`，argv: <file_id>
-`openapi_skill_exec` `toolName`=`finalize-version`，argv: <file_id> --confirm YES
+python3 -B <skill-dir>/scripts/manage/update-file-version.py <file_id> <project_id> <resource_id> --version-status 3 --confirm YES
+python3 -B <skill-dir>/scripts/manage/get-version-list.py <file_id>
+python3 -B <skill-dir>/scripts/manage/finalize-version.py <file_id> --confirm YES
 ```

@@ -65,7 +65,7 @@ def process_result(result):
 def main():
     parser = DocdbArgumentParser(description="删除文件", hint="""delete-file.py 必须提供 file_id。
 真实删除还需 --confirm YES（物理删除用 --physical 且 --confirm PHYSICAL）。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=delete-file argv=["12345", "--confirm", "YES"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/delete/delete-file.py 12345 --confirm YES；缺参补齐后用同一 python 命令重试
 """)
     parser.add_argument("file_id", type=int, help="要删除的文件 ID")
     parser.add_argument("--physical", action="store_true", help="加上此参数则物理彻底删除，否则移入回收站")

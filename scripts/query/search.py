@@ -84,7 +84,7 @@ def process_result(result):
 
 def main():
     parser = DocdbArgumentParser(description="按关键词搜索文件", hint="""search.py 必须提供 name_key，且必须带 --project-id。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=search argv=["合同", "--project-id", "10001"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/query/search.py "合同" --project-id 10001；缺参补齐后用同一 python 命令重试
 """)
     parser.add_argument("name_key", type=str, help="搜索关键词（必填）")
     parser.add_argument("--project-id", type=int, required=True, help="项目/空间 ID（必填，用于限定搜索范围）")

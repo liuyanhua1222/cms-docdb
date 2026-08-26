@@ -256,7 +256,7 @@ def main():
     parser = DocdbArgumentParser(
         description="智能目录导航器",
         hint="""folder-navigator.py 须提供 --project-id（或 --project-ids）以及 --folder-name 或 --folder-path。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=folder-navigator argv=["--project-id", "10001", "--folder-name", "产品资料"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料"；缺参补齐后用同一 python 命令重试
 """,
     )
     parser.add_argument("--project-id", type=int, help="项目空间 ID")

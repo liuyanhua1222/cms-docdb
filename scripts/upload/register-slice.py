@@ -69,7 +69,7 @@ def main():
     import argparse
     parser = DocdbArgumentParser(description="注册文件分片",
         hint="""register-slice.py 必须提供 file_path md5 size storage_type；真实写入还需 --confirm YES。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=register-slice argv=["/tmp/a.bin", "md5hex", "1024", "MINIO", "--confirm", "YES"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/upload/register-slice.py "/tmp/a.bin" "md5hex" 1024 "MINIO" --confirm YES；缺参补齐后用同一 python 命令重试
 """)
     parser.add_argument("file_path", type=str, nargs='?', help="文件完整路径（位置参数）")
     parser.add_argument("md5", type=str, nargs='?', help="文件 MD5（位置参数）")
@@ -90,7 +90,7 @@ def main():
     if None in [file_path, md5, size, storage_type]:
         print(
             "错误: 缺少参数。用法 argv: [<full_path>, <md5>, <size>, <storage_type>]；"
-            "openapi_skill_exec skillCode=cms-docdb toolName=register-slice",
+            "python3 -B <skill-dir>/scripts/upload/register-slice.py",
             file=sys.stderr,
         )
         sys.exit(1)

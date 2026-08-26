@@ -1,6 +1,6 @@
 # delete — 模块说明
 
-> **调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`，`toolName` 为下表/示例中的工具名；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
+> **调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令只含业务参数。
 
 
 ## 适用场景
@@ -71,11 +71,11 @@
 
 ## 运行方式速查
 
-**调用方式（强制）**：使用 `openapi_skill_exec`，`skillCode`=`cms-docdb`；`argv` 只含业务参数。禁止标准 `exec`、脚本路径与 appKey。
+**调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令只含业务参数。
 
 
 ```bash
-`openapi_skill_exec` `toolName`=`delete-file`，argv: <file_id> --dry-run
-`openapi_skill_exec` `toolName`=`delete-file`，argv: <file_id> --confirm YES
-`openapi_skill_exec` `toolName`=`delete-file`，argv: <file_id> --physical --confirm PHYSICAL
+python3 -B <skill-dir>/scripts/delete/delete-file.py <file_id> --dry-run
+python3 -B <skill-dir>/scripts/delete/delete-file.py <file_id> --confirm YES
+python3 -B <skill-dir>/scripts/delete/delete-file.py <file_id> --physical --confirm PHYSICAL
 ```

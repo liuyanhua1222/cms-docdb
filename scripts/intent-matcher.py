@@ -189,7 +189,7 @@ if __name__ == "__main__":
     parser = DocdbArgumentParser(
         description="意图识别和关键词提取",
         hint="""intent-matcher.py 必须提供 user_input。
-示例: openapi_skill_exec skillCode=cms-docdb toolName=intent-matcher argv=["打开康哲知识库"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec
+示例: python3 -B <skill-dir>/scripts/intent-matcher.py "打开康哲知识库"；缺参补齐后用同一 python 命令重试
 """,
     )
     parser.add_argument("user_input", type=str, nargs='?', help="用户输入（位置参数）")
@@ -201,7 +201,7 @@ if __name__ == "__main__":
         print(
             "错误: 缺少用户输入。\n"
             "intent-matcher.py 需要位置参数或 --user-input。\n"
-            "示例: openapi_skill_exec skillCode=cms-docdb toolName=intent-matcher argv=[\"打开康哲知识库\"]；缺参补齐后用同一 toolName 重试，禁止改用标准 exec",
+            "示例: python3 -B <skill-dir>/scripts/intent-matcher.py；缺参补齐后用同一 python 命令重试",
             file=sys.stderr,
         )
         print(json.dumps({

@@ -329,12 +329,13 @@ python3 -B <skill-dir>/scripts/upload/upload-whole-file.py <file_path> --confirm
 python3 -B <skill-dir>/scripts/upload/check-slice.py <md5> --confirm YES [--size <size>] [--suffix <suffix>]
 python3 -B <skill-dir>/scripts/upload/register-slice.py <full_path> <md5> <size> MINIO --confirm YES
 python3 -B <skill-dir>/scripts/upload/merge-resource.py "文件名.pdf" "sliceId1,sliceId2,..." --confirm YES [--suffix pdf] [--size <size>]
-python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py <parent_id> <resource_id> "文件名.pdf" --confirm YES [--project-id <id>] [--suffix pdf]
+python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py <parent_id> <resource_id> "文件名.pdf" --confirm YES [--suffix pdf]
+# parentId≠0 时可省略 --project-id；parentId=0（空间根）必须带：
+python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py 0 <resource_id> "文件名.pdf" --project-id <id> --confirm YES [--suffix pdf]
 python3 -B <skill-dir>/scripts/upload/save-file-by-path.py <project_id> "文件名.pdf" <resource_id> --confirm YES [--path "目录"] [--suffix pdf]
-python3 -B <skill-dir>/scripts/upload/create-folder.py <parent_id> "文件夹名" --confirm YES [--project-id <id>] [--cover] [--auto-rename]
-# parentId=0（空间根）时 --project-id 必填，例如：
-# python3 -B <skill-dir>/scripts/upload/create-folder.py 0 "文件夹名" --project-id <id> --confirm YES
-# python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py 0 <resource_id> "文件名.pdf" --project-id <id> --confirm YES
+python3 -B <skill-dir>/scripts/upload/create-folder.py <parent_id> "文件夹名" --confirm YES [--cover] [--auto-rename]
+# parentId≠0 时可省略 --project-id；parentId=0（空间根）必须带：
+python3 -B <skill-dir>/scripts/upload/create-folder.py 0 "文件夹名" --project-id <id> --confirm YES [--cover] [--auto-rename]
 # 预览：把 --confirm YES 换成 --dry-run
 ```
 

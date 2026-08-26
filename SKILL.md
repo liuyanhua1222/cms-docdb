@@ -2,7 +2,7 @@
 name: cms-docdb
 description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能调用 Open API，勿以无法访问钉钉云端为由拒绝。
 metadata:
-  version: 3.1.1
+  version: 3.1.2
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
     requires:
@@ -17,7 +17,9 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令只含业务参数。
 
-**当前版本**: 3.1.1
+**当前版本**: 3.1.2
+
+**3.1.2 变更**：纠偏个人/空间根浏览路由——禁止 `browse.py 0`；列根须 `get-personal-project-id`（或已知 projectId）→ `get-level1-folders`；`browse.py` 仅用于非零 parentId 下钻。
 
 **3.1.1 变更**：恢复并优化 2.0.3 业务导航（意图路由、能力树、触发流程、权限索引）；审查收紧智能导航为短要点+外链；鉴权仍对 Agent 透明。
 
@@ -40,9 +42,11 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 将 `<skill-dir>` 换成本 skill 根目录绝对路径。每个脚本单独一条命令；只传业务参数。禁止 `cd`/`&&`/管道/重定向/heredoc/`bash -lc`/`python3 -c`。优先 `python3 -B`（若无则 `python -B`）。
 
 ```bash
-python3 -B <skill-dir>/scripts/browse/browse.py 0
+python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py
+python3 -B <skill-dir>/scripts/browse/get-level1-folders.py <projectId>
 python3 -B <skill-dir>/scripts/browse/get-app-list.py
 python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledge_base
+python3 -B <skill-dir>/scripts/browse/browse.py 12345
 python3 -B <skill-dir>/scripts/query/search.py "合同" --project-id 10001
 python3 -B <skill-dir>/scripts/upload/upload-content.py "报告内容" "报告.md" --project-id 10001 --folder-name "产品资料" --confirm YES
 python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料"
@@ -78,7 +82,7 @@ python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-n
 - 运行时状态：`.cms-log/state/cms-docdb/`
 
 输入完整性规则（强制）：
-1. 浏览目录必须提供 parentId：个人库根传 `0`；项目空间传该空间 `rootFileId`（勿对任意空间一律传 0）；或先用 projectId 拉空间/一级目录
+1. 列个人/空间根：先取 `projectId`（个人用 `get-personal-project-id`，共享空间用列表接口），再 `get-level1-folders.py <projectId>`。**禁止** `browse.py 0`。下钻已知非零文件夹（含空间 `rootFileId`）才用 `browse.py`
 2. 搜索必须提供关键词；projectId 可选
 3. 上传必须提供文件名和内容（纯文本）或 resourceId（物理文件）
 4. 删除/重命名/移动必须提供 fileId
@@ -114,6 +118,7 @@ python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-n
 | `exec preflight: complex interpreter…` | 改写为单行 `python3 -B <skill-dir>/scripts/... <业务参>` 后重试 |
 | 重定向 / `Directory nonexistent` | 禁止 shell `>`；结果读 stdout；下载优先省略 `--output` |
 | 中文缺参提示（exit 2） | 按 stderr hint 补齐后用**同一 python 命令**重试 |
+| 误用 `browse.py 0`（exit 2） | 按 stderr：个人根用 `get-personal-project-id` → `get-level1-folders`；勿再传 0 |
 | `Read-only` / `__pycache__` | 使用 `python3 -B`；勿在 skill 目录造文件 |
 | 自造脚本 / 非 scripts 路径 | **停止**；只用本仓库 `scripts/` |
 | 写入须 `--confirm YES` | 先获用户确认再带 confirm；可先 `--dry-run` |

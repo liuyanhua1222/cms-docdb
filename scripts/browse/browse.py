@@ -77,16 +77,17 @@ def process_result(result):
 def main():
     parser = DocdbArgumentParser(
         description="浏览目录下的文件和文件夹",
-        hint="""browse.py 必须提供 parent_id：
-- 个人库根目录传 0
-- 项目空间请传该空间 rootFileId（勿对任意空间一律传 0）
-示例: python3 -B <skill-dir>/scripts/browse/browse.py 0；缺参补齐后用同一 python 命令重试
+        hint="""browse.py 必须提供非零 parent_id（已知文件夹 ID，或空间 rootFileId）。
+禁止传 0：0 不是个人/空间根捷径。
+列个人库根：先 get-personal-project-id.py，再 get-level1-folders.py <projectId>。
+列已知项目空间根：get-level1-folders.py <projectId>，或 browse.py <该空间 rootFileId>。
+示例: python3 -B <skill-dir>/scripts/browse/browse.py 12345；缺参补齐后用同一 python 命令重试
 """
     )
     parser.add_argument(
         "parent_id",
         type=int,
-        help="父目录 ID：个人库根传 0；项目空间传该空间 rootFileId",
+        help="父目录 ID：已知非零文件夹 ID，或空间 rootFileId（禁止传 0）",
     )
     parser.add_argument("--type", type=int, choices=[1, 2], help="1 只查文件夹，2 只查文件")
     parser.add_argument("--order", type=int, choices=[1, 2, 3, 4, 5, 6], help="排序规则")
@@ -94,6 +95,18 @@ def main():
     parser.add_argument("--exclude-folder-names", type=str, help="排除的文件夹名称，逗号分隔")
     parser.add_argument("--no-return-file-desc", action="store_true", help="不返回文件描述")
     args = parser.parse_args()
+
+    if args.parent_id == 0:
+        print(
+            "错误: browse.py 禁止 parent_id=0（0 不是个人/空间根捷径）。\n"
+            "列个人库根请改用：\n"
+            "  python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py\n"
+            "  python3 -B <skill-dir>/scripts/browse/get-level1-folders.py <projectId>\n"
+            "列已知项目空间根：get-level1-folders.py <projectId>，"
+            "或 browse.py <该空间非零 rootFileId>。",
+            file=sys.stderr,
+        )
+        sys.exit(2)
 
     result = call_api(
         parent_id=args.parent_id,

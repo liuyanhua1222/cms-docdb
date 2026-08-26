@@ -95,7 +95,7 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `parent_id` | Long | 是 | 父目录 ID | **个人库根传 `0`**；**项目空间传该空间 `rootFileId`**（勿对任意空间一律传 0） | 缺参会中文提示；空间 rootFileId 来自 get-project-list / 上下文 |
+| `parent_id` | Long | 是 | 父目录 ID | **已知非零**文件夹 ID，或空间 `rootFileId`；**禁止传 0**（列根见 get-level1-folders） | 缺参或传 0 会中文提示；空间 rootFileId 来自 get-project-list / 上下文 |
 | `--type` | Integer | 否 | 查询类型 | 枚举：`1`（只查文件夹）、`2`（只查文件） | - |
 | `--order` | Integer | 否 | 排序规则 | 枚举：`1`（更新倒序）、`2`（更新顺序）、`3`（创建倒序）、`4`（创建顺序）、`5`（名字倒序）、`6`（名字顺序） | - |
 | `--exclude-file-types` | String | 否 | 排除的文件业务分类 | 枚举：`work_report`、`work_plan`、`huiji`、`ai-report` 等，多个用逗号分隔 | - |
@@ -218,9 +218,10 @@
    - 查看所有可访问空间 → `get-project-list.py`
    - 保存文件前查看可写空间 → `get-uploadable-list.py`
 
-2. **目录浏览**：
-   - 浏览项目根目录 → `get-level1-folders.py` + projectId
-   - 浏览子目录 → `browse.py` + parentId
+2. **目录浏览（强制）**：
+   - **个人库根** → `get-personal-project-id.py`，再 `get-level1-folders.py` + projectId（**禁止** `browse.py 0`）
+   - **项目/共享空间根** → `get-level1-folders.py` + projectId（或 `browse.py` + 该空间非零 `rootFileId`）
+   - 浏览子目录 → `browse.py` + **非零** parentId
    - 继续下钻 → 递归调用 `browse.py`
 
 3. **快速访问**：
@@ -274,9 +275,10 @@ python3 -B <skill-dir>/scripts/browse/get-project-list.py （无业务参可传�
 python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py （无业务参可传空数组）
 python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py （无业务参可传空数组）
 python3 -B <skill-dir>/scripts/browse/get-level1-folders.py <project_id> [--order 1|2|5|6] [--permission-query <query>]
-# 个人库根：
-python3 -B <skill-dir>/scripts/browse/browse.py 0
-# 项目空间根：先取空间 rootFileId，再：
+# 个人库根（强制两步；禁止 browse.py 0）：
+python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py
+python3 -B <skill-dir>/scripts/browse/get-level1-folders.py <projectId>
+# 项目空间根：get-level1-folders.py <projectId>；或先取空间 rootFileId，再：
 python3 -B <skill-dir>/scripts/browse/browse.py <rootFileId> [--type 1|2] [--order 1|2|3|4|5|6] [--exclude-file-types "work_report,huiji"] [--exclude-folder-names "临时文件"]
 python3 -B <skill-dir>/scripts/browse/get-recent-files.py [--limit 10] [--search-key "关键词"]
 python3 -B <skill-dir>/scripts/browse/get-my-upload-records.py [--page-index 1] [--page-size 20] [--project-id <id>]

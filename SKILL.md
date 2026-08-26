@@ -229,14 +229,14 @@ python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-n
 
 | 用户意图 | 模块 | 能力摘要 | 说明 | 代表脚本 |
 |---|---|---|---|---|
-| 打开知识库/资料库/法务、浏览目录、最近使用/上传、按 fileId 查空间 | `browse` | 应用/空间/目录/最近/元数据 | `references/browse/README.md` | `scripts/browse/browse.py`、`get-app-list.py`、`get-uploadable-list.py` |
-| 搜索、查询、读取、总结文件 | `query` | 搜索与内容/下载预览 | `references/query/README.md` | `scripts/query/search.py`、`get-full-content.py` |
-| 上传、保存、归档、新建文件夹 | `upload` | 新建（更新走 manage） | `references/upload/README.md` | `scripts/upload/upload-content.py`、`create-folder.py` |
+| 打开知识库/资料库/法务、浏览目录、最近使用/上传、按 fileId 查空间 | `browse` | 应用/空间/目录/最近/元数据 | `references/browse/README.md` | `scripts/browse/browse.py`、`scripts/browse/get-app-list.py`、`scripts/browse/get-uploadable-list.py` |
+| 搜索、查询、读取、总结文件 | `query` | 搜索与内容/下载预览 | `references/query/README.md` | `scripts/query/search.py`、`scripts/query/get-full-content.py` |
+| 上传、保存、归档、新建文件夹 | `upload` | 新建（更新走 manage） | `references/upload/README.md` | `scripts/upload/upload-content.py`、`scripts/upload/create-folder.py` |
 | 删除、移除文件 | `delete` | 删除（须确认） | `references/delete/README.md` | `scripts/delete/delete-file.py` |
-| 重命名、移动、更新内容、历史版本、定稿 | `manage` | 重命名/移动/版本 | `references/manage/README.md` | `scripts/manage/update-file-name.py`、`update-file-version.py`、`finalize-version.py` |
+| 重命名、移动、更新内容、历史版本、定稿 | `manage` | 重命名/移动/版本 | `references/manage/README.md` | `scripts/manage/update-file-name.py`、`scripts/manage/update-file-version.py`、`scripts/manage/finalize-version.py` |
 | 协同分享、分享列表、取消协同 | `share` | 分享 upsert/列表/revoke | `references/share/README.md` | `scripts/share/upsert-file-share-grants.py` |
 | 去掉某人分享某项权限（非整单撤销） | `share` | 单项减权 | 同上 | `scripts/share/strip-share-permissions.py` |
-| 申请权限、我的申请、审批 | `apply` | 申请与审批 | `references/apply/README.md` | `scripts/apply/submit-apply.py`、`review-apply.py` |
+| 申请权限、我的申请、审批 | `apply` | 申请与审批 | `references/apply/README.md` | `scripts/apply/submit-apply.py`、`scripts/apply/review-apply.py` |
 | 目录授权、收回目录授权 | `grant` | 目录授权 | `references/grant/README.md` | `scripts/grant/upsert-file-grants.py` |
 | 去掉某人目录某项权限 | `grant` | 单项减权 | 同上 | `scripts/grant/strip-grant-permissions.py` |
 
@@ -269,7 +269,8 @@ cms-docdb/
     ├── context-manager.py
     ├── project-matcher.py
     ├── folder-navigator.py
-    ├── common/          # 内部模块；除触发脚本表点名（如 app_code_router）外勿直调
+    ├── common/          # 内部；除触发表点名外勿直调 cli_args / safety / docdb_open_api
+    │   └── app_code_router.py
     ├── browse/
     │   ├── browse.py
     │   ├── get-app-list.py

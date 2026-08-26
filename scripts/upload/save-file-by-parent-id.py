@@ -78,13 +78,14 @@ def process_result(result):
 
 def main():
     parser = DocdbArgumentParser(description="将物理文件保存到指定父目录", hint="""save-file-by-parent-id.py 必须提供 parent_id resource_id name。
+空间根传 0 时必须 --project-id（禁止仅传 0 当作个人库捷径）。
 真实写入还需 --confirm YES（可先 --dry-run）。
-示例: python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py 0 999 "报告.pdf" --confirm YES；缺参补齐后用同一 python 命令重试
+示例: python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py 0 999 "报告.pdf" --project-id 10001 --confirm YES；缺参补齐后用同一 python 命令重试
 """)
-    parser.add_argument("parent_id", type=int, help="目标文件夹 ID（根目录传 0）")
+    parser.add_argument("parent_id", type=int, help="目标文件夹 ID；空间根传 0 时必须同时传 --project-id")
     parser.add_argument("resource_id", type=int, help="资源 ID（必须）")
     parser.add_argument("name", type=str, help="保存的文件名")
-    parser.add_argument("--project-id", type=int, default=None, help="空间 ID；parentId!=0 时可省略（自动反查）")
+    parser.add_argument("--project-id", type=int, default=None, help="空间 ID；parentId=0 时必填，parentId!=0 时可省略（自动反查）")
     parser.add_argument("--no-resolve-project-id", action="store_true",
                         help="不调用 getFileBasicInfo，直接使用 --project-id（不推荐）")
     parser.add_argument("--suffix", type=str, help="文件后缀")

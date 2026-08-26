@@ -238,11 +238,12 @@
 
 当用户希望“打开知识库位置/打开目录/看看这个文件在哪”时，推荐做法：
 
-1. 若已知目标文件的 `parentId`（保存返回或上下文里有 last_file.parentId），直接调用：
-   - `scripts/browse/browse.py <parentId>`
-2. 若要给用户展示“面包屑路径”，优先使用文件对象里的：
+1. **列个人/空间根**：先 `get-personal-project-id`（或已知 projectId）→ `get-level1-folders.py <projectId>`；**禁止** `browse.py 0`
+2. 若已知目标**非零** `parentId`（保存返回或上下文里有 last_file.parentId），直接调用：
+   - `scripts/browse/browse.py <非零 parentId>`
+3. 若要给用户展示“面包屑路径”，优先使用文件对象里的：
    - `ancestorNames`（若接口返回）
-3. 若用户希望继续下钻查看更深层目录，继续递归调用 `browse.py`。
+4. 若用户希望继续下钻查看更深层目录，继续递归调用 `browse.py`（仍须非零 parentId）。
 
 推荐输出（面向用户）：
 

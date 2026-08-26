@@ -68,6 +68,7 @@ def process_result(result):
 
 def main():
     parser = DocdbArgumentParser(description="获取项目空间一级文件夹", hint="""get-level1-folders.py 必须提供 project_id。
+个人库根：先 get-personal-project-id.py 取得 projectId，再对本脚本传入该 ID。
 示例: python3 -B <skill-dir>/scripts/browse/get-level1-folders.py 10001；缺参补齐后用同一 python 命令重试
 """)
     parser.add_argument("project_id", type=int, help="项目/空间 ID")

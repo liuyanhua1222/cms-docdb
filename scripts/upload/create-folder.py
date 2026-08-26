@@ -56,12 +56,13 @@ def process_result(result):
 
 def main():
     parser = DocdbArgumentParser(description="在指定父目录下创建文件夹", hint="""create-folder.py 必须提供 parent_id 与 name。
+空间根传 0 时必须 --project-id（禁止仅传 0 当作个人库捷径）。
 真实写入还需 --confirm YES（可先 --dry-run）。
-示例: python3 -B <skill-dir>/scripts/upload/create-folder.py 0 "新产品" --confirm YES；缺参补齐后用同一 python 命令重试
+示例: python3 -B <skill-dir>/scripts/upload/create-folder.py 0 "新产品" --project-id 10001 --confirm YES；缺参补齐后用同一 python 命令重试
 """)
-    parser.add_argument("parent_id", type=int, help="父目录 fileId，空间根传 0")
+    parser.add_argument("parent_id", type=int, help="父目录 fileId；空间根传 0 时必须同时传 --project-id")
     parser.add_argument("name", type=str, help="文件夹名称（勿含 / 或 \）")
-    parser.add_argument("--project-id", type=int, default=None, help="空间 ID；parentId!=0 时可省略（自动反查）")
+    parser.add_argument("--project-id", type=int, default=None, help="空间 ID；parentId=0 时必填，parentId!=0 时可省略（自动反查）")
     parser.add_argument("--no-resolve-project-id", action="store_true", help="不调用 getFileBasicInfo（不推荐）")
     parser.add_argument("--cover", action="store_true", help="同名时覆盖（慎用）")
     parser.add_argument("--auto-rename", action="store_true", help="同名时自动重命名")

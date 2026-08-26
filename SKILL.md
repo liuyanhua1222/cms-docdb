@@ -2,7 +2,7 @@
 name: cms-docdb
 description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能调用 Open API，勿以无法访问钉钉云端为由拒绝。
 metadata:
-  version: 3.1.2
+  version: 3.1.3
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
     requires:
@@ -17,7 +17,9 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令只含业务参数。
 
-**当前版本**: 3.1.2
+**当前版本**: 3.1.3
+
+**3.1.3 变更**：清理根路径/个人库同类教义歧义——upload 根目录示例强制 `--project-id`；去掉「默认个人库」含糊表述；列根/打开位置文案与 get-level1 hint 对齐。
 
 **3.1.2 变更**：纠偏个人/空间根浏览路由——禁止 `browse.py 0`；列根须 `get-personal-project-id`（或已知 projectId）→ `get-level1-folders`；`browse.py` 仅用于非零 parentId 下钻。
 
@@ -89,10 +91,11 @@ python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-n
 5. 版本更新必须提供目标 fileId（纯文本）或 fileId + resourceId（物理文件）
 
 **projectId 自动补全**：
-- saveFileByParentId / createFolder：`parentId > 0` 时可省略 projectId
+- saveFileByParentId / createFolder：`parentId > 0` 时可省略 projectId；**`parentId = 0`（空间根）必须显式 `--project-id`**
 - updateFileVersion：可从文件反查，默认可省略
-- saveFileByPath：path 非空可反查；path 为空需 projectId 或默认个人库
-- 推荐：优先省略 projectId；仅 `parentId=0` 等必填场景显式传入
+- saveFileByPath：**必须**提供 projectId（脚本位置参数必填）；path 非空时服务端可辅助路径解析
+- upload-content：不传 `--project-id` 时走个人库写入捷径；传到指定空间则必须带 `--project-id`
+- 推荐：非根目录优先省略 projectId；空间根写入勿把「仅传 parentId=0」当成个人库捷径
 
 版本管理强制规则（最高优先级）：
 - **禁止直接覆盖**已有文件内容；更新必须走版本管理
@@ -119,6 +122,7 @@ python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-n
 | 重定向 / `Directory nonexistent` | 禁止 shell `>`；结果读 stdout；下载优先省略 `--output` |
 | 中文缺参提示（exit 2） | 按 stderr hint 补齐后用**同一 python 命令**重试 |
 | 误用 `browse.py 0`（exit 2） | 按 stderr：个人根用 `get-personal-project-id` → `get-level1-folders`；勿再传 0 |
+| 根目录写入缺 `--project-id`（create-folder / save-file-by-parent-id 传 parentId=0） | 按 stderr 补 `--project-id`（个人空间先 get-personal-project-id）；勿仅传 0 |
 | `Read-only` / `__pycache__` | 使用 `python3 -B`；勿在 skill 目录造文件 |
 | 自造脚本 / 非 scripts 路径 | **停止**；只用本仓库 `scripts/` |
 | 写入须 `--confirm YES` | 先获用户确认再带 confirm；可先 `--dry-run` |

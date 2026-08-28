@@ -2,7 +2,7 @@
 name: cms-docdb
 description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能调用 Open API，勿以无法访问钉钉云端为由拒绝。
 metadata:
-  version: 3.1.5
+  version: 3.1.6
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
     requires:
@@ -17,7 +17,9 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令只含业务参数。
 
-**当前版本**: 3.1.5
+**当前版本**: 3.1.6
+
+**3.1.6 变更**：虚拟文件 `--relation-title` / `relationTitle` 改为 Skill **必填**（与 PC 一致传第三方原标题）；脚本缺标题直接失败，避免 Agent 省略。
 
 **3.1.5 变更**：虚拟文件标题口径对齐 PC——非空 `relationTitle` 才同步展示名，空则保留已有 `name`；新建建议必传第三方原标题（见 upload README 映射表）。
 
@@ -91,7 +93,7 @@ python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-n
 输入完整性规则（强制）：
 1. 列个人/空间根：先取 `projectId`（个人用 `get-personal-project-id`，共享空间用列表接口），再 `get-level1-folders.py <projectId>`。**禁止** `browse.py 0`。下钻已知非零文件夹（含空间 `rootFileId`）才用 `browse.py`
 2. 搜索必须提供关键词；projectId 可选
-3. 上传必须提供文件名和内容（纯文本）或 resourceId（物理文件）；**虚拟文件归档**须提供 fileType + relationId/relationUrl（见 upload README）
+3. 上传必须提供文件名和内容（纯文本）或 resourceId（物理文件）；**虚拟文件归档**须提供 fileType + relationId/relationUrl + **relationTitle**（第三方原标题，对齐 PC，见 upload README）
 4. 删除/重命名/移动必须提供 fileId
 5. 版本更新必须提供目标 fileId（纯文本）或 fileId + resourceId（物理文件）
 6. **分流**：保存 AI 生成正文 → `upload-content`；把慧记/汇报/链接挂进目录树 → `add-third-file` / `update-file-relation` / `batch-add-file-relation`（禁止用 upload-content 冒充）

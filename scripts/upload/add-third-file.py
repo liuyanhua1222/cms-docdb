@@ -34,7 +34,7 @@ def normalize(value):
     return text if text else None
 
 
-def validate(file_type, relation_id, relation_url):
+def validate(file_type, relation_id, relation_url, relation_title):
     if file_type not in SUPPORTED:
         raise SystemExit(f"不支持的虚拟文件类型: {file_type}（禁止 document-database）")
     if not relation_id and not relation_url:
@@ -45,12 +45,17 @@ def validate(file_type, relation_id, relation_url):
         raise SystemExit(f"{file_type} 类型必须提供 --relation-id")
     if relation_id and len(relation_id) > 50:
         raise SystemExit("relationId 长度不能超过50")
+    if not relation_title:
+        raise SystemExit(
+            "必须提供 --relation-title（与 PC 一致：huiji/notex→name，ai-report→taskName，"
+            "work_report/work_plan→main，url→链接名）"
+        )
 
 
 def main():
     parser = DocdbArgumentParser(
         description="个人知识库挂第三方虚拟文件",
-        hint="""add-third-file.py 必须 --project-id、--file-type，以及来源 ID/URL。
+        hint="""add-third-file.py 必须 --project-id、--file-type、来源 ID/URL，以及 --relation-title（第三方原标题，对齐 PC）。
 示例: python3 -B <skill-dir>/scripts/upload/add-third-file.py --project-id 10001 --file-type huiji --relation-id 1 --relation-title "纪要" --confirm YES
 """,
     )
@@ -58,7 +63,8 @@ def main():
     parser.add_argument("--file-type", required=True)
     parser.add_argument("--relation-id", default=None)
     parser.add_argument("--relation-url", default=None)
-    parser.add_argument("--relation-title", default=None)
+    parser.add_argument("--relation-title", required=True,
+                        help="第三方原标题（必填，对齐 PC：name/taskName/main/链接名）")
     parser.add_argument("--parent-file-id", type=int, default=None)
     parser.add_argument("--folder-path", default=None)
     add_safety_args(parser)
@@ -67,7 +73,7 @@ def main():
     relation_id = normalize(args.relation_id)
     relation_url = normalize(args.relation_url)
     relation_title = normalize(args.relation_title)
-    validate(args.file_type, relation_id, relation_url)
+    validate(args.file_type, relation_id, relation_url, relation_title)
 
     body = {
         "projectId": args.project_id,

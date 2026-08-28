@@ -34,7 +34,7 @@ def normalize(value):
     return text if text else None
 
 
-def validate_one(file_type, relation_id, relation_url):
+def validate_one(file_type, relation_id, relation_url, relation_title):
     if not relation_id and not relation_url:
         raise SystemExit("每条 relations 必须提供 relationId 或 relationUrl")
     if file_type == "url" and not relation_url:
@@ -43,17 +43,22 @@ def validate_one(file_type, relation_id, relation_url):
         raise SystemExit(f"{file_type} 类型每条必须提供 relationId")
     if relation_id and len(relation_id) > 50:
         raise SystemExit("relationId 长度不能超过50")
+    if not relation_title:
+        raise SystemExit(
+            "每条 relations 必须提供 relationTitle（与 PC 一致：huiji/notex→name，"
+            "ai-report→taskName，work_report/work_plan→main，url→链接名）"
+        )
 
 
 def main():
     parser = DocdbArgumentParser(
         description="共享空间批量虚拟文件归档",
-        hint="""batch-add-file-relation.py 必须 --file-type 与 --relations-json。
+        hint="""batch-add-file-relation.py 必须 --file-type 与 --relations-json；每条必须含 relationTitle（第三方原标题，对齐 PC）。
 relations-json 示例: [{"relationId":"1","relationTitle":"A"}]
 """,
     )
     parser.add_argument("--file-type", required=True)
-    parser.add_argument("--relations-json", required=True, help="JSON 数组")
+    parser.add_argument("--relations-json", required=True, help="JSON 数组，每条须含 relationTitle")
     parser.add_argument("--project-id", type=int, default=None)
     parser.add_argument("--parent-file-id", type=int, default=None)
     parser.add_argument("--folder-path", default=None)
@@ -77,7 +82,7 @@ relations-json 示例: [{"relationId":"1","relationTitle":"A"}]
         relation_id = normalize(item.get("relationId") or item.get("relation_id"))
         relation_url = normalize(item.get("relationUrl") or item.get("relation_url"))
         relation_title = normalize(item.get("relationTitle") or item.get("relation_title"))
-        validate_one(args.file_type, relation_id, relation_url)
+        validate_one(args.file_type, relation_id, relation_url, relation_title)
         entry = {
             "relationId": relation_id,
             "relationUrl": relation_url,

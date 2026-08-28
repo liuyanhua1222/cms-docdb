@@ -56,9 +56,9 @@
 | 动作 | 必填输入 | 可选输入 |
 |---|---|---|
 | 纯文本上传 | content, fileName | fileSuffix, folderName, projectId, updateFileId, versionName, versionRemark |
-| **虚拟文件·个人** | projectId, fileType, relationId 或 relationUrl | parentFileId, folderPath, relationTitle |
-| **虚拟文件·共享单条** | fileType, relationId 或 relationUrl；及 projectId 或有效 parentFileId 或 fileId | parentFileId, folderPath, relationTitle, fileId |
-| **虚拟文件·共享批量** | fileType, relations JSON；及 projectId 或有效 parentFileId | parentFileId, folderPath |
+| **虚拟文件·个人** | projectId, fileType, relationId 或 relationUrl, **relationTitle** | parentFileId, folderPath |
+| **虚拟文件·共享单条** | fileType, relationId 或 relationUrl, **relationTitle**；及 projectId 或有效 parentFileId 或 fileId | parentFileId, folderPath, fileId |
+| **虚拟文件·共享批量** | fileType, relations JSON（每条含 relationTitle）；及 projectId 或有效 parentFileId | parentFileId, folderPath |
 | 物理文件整传 | 本地文件路径 | — |
 | 按父 ID 保存 | parentId, resourceId, name | projectId（parentId≠0 可自动反查）, suffix, size, isSensitive |
 | 按路径保存 | projectId, resourceId, name, fileType | path, suffix, size, isSensitive |
@@ -90,9 +90,9 @@
 | 禁止类型 | `document-database` |
 | 幂等 | 同空间同目录同来源复用 `fileId`；跨目录可多份 |
 | 来源 | 非 url 必填 `--relation-id`；url 必填 `--relation-url`；自动 trim；relationId ≤50 |
-| 标题 | 非空 `relationTitle` 才同步展示名；空则保留已有 `name`（新建建议必传，对齐 PC） |
+| 标题 | **必传** `relationTitle` / `--relation-title`（与 PC 一致，取第三方原标题）；脚本缺标题直接失败 |
 
-**`relationTitle` 取值（与 PC 前端一致，写入 `--relation-title` / JSON `relationTitle`）**
+**`relationTitle` 取值（与 PC 前端一致，写入 `--relation-title` / JSON `relationTitle`；禁止自拟或省略）**
 
 | fileType | 取自第三方字段 |
 |------|------|
@@ -101,7 +101,7 @@
 | `work_report` / `work_plan` | `main` |
 | `url` | 用户指定的链接名 |
 
-脚本不回源第三方；由调用方按上表填入。
+脚本不回源第三方；Agent 必须按上表填入原标题后再调用。
 
 ### add-third-file.py — 个人库虚拟归档
 
@@ -110,7 +110,7 @@
 | `--project-id` | 是 | 个人知识库空间 ID |
 | `--file-type` | 是 | 白名单类型 |
 | `--relation-id` / `--relation-url` | 条件 | 见上 |
-| `--relation-title` | 否 | 建议传第三方原标题（见上表）；新建建议必传 |
+| `--relation-title` | **是** | 第三方原标题（见上表，对齐 PC；空白视为未传） |
 | `--parent-file-id` | 否 | 父目录，默认 0 |
 | `--folder-path` | 否 | 相对路径建目录 |
 
@@ -120,16 +120,17 @@
 |------|------|------|
 | `--file-type` | 是 | 白名单 |
 | `--relation-id` / `--relation-url` | 条件 | 见上 |
+| `--relation-title` | **是** | 第三方原标题（见上表，对齐 PC） |
 | `--project-id` | 条件 | 根目录或 folder-path 时必填；有 fileId 或有效 parent 时可省 |
 | `--file-id` | 否 | 显式更新 |
-| `--parent-file-id` / `--folder-path` / `--relation-title` | 否 | |
+| `--parent-file-id` / `--folder-path` | 否 | |
 
 ### batch-add-file-relation.py — 共享空间批量
 
 | 参数 | 必填 | 说明 |
 |------|------|------|
 | `--file-type` | 是 | 整批同一类型 |
-| `--relations-json` | 是 | JSON 数组，元素含 relationId/relationUrl/relationTitle |
+| `--relations-json` | 是 | JSON 数组；**每条必须含** `relationId`/`relationUrl` 与 `relationTitle` |
 | `--project-id` | 条件 | 同单条 |
 | `--parent-file-id` / `--folder-path` | 否 | |
 

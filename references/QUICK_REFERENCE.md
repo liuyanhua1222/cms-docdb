@@ -29,7 +29,7 @@ python3 -B <skill-dir>/scripts/query/get-download-info.py 12345
 ```bash
 python3 -B <skill-dir>/scripts/upload/create-folder.py 0 "新建目录" --project-id 10001 --dry-run
 python3 -B <skill-dir>/scripts/upload/upload-content.py "内容" "报告.md" --project-id 10001 --confirm YES
-# 虚拟文件：relationTitle 对齐 PC（huiji/notex→name，ai-report→taskName，汇报/任务→main）；新建建议必传；空则不改已有展示名
+# 虚拟文件：relationTitle 必填（对齐 PC：huiji/notex→name，ai-report→taskName，汇报/任务→main；禁止省略）
 python3 -B <skill-dir>/scripts/upload/add-third-file.py --project-id 10001 --file-type huiji --relation-id 987654 --relation-title "纪要" --folder-path "AI慧记" --confirm YES
 python3 -B <skill-dir>/scripts/upload/update-file-relation.py --project-id 20001 --parent-file-id 3001 --file-type work_report --relation-id 111 --relation-title "周报" --confirm YES
 python3 -B <skill-dir>/scripts/upload/batch-add-file-relation.py --project-id 20001 --file-type huiji --relations-json '[{"relationId":"1","relationTitle":"A"},{"relationId":"2","relationTitle":"B"}]' --confirm YES

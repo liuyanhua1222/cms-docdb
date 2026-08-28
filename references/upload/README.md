@@ -90,6 +90,18 @@
 | 禁止类型 | `document-database` |
 | 幂等 | 同空间同目录同来源复用 `fileId`；跨目录可多份 |
 | 来源 | 非 url 必填 `--relation-id`；url 必填 `--relation-url`；自动 trim；relationId ≤50 |
+| 标题 | 非空 `relationTitle` 才同步展示名；空则保留已有 `name`（新建建议必传，对齐 PC） |
+
+**`relationTitle` 取值（与 PC 前端一致，写入 `--relation-title` / JSON `relationTitle`）**
+
+| fileType | 取自第三方字段 |
+|------|------|
+| `huiji` / `notex_result` | `name` |
+| `ai-report` | `taskName` |
+| `work_report` / `work_plan` | `main` |
+| `url` | 用户指定的链接名 |
+
+脚本不回源第三方；由调用方按上表填入。
 
 ### add-third-file.py — 个人库虚拟归档
 
@@ -98,7 +110,7 @@
 | `--project-id` | 是 | 个人知识库空间 ID |
 | `--file-type` | 是 | 白名单类型 |
 | `--relation-id` / `--relation-url` | 条件 | 见上 |
-| `--relation-title` | 否 | 标题 |
+| `--relation-title` | 否 | 建议传第三方原标题（见上表）；新建建议必传 |
 | `--parent-file-id` | 否 | 父目录，默认 0 |
 | `--folder-path` | 否 | 相对路径建目录 |
 

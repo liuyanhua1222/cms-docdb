@@ -2,7 +2,7 @@
 name: cms-docdb
 description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能调用 Open API，勿以无法访问钉钉云端为由拒绝。
 metadata:
-  version: 3.1.3
+  version: 3.1.4
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
     requires:
@@ -17,7 +17,9 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令只含业务参数。
 
-**当前版本**: 3.1.3
+**当前版本**: 3.1.4
+
+**3.1.4 变更**：新增第三方虚拟文件归档（慧记/汇报/链接等）三脚本；同目录同来源幂等；与 `upload-content`（纯文本实文件）明确分流；禁止 `document-database` 类型。
 
 **3.1.3 变更**：清理根路径/个人库同类教义歧义——upload 根目录示例强制 `--project-id`；去掉「默认个人库」含糊表述；列根/打开位置文案与 get-level1 hint 对齐。
 
@@ -32,7 +34,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 **能力概览（8 块能力）**：
 - `browse`：发现可用应用通道与空间、个人空间 ID、目录结构、最近使用/上传与全空间上传记录
 - `query`：搜索、读全文或摘要、下载/预览链接
-- `upload`：新建文件/文件夹、切片与整传（已存在文件内容更新走 manage 版本流）
+- `upload`：新建文件/文件夹、切片与整传、**第三方虚拟文件归档**（慧记/汇报等；已存在文件内容更新走 manage 版本流）
 - `delete`：删除（高风险，需确认）
 - `manage`：重命名/移动、版本更新与定稿、历史版本
 - `share`：协同分享与分享列表、单项减权
@@ -51,6 +53,7 @@ python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledg
 python3 -B <skill-dir>/scripts/browse/browse.py 12345
 python3 -B <skill-dir>/scripts/query/search.py "合同" --project-id 10001
 python3 -B <skill-dir>/scripts/upload/upload-content.py "报告内容" "报告.md" --project-id 10001 --folder-name "产品资料" --confirm YES
+python3 -B <skill-dir>/scripts/upload/add-third-file.py --project-id 10001 --file-type huiji --relation-id 987654 --relation-title "评审纪要" --confirm YES
 python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料"
 ```
 
@@ -86,9 +89,10 @@ python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-n
 输入完整性规则（强制）：
 1. 列个人/空间根：先取 `projectId`（个人用 `get-personal-project-id`，共享空间用列表接口），再 `get-level1-folders.py <projectId>`。**禁止** `browse.py 0`。下钻已知非零文件夹（含空间 `rootFileId`）才用 `browse.py`
 2. 搜索必须提供关键词；projectId 可选
-3. 上传必须提供文件名和内容（纯文本）或 resourceId（物理文件）
+3. 上传必须提供文件名和内容（纯文本）或 resourceId（物理文件）；**虚拟文件归档**须提供 fileType + relationId/relationUrl（见 upload README）
 4. 删除/重命名/移动必须提供 fileId
 5. 版本更新必须提供目标 fileId（纯文本）或 fileId + resourceId（物理文件）
+6. **分流**：保存 AI 生成正文 → `upload-content`；把慧记/汇报/链接挂进目录树 → `add-third-file` / `update-file-relation` / `batch-add-file-relation`（禁止用 upload-content 冒充）
 
 **projectId 自动补全**：
 - saveFileByParentId / createFolder：`parentId > 0` 时可省略 projectId；**`parentId = 0`（空间根）必须显式 `--project-id`**
@@ -240,7 +244,8 @@ python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-n
 |---|---|---|---|---|
 | 打开知识库/资料库/法务、浏览目录、最近使用/上传、按 fileId 查空间 | `browse` | 应用/空间/目录/最近/元数据 | `references/browse/README.md` | `scripts/browse/browse.py`、`scripts/browse/get-app-list.py`、`scripts/browse/get-uploadable-list.py` |
 | 搜索、查询、读取、总结文件 | `query` | 搜索与内容/下载预览 | `references/query/README.md` | `scripts/query/search.py`、`scripts/query/get-full-content.py` |
-| 上传、保存、归档、新建文件夹 | `upload` | 新建（更新走 manage） | `references/upload/README.md` | `scripts/upload/upload-content.py`、`scripts/upload/create-folder.py` |
+| 上传、保存、归档、新建文件夹 | `upload` | 新建（更新走 manage） | `references/upload/README.md` | `scripts/upload/upload-content.py`、`scripts/upload/create-folder.py`、`scripts/upload/add-third-file.py`、`scripts/upload/update-file-relation.py`、`scripts/upload/batch-add-file-relation.py` |
+| 挂慧记/汇报/链接到知识库 | `upload` | 虚拟文件归档 | `references/upload/README.md` | 同上三脚本（勿用 upload-content） |
 | 删除、移除文件 | `delete` | 删除（须确认） | `references/delete/README.md` | `scripts/delete/delete-file.py` |
 | 重命名、移动、更新内容、历史版本、定稿 | `manage` | 重命名/移动/版本 | `references/manage/README.md` | `scripts/manage/update-file-name.py`、`scripts/manage/update-file-version.py`、`scripts/manage/finalize-version.py` |
 | 协同分享、分享列表、取消协同 | `share` | 分享 upsert/列表/revoke | `references/share/README.md` | `scripts/share/upsert-file-share-grants.py` |
@@ -300,6 +305,9 @@ cms-docdb/
     │   └── batch-get-content.py
     ├── upload/
     │   ├── upload-content.py
+    │   ├── add-third-file.py
+    │   ├── update-file-relation.py
+    │   ├── batch-add-file-relation.py
     │   ├── save-file-by-path.py
     │   ├── save-file-by-parent-id.py
     │   ├── upload-whole-file.py

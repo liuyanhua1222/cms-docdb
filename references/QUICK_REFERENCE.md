@@ -29,6 +29,9 @@ python3 -B <skill-dir>/scripts/query/get-download-info.py 12345
 ```bash
 python3 -B <skill-dir>/scripts/upload/create-folder.py 0 "新建目录" --project-id 10001 --dry-run
 python3 -B <skill-dir>/scripts/upload/upload-content.py "内容" "报告.md" --project-id 10001 --confirm YES
+python3 -B <skill-dir>/scripts/upload/add-third-file.py --project-id 10001 --file-type huiji --relation-id 987654 --relation-title "纪要" --folder-path "AI慧记" --confirm YES
+python3 -B <skill-dir>/scripts/upload/update-file-relation.py --project-id 20001 --parent-file-id 3001 --file-type work_report --relation-id 111 --relation-title "周报" --confirm YES
+python3 -B <skill-dir>/scripts/upload/batch-add-file-relation.py --project-id 20001 --file-type huiji --relations-json '[{"relationId":"1","relationTitle":"A"},{"relationId":"2","relationTitle":"B"}]' --confirm YES
 python3 -B <skill-dir>/scripts/delete/delete-file.py 12345 --confirm YES
 python3 -B <skill-dir>/scripts/manage/move-file.py 12345 --target-parent-id 0 --confirm YES
 ```

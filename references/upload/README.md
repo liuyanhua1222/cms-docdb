@@ -20,7 +20,17 @@
 - 用户说"帮我把这个文档存到知识库"、"上传 xxx 到知识库"、"把这份报告归档"
 - 用户想让 AI 分析完某个内容后自动保存结果
 - **仅用于新建文件**：若目标文件已存在，必须路由到 `manage` 模块走版本更新，禁止在此模块覆盖
+- **第三方虚拟文件**：把慧记/工作汇报/计划/情报/超链接/Notex 结果挂进目录树（不是写 Markdown 正文）
 
+### 分流（强制）
+
+| 诉求 | 脚本 | 说明 |
+|---|---|---|
+| 保存 AI 生成的纯文本/Markdown | `upload-content.py` | 真实文件，可预览检索 |
+| 挂慧记/汇报/链接等到目录 | `add-third-file.py` / `update-file-relation.py` / `batch-add-file-relation.py` | 虚拟节点；**目录级幂等**（同目录同来源复用） |
+| 禁止 | 用 upload-content 冒充慧记入库；禁止 `fileType=document-database` | |
+
+允许的 `fileType`：`work_report`、`work_plan`、`huiji`、`ai-report`、`url`、`notex_result`。`url` 必须提供 `relationUrl`，其它必须提供 `relationId`。
 ## 鉴权模式
 
 ## 脚本清单
@@ -36,6 +46,9 @@
 | `scripts/upload/merge-resource.py` | `POST /open-api/document-database/file/saveResource` | 合并分片生成最终 resourceId |
 | `scripts/upload/get-file-download-info.py` | `GET /open-api/cwork-file/getDownloadInfo` | 根据 resourceId 获取下载 URL（有效期 1 小时） |
 | `scripts/upload/create-folder.py` | `POST /open-api/document-database/file/createFolder` | 显式创建空文件夹（`parentId=0` 表示空间根下建一级目录） |
+| `scripts/upload/add-third-file.py` | `POST /open-api/document-database/project/personal/addThirdFile` | 个人知识库挂第三方虚拟文件（慧记/汇报等） |
+| `scripts/upload/update-file-relation.py` | `POST /open-api/document-database/relation/updateFileRelation` | 共享空间单条虚拟文件新增/更新（目录级幂等） |
+| `scripts/upload/batch-add-file-relation.py` | `POST /open-api/document-database/relation/batchAddFileRelation` | 共享空间批量挂虚拟文件（逐条幂等） |
 
 
 ## 输入要求
@@ -43,6 +56,9 @@
 | 动作 | 必填输入 | 可选输入 |
 |---|---|---|
 | 纯文本上传 | content, fileName | fileSuffix, folderName, projectId, updateFileId, versionName, versionRemark |
+| **虚拟文件·个人** | projectId, fileType, relationId 或 relationUrl | parentFileId, folderPath, relationTitle |
+| **虚拟文件·共享单条** | fileType, relationId 或 relationUrl；及 projectId 或有效 parentFileId 或 fileId | parentFileId, folderPath, relationTitle, fileId |
+| **虚拟文件·共享批量** | fileType, relations JSON；及 projectId 或有效 parentFileId | parentFileId, folderPath |
 | 物理文件整传 | 本地文件路径 | — |
 | 按父 ID 保存 | parentId, resourceId, name | projectId（parentId≠0 可自动反查）, suffix, size, isSensitive |
 | 按路径保存 | projectId, resourceId, name, fileType | path, suffix, size, isSensitive |
@@ -65,6 +81,45 @@
 | `--update-file-id` | Long | 否 | 版本更新模式的目标文件 ID | 有效文件 ID | 传入后切换为版本更新模式，不能与 --folder-name 同时使用 |
 | `--version-name` | String | 否 | 版本名称 | 如 `V2.0` | 仅版本更新模式有效（需传 --update-file-id） |
 | `--version-remark` | String | 否 | 版本说明 | 任意文本 | 仅版本更新模式有效（需传 --update-file-id） |
+
+### 虚拟文件归档（三脚本共用规则）
+
+| 规则 | 说明 |
+|------|------|
+| 类型白名单 | `work_report` / `work_plan` / `huiji` / `ai-report` / `url` / `notex_result` |
+| 禁止类型 | `document-database` |
+| 幂等 | 同空间同目录同来源复用 `fileId`；跨目录可多份 |
+| 来源 | 非 url 必填 `--relation-id`；url 必填 `--relation-url`；自动 trim；relationId ≤50 |
+
+### add-third-file.py — 个人库虚拟归档
+
+| 参数 | 必填 | 说明 |
+|------|------|------|
+| `--project-id` | 是 | 个人知识库空间 ID |
+| `--file-type` | 是 | 白名单类型 |
+| `--relation-id` / `--relation-url` | 条件 | 见上 |
+| `--relation-title` | 否 | 标题 |
+| `--parent-file-id` | 否 | 父目录，默认 0 |
+| `--folder-path` | 否 | 相对路径建目录 |
+
+### update-file-relation.py — 共享空间单条
+
+| 参数 | 必填 | 说明 |
+|------|------|------|
+| `--file-type` | 是 | 白名单 |
+| `--relation-id` / `--relation-url` | 条件 | 见上 |
+| `--project-id` | 条件 | 根目录或 folder-path 时必填；有 fileId 或有效 parent 时可省 |
+| `--file-id` | 否 | 显式更新 |
+| `--parent-file-id` / `--folder-path` / `--relation-title` | 否 | |
+
+### batch-add-file-relation.py — 共享空间批量
+
+| 参数 | 必填 | 说明 |
+|------|------|------|
+| `--file-type` | 是 | 整批同一类型 |
+| `--relations-json` | 是 | JSON 数组，元素含 relationId/relationUrl/relationTitle |
+| `--project-id` | 条件 | 同单条 |
+| `--parent-file-id` / `--folder-path` | 否 | |
 
 ### upload-whole-file.py — 物理文件整传
 
@@ -266,6 +321,12 @@ python3 -B <skill-dir>/scripts/upload/save-file-by-path.py 2025001 "笔记.pdf" 
    - 传入 `--project-id`：保存到指定项目空间（需确保用户有访问权限）
 4. 返回 fileId
 
+### 第三方虚拟文件归档（慧记/汇报等）
+
+1. 确认类型与来源 ID/URL（禁止 document-database；勿用 upload-content）
+2. 个人库 → `add-third-file.py`；共享单条 → `update-file-relation.py`；共享批量 → `batch-add-file-relation.py`
+3. 同目录重复调用会复用同一 fileId（幂等）
+
 ## 用户感知与对话输出规范（建议）
 
 > 目标：让用户明确知道“保存成功了吗、保存到了哪里、后续还能不能继续改”。
@@ -336,6 +397,10 @@ python3 -B <skill-dir>/scripts/upload/save-file-by-path.py <project_id> "文件�
 python3 -B <skill-dir>/scripts/upload/create-folder.py <parent_id> "文件夹名" --confirm YES [--cover] [--auto-rename]
 # parentId≠0 时可省略 --project-id；parentId=0（空间根）必须带：
 python3 -B <skill-dir>/scripts/upload/create-folder.py 0 "文件夹名" --project-id <id> --confirm YES [--cover] [--auto-rename]
+# 虚拟文件（慧记/汇报等；勿用 upload-content 冒充）
+python3 -B <skill-dir>/scripts/upload/add-third-file.py --project-id <id> --file-type huiji --relation-id <id> --relation-title "标题" --confirm YES [--folder-path "AI慧记"]
+python3 -B <skill-dir>/scripts/upload/update-file-relation.py --project-id <id> --file-type work_report --relation-id <id> --relation-title "周报" --confirm YES [--parent-file-id <pid>]
+python3 -B <skill-dir>/scripts/upload/batch-add-file-relation.py --project-id <id> --file-type huiji --relations-json '[{"relationId":"1","relationTitle":"A"}]' --confirm YES
 # 预览：把 --confirm YES 换成 --dry-run
 ```
 

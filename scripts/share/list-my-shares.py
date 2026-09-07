@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """GET /document-database/share/myShares — 我的分享列表"""
 import sys, os, json
+import urllib.parse
 
 # --- cms-docdb common ---
 _cms_here = os.path.dirname(os.path.abspath(__file__))

@@ -24,9 +24,24 @@
 | `scripts/grant/get-file-grants.py` | `GET .../fileGrant/getGrants` |
 | `scripts/grant/strip-grant-permissions.py` | 单项减权（内部 upsert） |
 | `scripts/grant/revoke-file-grants.py` | `POST .../fileGrant/revokeGrants`（整单收回） |
+| `scripts/grant/get-inherit-permission.py` | `GET .../fileGrant/getInheritPermission` |
+| `scripts/grant/preview-inherit-change.py` | `GET .../fileGrant/previewInheritChange` |
+| `scripts/grant/update-inherit-permission.py` | `POST .../fileGrant/updateInheritPermission` |
 | `scripts/admin/is-project-member.py` | `GET .../admin/isProjectMember`（授权前自检） |
 
-不可授予 `admin`、`permmanage`。
+不可授予 `admin`、`permmanage`（关闭继承时的 `promoteCallerAsAdmin` 为例外，仅把调用方落为本级 admin）。
+
+## 权限继承（文件夹）
+
+保密子目录闭环：`get-inherit-permission` → `preview-inherit-change` → `update-inherit-permission`（可 `--promote-caller-as-admin`）→ `upsert`/`revoke` 配本级权。
+
+```bash
+python3 -B <skill-dir>/scripts/grant/get-inherit-permission.py 123456
+python3 -B <skill-dir>/scripts/grant/preview-inherit-change.py 123456 --cancel-inherit true
+python3 -B <skill-dir>/scripts/grant/update-inherit-permission.py 123456 --cancel-inherit true --dry-run
+python3 -B <skill-dir>/scripts/grant/update-inherit-permission.py 123456 --cancel-inherit true --server-dry-run --confirm YES
+python3 -B <skill-dir>/scripts/grant/update-inherit-permission.py 123456 --cancel-inherit true --promote-caller-as-admin --confirm YES
+```
 
 ## 示例
 

@@ -29,7 +29,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 - `manage`：重命名/移动、版本更新与定稿、历史版本
 - `share`：协同分享与分享列表、单项减权
 - `apply`：权限申请与审批
-- `grant`：目录授权（空间成员；增量 upsert / 减权 / 收回）
+- `grant`：目录授权（空间成员；增量 upsert / 减权 / 收回；文件夹权限继承查询与切换）
 
 ## 调用方法（强制）
 
@@ -243,6 +243,7 @@ python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-n
 | 申请权限、我的申请、审批 | `apply` | 申请与审批 | `references/apply/README.md` | `scripts/apply/submit-apply.py`、`scripts/apply/review-apply.py` |
 | 目录授权、收回目录授权 | `grant` | 目录授权 | `references/grant/README.md` | `scripts/grant/upsert-file-grants.py` |
 | 去掉某人目录某项权限 | `grant` | 单项减权 | 同上 | `scripts/grant/strip-grant-permissions.py` |
+| 关闭/恢复文件夹上级权限继承 | `grant` | 权限继承 | 同上 | `scripts/grant/update-inherit-permission.py` |
 
 速查：`references/QUICK_REFERENCE.md`。
 
@@ -337,7 +338,10 @@ cms-docdb/
     │   ├── upsert-file-grants.py
     │   ├── get-file-grants.py
     │   ├── strip-grant-permissions.py
-    │   └── revoke-file-grants.py
+    │   ├── revoke-file-grants.py
+    │   ├── get-inherit-permission.py
+    │   ├── preview-inherit-change.py
+    │   └── update-inherit-permission.py
     └── admin/
         ├── add-member.py
         └── is-project-member.py

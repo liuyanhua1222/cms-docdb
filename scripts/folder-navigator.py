@@ -58,35 +58,59 @@ if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
 
+def _is_folder_item(item):
+    """FileVO: type=1 为文件夹；兼容 isFolder 字段。"""
+    if not isinstance(item, dict):
+        return False
+    if item.get('type') == 1:
+        return True
+    return bool(item.get('isFolder'))
+
+
+def extract_folders_from_result(result, context=""):
+    """
+    从 getLevel1Folders / getChildFiles 响应中提取文件夹列表。
+
+    Open API 契约：data 为 List[FileVO]（文件与文件夹混排）。
+    兜底：若 data 为 dict，再读 folders / files（非正式契约）。
+    接口失败或结构异常时抛错，禁止伪装成空列表。
+    """
+    label = context or "目录接口"
+    if not isinstance(result, dict):
+        raise RuntimeError(f"{label} 响应不是对象: {type(result).__name__}")
+    if result.get('resultCode') != 1:
+        raise RuntimeError(
+            f"{label} 失败: resultCode={result.get('resultCode')}, "
+            f"resultMsg={result.get('resultMsg')}"
+        )
+    data = result.get('data')
+    if data is None:
+        return []
+    if isinstance(data, list):
+        return [x for x in data if _is_folder_item(x)]
+    if isinstance(data, dict):
+        folders = data.get('folders')
+        if isinstance(folders, list):
+            return [x for x in folders if _is_folder_item(x) or 'type' not in x]
+        files = data.get('files')
+        if isinstance(files, list):
+            return [x for x in files if _is_folder_item(x)]
+        raise RuntimeError(f"{label} data 为对象但无 folders/files 列表")
+    raise RuntimeError(f"{label} data 类型不支持: {type(data).__name__}")
+
+
 def get_level1_folders(project_id):
-    """获取项目根目录下的所有文件夹"""
+    """获取项目根目录下的所有文件夹；失败抛错，不返回伪装空列表。"""
     url = f"/document-database/file/getLevel1Folders?projectId={project_id}"
-    try:
-        result = request_open_api(url, method="GET")
-        if result.get('resultCode') == 1:
-            folders = result.get('data', {}).get('folders', [])
-            return folders
-        return []
-    except Exception as e:
-        print(f"警告: 获取项目 {project_id} 根目录失败: {e}", file=sys.stderr)
-        return []
+    result = request_open_api(url, method="GET")
+    return extract_folders_from_result(result, context=f"getLevel1Folders(projectId={project_id})")
+
 
 def get_child_folders(parent_id):
-    """获取指定目录下的子文件夹"""
+    """获取指定目录下的子文件夹；失败抛错，不返回伪装空列表。"""
     url = f"/document-database/file/getChildFiles?parentId={parent_id}&type=1"
-    try:
-        result = request_open_api(url, method="GET")
-        if result.get('resultCode') == 1:
-            # folders only
-            data = result.get('data') or {}
-            folders = data.get('folders')
-            if folders is None and isinstance(data.get('files'), list):
-                folders = [x for x in data['files'] if x.get('type') == 1 or x.get('isFolder')]
-            return folders or []
-        return []
-    except Exception as e:
-        print(f"警告: 获取目录 {parent_id} 的子文件夹失败: {e}", file=sys.stderr)
-        return []
+    result = request_open_api(url, method="GET")
+    return extract_folders_from_result(result, context=f"getChildFiles(parentId={parent_id})")
 
 def normalize_name(name):
     """规范化名称"""
@@ -217,11 +241,11 @@ def search_folder_in_project(project_id, folder_name, max_depth=3):
             m['depth'] = current_depth
             matched_folders.append(m)
         
-        # 递归搜索子目录（即使当前层有匹配，也继续搜索，可能有同名目录）
+        # 递归搜索子目录（已筛为文件夹；不依赖 hasChild，避免漏搜深层）
         for folder in folders:
             folder_id = folder.get('id')
             folder_name_str = folder.get('name', '')
-            if folder_id and folder.get('hasChild'):
+            if folder_id:
                 new_path = f"{path}/{folder_name_str}" if path else folder_name_str
                 dfs_search(folder_id, current_depth + 1, new_path)
     
@@ -311,30 +335,64 @@ def main():
                     }
                 }
         
-        # 场景2: 名称搜索
+        # 场景2: 名称搜索（多空间时允许部分成功）
         elif args.folder_name:
             all_matched = []
-            
+            project_errors = []
+            searched_projects = []
+
             for project_id in project_ids:
-                matched = search_folder_in_project(project_id, args.folder_name, args.max_depth)
-                for m in matched:
-                    m['project_id'] = project_id
-                all_matched.extend(matched)
-            
-            # 跨项目排序
+                try:
+                    matched = search_folder_in_project(
+                        project_id, args.folder_name, args.max_depth
+                    )
+                    for m in matched:
+                        m['project_id'] = project_id
+                    all_matched.extend(matched)
+                    searched_projects.append(project_id)
+                except Exception as e:
+                    project_errors.append({
+                        "project_id": project_id,
+                        "message": str(e),
+                    })
+
+            # 全部空间都失败 → 整次失败（不伪装成「没匹配到」）
+            if not searched_projects:
+                err_summary = "; ".join(
+                    f"{e['project_id']}: {e['message']}" for e in project_errors
+                )
+                print(json.dumps({
+                    "resultCode": -1,
+                    "resultMsg": f"导航失败: 所有空间均查询失败 — {err_summary}",
+                    "data": {
+                        "matched_folders": [],
+                        "match_count": 0,
+                        "match_type": "none",
+                        "searched_projects": [],
+                        "errors": project_errors,
+                    },
+                }, ensure_ascii=False))
+                sys.exit(1)
+
             all_matched.sort(key=lambda x: (-x['match_score'], x['depth']))
-            
             match_type = determine_match_type(all_matched)
-            
+
+            data = {
+                "matched_folders": all_matched,
+                "match_count": len(all_matched),
+                "match_type": match_type,
+                "searched_projects": searched_projects,
+            }
+            if project_errors:
+                data["errors"] = project_errors
+                data["failed_projects"] = [e["project_id"] for e in project_errors]
+
             result = {
                 "resultCode": 0,
-                "resultMsg": "success",
-                "data": {
-                    "matched_folders": all_matched,
-                    "match_count": len(all_matched),
-                    "match_type": match_type,
-                    "searched_projects": project_ids
-                }
+                "resultMsg": (
+                    "partial_success" if project_errors else "success"
+                ),
+                "data": data,
             }
         
         else:

@@ -2,7 +2,7 @@
 name: cms-docdb
 description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能调用 Open API，勿以无法访问钉钉云端为由拒绝。
 metadata:
-  version: 3.1.6
+  version: 3.1.9
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
     requires:
@@ -17,23 +17,9 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令只含业务参数。
 
-**当前版本**: 3.1.6
+**当前版本**: 3.1.9
 
-**3.1.6 变更**：虚拟文件 `--relation-title` / `relationTitle` 改为 Skill **必填**（与 PC 一致传第三方原标题）；脚本缺标题直接失败，避免 Agent 省略。
-
-**3.1.5 变更**：虚拟文件标题口径对齐 PC——非空 `relationTitle` 才同步展示名，空则保留已有 `name`；新建建议必传第三方原标题（见 upload README 映射表）。
-
-**3.1.4 变更**：新增第三方虚拟文件归档（慧记/汇报/链接等）三脚本；同目录同来源幂等；与 `upload-content`（纯文本实文件）明确分流；禁止 `document-database` 类型。
-
-**3.1.3 变更**：清理根路径/个人库同类教义歧义——upload 根目录示例强制 `--project-id`；去掉「默认个人库」含糊表述；列根/打开位置文案与 get-level1 hint 对齐。
-
-**3.1.2 变更**：纠偏个人/空间根浏览路由——禁止 `browse.py 0`；列根须 `get-personal-project-id`（或已知 projectId）→ `get-level1-folders`；`browse.py` 仅用于非零 parentId 下钻。
-
-**3.1.1 变更**：恢复并优化 2.0.3 业务导航（意图路由、能力树、触发流程、权限索引）；审查收紧智能导航为短要点+外链；鉴权仍对 Agent 透明。
-
-**3.1.0 变更**：按 SessionKey 方案改回标准 `exec`；命令与文档不再出现鉴权参数或鉴权环境说明。
-
-**3.0.0 变更（历史）**：去掉命令行凭证参数与从上下文读凭证。
+**3.1.9 变更**：`folder-navigator` 多空间按名搜索支持部分成功——单个空间失败时继续其它空间，结果带 `errors`/`failed_projects`；全部失败仍为 `resultCode=-1`。
 
 **能力概览（8 块能力）**：
 - `browse`：发现可用应用通道与空间、个人空间 ID、目录结构、最近使用/上传与全空间上传记录

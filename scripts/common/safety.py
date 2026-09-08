@@ -2,7 +2,8 @@
 """
 高危写入脚本的确认门禁与 dry-run。
 
-执行顺序（强制）：parse_args → enforce_or_dry_run →（仅真实调用）再发请求（凭证由运行时注入）。
+执行顺序（强制）：parse_args → enforce_or_dry_run →（仅真实调用）再发请求。
+AppKey 由公共层双来源选择（运行时优先，可选 --app-key 兜底）。
 """
 
 from __future__ import annotations

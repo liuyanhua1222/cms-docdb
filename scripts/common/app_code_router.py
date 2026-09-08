@@ -180,8 +180,9 @@ def intersect_with_apps(route: dict, apps: list) -> dict:
 
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="应用通道路由（话术→appCode）")
+    from cli_args import DocdbArgumentParser
+
+    parser = DocdbArgumentParser(description="应用通道路由（话术→appCode）")
     parser.add_argument("user_input", nargs="?", help="用户输入")
     parser.add_argument("--user-input", dest="user_input_opt")
     parser.add_argument(

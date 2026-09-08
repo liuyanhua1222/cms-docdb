@@ -1,6 +1,6 @@
 # share — 模块说明（授权分享）
 
-> **调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令只含业务参数。
+> **调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令含业务参数 + 可选 `--app-key`。
 
 
 ## 适用场景
@@ -11,6 +11,8 @@
 - 用户在授权后还需要：**分享预览短链** 或 **查看分享记录**
 
 ## 鉴权模式
+
+见 [`common-params.md`](../common-params.md)。可选 `--app-key`；未传时由脚本自行获取。旧条款「不得传入 AppKey」已废止。
 
 ## 员工 ID（empId）获取方式（必须遵循用户服务文档）
 
@@ -172,7 +174,7 @@ open-api / skill 的 **`upsertFileShareGrants` 只写 `t_file_share`**，与「�
 
 
 
-**调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令只含业务参数。
+**调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令含业务参数 + 可选 `--app-key`。
 
 
 ```bash

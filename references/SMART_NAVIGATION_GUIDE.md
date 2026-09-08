@@ -1,6 +1,6 @@
 # 智能导航完整指南 - 空间+目录双重匹配
 
-> **调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令只含业务参数。
+> **调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令含业务参数 + 可选 `--app-key`。
 
 
 ## 企业应用先筛（必读）

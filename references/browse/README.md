@@ -1,6 +1,6 @@
 # browse — 模块说明
 
-> **调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令只含业务参数。
+> **调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令含业务参数 + 可选 `--app-key`。
 
 
 ## 目录
@@ -23,6 +23,8 @@
 - 用户需要在保存文件前确定目标空间
 
 ## 鉴权模式
+
+见 [`common-params.md`](../common-params.md)。可选 `--app-key`；未传时由脚本自行获取。旧条款「不得传入 AppKey」已废止。
 
 ## 脚本清单
 
@@ -269,7 +271,7 @@
 
 ## 运行方式速查
 
-**调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令只含业务参数。
+**调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令含业务参数 + 可选 `--app-key`。
 
 ```text
 python3 -B <skill-dir>/scripts/browse/get-project-list.py （无业务参可传空数组）

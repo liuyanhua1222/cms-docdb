@@ -2,7 +2,7 @@
 name: cms-docdb
 description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能调用 Open API，勿以无法访问钉钉云端为由拒绝。
 metadata:
-  version: 3.1.9
+  version: 3.3.0
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
     requires:
@@ -15,9 +15,11 @@ metadata:
 
 OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识库 / 资料库 / 法务文档**（康哲、德镁、玄关等；用户常说的「钉钉知识库」「企业知识库」即本 Open API 文档库，非钉盘）的目录浏览、搜索、读写与归档。接口侧用 `appCode` 区分产品。
 
-本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令只含业务参数。
+本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令含业务参数，可选 `--app-key`。
 
-**当前版本**: 3.1.9
+**当前版本**: 3.3.0
+
+**3.3.0 变更**：业务脚本支持可选 `--app-key`，便于外部 Agent（如 Codex）在上下文已有当前用户 AppKey 时调用；内部运行时注入仍然优先。详见 `references/common-params.md`。
 
 **3.1.9 变更**：`folder-navigator` 多空间按名搜索支持部分成功——单个空间失败时继续其它空间，结果带 `errors`/`failed_projects`；全部失败仍为 `resultCode=-1`。
 
@@ -33,7 +35,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 ## 调用方法（强制）
 
-将 `<skill-dir>` 换成本 skill 根目录绝对路径。每个脚本单独一条命令；只传业务参数。禁止 `cd`/`&&`/管道/重定向/heredoc/`bash -lc`/`python3 -c`。优先 `python3 -B`（若无则 `python -B`）。
+将 `<skill-dir>` 换成本 skill 根目录绝对路径。每个脚本单独一条命令；传业务参数，可选 `--app-key`。禁止 `cd`/`&&`/管道/重定向/heredoc/`bash -lc`/`python3 -c`。优先 `python3 -B`（若无则 `python -B`）。
 
 ```bash
 python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py
@@ -45,16 +47,24 @@ python3 -B <skill-dir>/scripts/query/search.py "合同" --project-id 10001
 python3 -B <skill-dir>/scripts/upload/upload-content.py "报告内容" "报告.md" --project-id 10001 --folder-name "产品资料" --confirm YES
 python3 -B <skill-dir>/scripts/upload/add-third-file.py --project-id 10001 --file-type huiji --relation-id 987654 --relation-title "评审纪要" --confirm YES
 python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料"
+# 当前用户上下文或记忆中已有明确 AppKey 时：
+python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当前用户AppKey>"
 ```
 
-更多模块示例见 `references/*/README.md` 与 `references/QUICK_REFERENCE.md`。
+更多模块示例见 `references/*/README.md`、`references/QUICK_REFERENCE.md` 与 `references/common-params.md`。
+
+- 所有业务脚本都支持非必填参数 `--app-key APP_KEY`，其含义是当前用户的企业知识库 AppKey。若当前用户的上下文或记忆中已有明确可用的 appKey，调用脚本时可以传入；没有则省略，不得猜测、拼接或使用其他用户的 appKey。
+- appKey 不是普通业务内容，不得写入草稿、正文、附件或面向用户的业务结果。若脚本返回 `AUTH_CONTEXT_MISSING`，应明确告知用户当前未获取到企业知识库 AppKey，请用户提供或完成配置后再重试。
 
 **禁止**：
-- 在命令行、JSON 或对话中要求用户提供、拼接或更换任何开放平台凭证
+- 猜测、拼接、修复 AppKey，或使用其他用户、其他会话、来源不明的 AppKey
+- 为确认运行时是否已有 AppKey 而打印环境或另跑诊断命令
+- 在面向用户的回复中复述完整或脱敏 AppKey
+- 把 AppKey 填入正文、草稿、附件或普通业务参数
 - 缺业务参数时改跑无关脚本；应按 stderr 中文提示补齐后，用**同一 python 命令**重试
 - 自造 `/tmp` 脚本或跳过本仓库 `scripts/` 调文档库接口
 
-`--dry-run` 不发起真实 HTTP；真实写入须 `--confirm YES`（物理删除 `--confirm PHYSICAL`）。脚本返回公开错误时原样展示，不要引导用户提供密钥。
+`--dry-run` 不发起真实 HTTP，可不传 AppKey；真实写入须 `--confirm YES`（物理删除 `--confirm PHYSICAL`）。脚本成功时按业务 stdout 继续；stderr 降级日志本身不等于失败。公开错误按下方失败表处理。
 
 ## 适用范围与歧义排除（技能门控，强制）
 
@@ -100,7 +110,7 @@ python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-n
 1. 读本文件确认边界
 2. 按意图加载 `references/<module>/README.md`
 3. 确定 appCode（parameter-extractor / app_code_router / get-app-list / 追问）
-4. 用标准 `exec` 执行对应脚本与业务参数
+4. 用标准 `exec` 执行对应脚本与业务参数；上下文已有当前用户 AppKey 时可附加 `--app-key`
 5. 保存前做存在性检查
 
 脚本使用规则（强制）：
@@ -111,7 +121,9 @@ python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-n
 
 | 现象 | Agent 立刻怎么做 |
 |------|------------------|
-| 脚本公开错误（含无法完成调用） | 展示公开错误；不索要或更换密钥；不改跑无关命令 |
+| 脚本公开错误（含无法完成调用） | 展示公开错误；不改跑无关命令；仅 `AUTH_CONTEXT_MISSING` 时请用户提供 AppKey |
+| `AUTH_CONTEXT_MISSING` | 告知用户未获取到企业知识库 AppKey，请提供或完成配置后重试；收到后再按原确认流程重试。写操作状态不明时不得重试 |
+| `AUTH_CONTEXT_INVALID` | 告知配置值非法，不得自动修剪或换用低优先级参数 |
 | `exec preflight: complex interpreter…` | 改写为单行 `python3 -B <skill-dir>/scripts/... <业务参>` 后重试 |
 | 重定向 / `Directory nonexistent` | 禁止 shell `>`；结果读 stdout；下载优先省略 `--output` |
 | 中文缺参提示（exit 2） | 按 stderr hint 补齐后用**同一 python 命令**重试 |

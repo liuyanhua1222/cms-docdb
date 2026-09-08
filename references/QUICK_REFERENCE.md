@@ -1,6 +1,6 @@
 # 速查：常用标准 exec 调用
 
-> 强制：将 `<skill-dir>` 换成本 skill 根目录绝对路径；只传业务参数。缺参按 stderr 中文提示补齐后用同一 python 命令重试。写入须 `--confirm YES`（可先 `--dry-run`）。
+> 强制：将 `<skill-dir>` 换成本 skill 根目录绝对路径；传业务参数，可选 `--app-key`（旧条款「只传业务参数」已废止，见 `common-params.md`）。缺参按 stderr 中文提示补齐后用同一 python 命令重试。写入须 `--confirm YES`（可先 `--dry-run`）。
 
 ## browse
 
@@ -9,6 +9,7 @@ python3 -B <skill-dir>/scripts/browse/get-app-list.py
 python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py --app-code kz_knowledge_base
 python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledge_base
 python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py
+python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当前用户AppKey>"
 python3 -B <skill-dir>/scripts/browse/get-level1-folders.py <projectId>
 python3 -B <skill-dir>/scripts/browse/browse.py 12345
 python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料"
@@ -41,7 +42,9 @@ python3 -B <skill-dir>/scripts/manage/move-file.py 12345 --target-parent-id 0 --
 
 | 现象 | 做法 |
 |------|------|
-| 脚本公开错误 | 展示给用户；不索要密钥 |
+| 脚本公开错误 | 展示给用户；仅 `AUTH_CONTEXT_MISSING` 时请用户提供 AppKey |
+| `AUTH_CONTEXT_MISSING` | 告知未获取到企业知识库 AppKey，请提供或完成配置后重试 |
+| `AUTH_CONTEXT_INVALID` | 告知配置值非法，不得自动修剪 |
 | 缺业务参数 | 按 stderr 补齐后重试同一命令 |
 | 须 `--confirm YES` | 先获用户确认再执行 |
 

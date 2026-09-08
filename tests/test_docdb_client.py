@@ -1,0 +1,339 @@
+#!/usr/bin/env python3
+"""cms-docdb AppKey 双来源与标准库客户端回归。"""
+
+from __future__ import annotations
+
+import io
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+from contextlib import redirect_stderr
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+from urllib.error import HTTPError, URLError
+from urllib.request import Request
+
+SKILL_ROOT = Path(__file__).resolve().parents[1]
+COMMON = SKILL_ROOT / "scripts" / "common"
+SCRIPTS = SKILL_ROOT / "scripts"
+sys.path.insert(0, str(COMMON))
+
+import cli_args  # noqa: E402
+import docdb_open_api as api  # noqa: E402
+
+
+RUNTIME_ENV = "XG_OPENAPI_APP_KEY"
+RUNTIME_KEY = "runtimeAB12345678"
+PARAM_KEY = "paramXYZ12345678"
+
+
+class AuthTestCase(unittest.TestCase):
+    def setUp(self):
+        self._had_runtime = RUNTIME_ENV in os.environ
+        self._old_runtime = os.environ.get(RUNTIME_ENV)
+        os.environ.pop(RUNTIME_ENV, None)
+        api.reset_auth_state()
+
+    def tearDown(self):
+        api.reset_auth_state()
+        if self._had_runtime:
+            os.environ[RUNTIME_ENV] = self._old_runtime or ""
+        else:
+            os.environ.pop(RUNTIME_ENV, None)
+
+    def _stderr_resolve(self, fn):
+        buf = io.StringIO()
+        with redirect_stderr(buf):
+            try:
+                result = fn()
+            except SystemExit as exc:
+                return exc.code, buf.getvalue(), None
+        return 0, buf.getvalue(), result
+
+
+class TestHelp(AuthTestCase):
+    def test_all_docdb_parsers_show_optional_app_key(self):
+        scripts = []
+        for path in SCRIPTS.rglob("*.py"):
+            if path.name in {"docdb_open_api.py", "cli_args.py", "safety.py"}:
+                continue
+            text = path.read_text(encoding="utf-8")
+            if "DocdbArgumentParser" in text:
+                scripts.append(path)
+        self.assertGreaterEqual(len(scripts), 40)
+        missing = []
+        for path in scripts:
+            proc = subprocess.run(
+                [sys.executable, "-B", str(path), "--help"],
+                capture_output=True,
+                text=True,
+                cwd=str(SKILL_ROOT),
+            )
+            help_text = (proc.stdout or "") + (proc.stderr or "")
+            if proc.returncode != 0 or "--app-key" not in help_text or "APP_KEY" not in help_text:
+                missing.append((str(path.relative_to(SKILL_ROOT)), proc.returncode, help_text[-400:]))
+        self.assertEqual(missing, [])
+
+    def test_import_and_help_without_shared_client(self):
+        proc = subprocess.run(
+            [sys.executable, "-B", str(SCRIPTS / "browse" / "get-app-list.py"), "--help"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(proc.returncode, 0)
+        self.assertIn("--app-key", proc.stdout)
+
+
+class TestSourcePriority(AuthTestCase):
+    def test_runtime_wins_parameter_ignored(self):
+        os.environ[RUNTIME_ENV] = RUNTIME_KEY
+        api.stash_cli_app_key(PARAM_KEY)
+        code, err, result = self._stderr_resolve(api.resolve_app_key)
+        self.assertEqual(code, 0)
+        self.assertEqual(result[0], RUNTIME_KEY)
+        self.assertEqual(result[1], "environment")
+        self.assertIn("OPENAPI_AUTH_SOURCE=environment", err)
+        self.assertIn("parameter_ignored=true", err)
+        self.assertIn("********", err)
+        self.assertNotIn(RUNTIME_KEY, err)
+        self.assertNotIn(PARAM_KEY, err)
+
+    def test_parameter_fallback_when_runtime_missing(self):
+        api.stash_cli_app_key(PARAM_KEY)
+        code, err, result = self._stderr_resolve(api.resolve_app_key)
+        self.assertEqual(code, 0)
+        self.assertEqual(result[0], PARAM_KEY)
+        self.assertEqual(result[1], "parameter")
+        self.assertIn("OPENAPI_AUTH_FALLBACK=parameter", err)
+        self.assertEqual(os.environ.get(RUNTIME_ENV), PARAM_KEY)
+        self.assertNotIn(PARAM_KEY, err)
+
+    def test_both_missing(self):
+        code, err, _ = self._stderr_resolve(api.resolve_app_key)
+        self.assertEqual(code, 1)
+        self.assertIn("AUTH_CONTEXT_MISSING", err)
+        self.assertIn("企业知识库 AppKey", err)
+
+    def test_invalid_runtime_not_overridden(self):
+        os.environ[RUNTIME_ENV] = "  " + RUNTIME_KEY + "  "
+        api.stash_cli_app_key(PARAM_KEY)
+        code, err, _ = self._stderr_resolve(api.resolve_app_key)
+        self.assertEqual(code, 1)
+        self.assertIn("AUTH_CONTEXT_INVALID", err)
+
+    def test_spaces_only_invalid(self):
+        api.stash_cli_app_key("     ")
+        code, err, _ = self._stderr_resolve(api.resolve_app_key)
+        self.assertEqual(code, 1)
+        self.assertIn("AUTH_CONTEXT_INVALID", err)
+
+    def test_empty_runtime_uses_parameter(self):
+        os.environ[RUNTIME_ENV] = ""
+        api.stash_cli_app_key(PARAM_KEY)
+        code, err, result = self._stderr_resolve(api.resolve_app_key)
+        self.assertEqual(code, 0)
+        self.assertEqual(result[1], "parameter")
+        self.assertIn("OPENAPI_AUTH_FALLBACK=parameter", err)
+
+    def test_parse_args_does_not_select_source(self):
+        parser = cli_args.DocdbArgumentParser(prog="t")
+        ns = parser.parse_args(["--app-key", PARAM_KEY])
+        self.assertEqual(ns.app_key, PARAM_KEY)
+        self.assertNotIn(RUNTIME_ENV, os.environ)
+
+    def test_dry_run_without_app_key(self):
+        script = SCRIPTS / "delete" / "delete-file.py"
+        env = os.environ.copy()
+        env.pop(RUNTIME_ENV, None)
+        proc = subprocess.run(
+            [sys.executable, "-B", str(script), "12345", "--dry-run"],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        payload = json.loads(proc.stdout)
+        self.assertTrue(payload.get("dryRun"))
+
+
+class TestMaskAndBaseUrl(AuthTestCase):
+    def test_mask_short_and_long(self):
+        self.assertEqual(api.mask_app_key("abcd"), "****")
+        masked = api.mask_app_key("abcdefghijklmnop")
+        self.assertIn("********", masked)
+        self.assertNotEqual(masked, "abcdefghijklmnop")
+
+    def test_base_url_open_api_once(self):
+        self.assertEqual(
+            api.normalize_base_url("https://example.com"),
+            "https://example.com/open-api",
+        )
+        self.assertEqual(
+            api.normalize_base_url("https://example.com/open-api"),
+            "https://example.com/open-api",
+        )
+        self.assertEqual(
+            api.normalize_base_url("https://example.com/open-api/"),
+            "https://example.com/open-api",
+        )
+        path = api.normalize_open_api_path("/open-api/document-database/file/getChildFiles")
+        self.assertEqual(path, "/document-database/file/getChildFiles")
+        joined = api.normalize_base_url("https://example.com/open-api") + path
+        self.assertEqual(joined.count("/open-api"), 1)
+
+
+class TestClientFactory(AuthTestCase):
+    def test_stdlib_when_package_missing(self):
+        api.stash_cli_app_key(PARAM_KEY)
+        with patch.object(api, "_shared_client_spec_exists", return_value=False):
+            buf = io.StringIO()
+            with redirect_stderr(buf):
+                client = api.get_openapi_client(timeout=60)
+        self.assertIsInstance(client, api.StdlibOpenApiClient)
+        self.assertIn("OPENAPI_CLIENT_FALLBACK=stdlib", buf.getvalue())
+        self.assertFalse(hasattr(client, "upload_file"))
+
+    def test_import_failed_does_not_fallback(self):
+        api.stash_cli_app_key(PARAM_KEY)
+        with patch.object(api, "_shared_client_spec_exists", return_value=True):
+            with patch.dict(sys.modules, {"xg_openapi_client": None}):
+                buf = io.StringIO()
+                with redirect_stderr(buf):
+                    with self.assertRaises(SystemExit):
+                        api.get_openapi_client()
+                self.assertIn("OPENAPI_CLIENT_IMPORT_FAILED", buf.getvalue())
+                self.assertNotIn("OPENAPI_CLIENT_FALLBACK=stdlib", buf.getvalue())
+
+
+class FakeResponse:
+    def __init__(self, body: bytes, status: int = 200):
+        self.status = status
+        self._body = body
+
+    def read(self):
+        return self._body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+class TestStdlibHttp(AuthTestCase):
+    def _client(self):
+        return api.StdlibOpenApiClient(PARAM_KEY, "https://example.com/open-api", timeout=5)
+
+    def test_get_json_and_appkey_header(self):
+        opener = MagicMock()
+        opener.open.return_value = FakeResponse(json.dumps({"resultCode": 1, "data": {"ok": True}}).encode())
+        with patch.object(api, "build_opener", return_value=opener):
+            data = self._client().get("/document-database/app/listAll")
+        self.assertEqual(data["resultCode"], 1)
+        req = opener.open.call_args[0][0]
+        self.assertEqual(req.get_header("Appkey") or req.headers.get("appKey"), PARAM_KEY)
+
+    def test_http_401(self):
+        err = HTTPError("https://example.com/x", 401, "Unauthorized", hdrs=None, fp=io.BytesIO(b"secret-body"))
+        opener = MagicMock()
+        opener.open.side_effect = err
+        with patch.object(api, "build_opener", return_value=opener):
+            with self.assertRaises(RuntimeError) as cm:
+                self._client().get("/x")
+        self.assertIn("HTTP 401", str(cm.exception))
+        self.assertNotIn(PARAM_KEY, str(cm.exception))
+        self.assertNotIn("secret-body", str(cm.exception))
+
+    def test_invalid_json(self):
+        opener = MagicMock()
+        opener.open.return_value = FakeResponse(b"<html>not json</html>")
+        with patch.object(api, "build_opener", return_value=opener):
+            with self.assertRaises(RuntimeError) as cm:
+                self._client().get("/x")
+        self.assertIn("OPENAPI_INVALID_RESPONSE", str(cm.exception))
+        self.assertNotIn(PARAM_KEY, str(cm.exception))
+
+    def test_network_error(self):
+        opener = MagicMock()
+        opener.open.side_effect = URLError("timed out")
+        with patch.object(api, "build_opener", return_value=opener):
+            with self.assertRaises(RuntimeError) as cm:
+                self._client().get("/x")
+        self.assertIn("OPENAPI_NETWORK_ERROR", str(cm.exception))
+        self.assertNotIn(PARAM_KEY, str(cm.exception))
+
+    def test_timeout_error(self):
+        opener = MagicMock()
+        opener.open.side_effect = TimeoutError("timeout")
+        with patch.object(api, "build_opener", return_value=opener):
+            with self.assertRaises(RuntimeError) as cm:
+                self._client().get("/x")
+        self.assertIn("OPENAPI_NETWORK_ERROR", str(cm.exception))
+
+    def test_cross_origin_redirect_rejected(self):
+        handler = api._SameOriginRedirectHandler()
+        req = Request("https://a.example/open-api/x", headers={"appKey": PARAM_KEY})
+        with self.assertRaises(URLError) as cm:
+            handler.redirect_request(req, None, 302, "Found", {}, "https://b.example/x")
+        self.assertIn("跨源重定向", str(cm.exception))
+        self.assertNotIn(PARAM_KEY, str(cm.exception))
+
+    def test_same_origin_allowed_predicate(self):
+        self.assertTrue(api._is_same_origin("https", "a.example", "https://a.example/other"))
+        self.assertFalse(api._is_same_origin("https", "a.example", "https://b.example/other"))
+
+    def test_multipart_cross_origin_raises(self):
+        api.stash_cli_app_key(PARAM_KEY)
+        with tempfile.NamedTemporaryFile(delete=False) as fh:
+            fh.write(b"hello")
+            tmp = fh.name
+        self.addCleanup(lambda: os.path.exists(tmp) and os.unlink(tmp))
+
+        class FakeHTTPResponse:
+            def __init__(self):
+                self.status = 302
+
+            def getheader(self, name):
+                return "https://evil.example/steal"
+
+            def read(self):
+                return b""
+
+            def close(self):
+                return None
+
+        class FakeConn:
+            def putrequest(self, *a, **k):
+                return None
+
+            def putheader(self, *a, **k):
+                return None
+
+            def endheaders(self):
+                return None
+
+            def send(self, *a, **k):
+                return None
+
+            def getresponse(self):
+                return FakeHTTPResponse()
+
+            def close(self):
+                return None
+
+        with patch.object(api, "_shared_client_spec_exists", return_value=False):
+            with patch("http.client.HTTPSConnection", return_value=FakeConn()):
+                with patch.object(api.time, "sleep"):
+                    buf = io.StringIO()
+                    with redirect_stderr(buf):
+                        with self.assertRaises(SystemExit):
+                            api.upload_multipart_file("/cwork-file/uploadWholeFile", tmp)
+                    self.assertIn("跨源重定向", buf.getvalue())
+                    self.assertNotIn(PARAM_KEY, buf.getvalue())
+
+
+if __name__ == "__main__":
+    unittest.main()

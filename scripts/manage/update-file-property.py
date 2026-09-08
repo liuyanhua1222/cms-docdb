@@ -6,8 +6,8 @@ manage / updateFileProperty — 已废弃
   - python3 -B <skill-dir>/scripts/manage/update-file-name.py …
   - python3 -B <skill-dir>/scripts/manage/move-file.py …
 
-本工具仅兼容旧入口：在同一工具子进程内转发到上述脚本（继承运行时注入的环境变量），
-原样转发 --dry-run / --confirm；自身缺 confirm 且非 dry-run 时 exit 2。
+本工具仅兼容旧入口：在同一工具子进程内转发到上述脚本，
+原样转发 --dry-run / --confirm / --app-key；自身缺 confirm 且非 dry-run 时 exit 2。
 """
 
 import sys
@@ -72,6 +72,8 @@ def main():
         safety_flags.append("--dry-run")
     if args.confirm:
         safety_flags.extend(["--confirm", args.confirm])
+    if getattr(args, "app_key", None):
+        safety_flags.extend(["--app-key", args.app_key])
 
     move_strategy = "1" if args.cover else ("0" if args.auto_rename else "2")
     rename_strategy = "0" if args.auto_rename else "1"

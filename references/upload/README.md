@@ -1,6 +1,6 @@
 # upload — 模块说明
 
-> **调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令只含业务参数。
+> **调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令含业务参数 + 可选 `--app-key`。
 
 
 ## 目录
@@ -32,6 +32,8 @@
 
 允许的 `fileType`：`work_report`、`work_plan`、`huiji`、`ai-report`、`url`、`notex_result`。`url` 必须提供 `relationUrl`，其它必须提供 `relationId`。
 ## 鉴权模式
+
+见 [`common-params.md`](../common-params.md)。可选 `--app-key`；未传时由脚本自行获取。旧条款「不得传入 AppKey」已废止。
 
 ## 脚本清单
 
@@ -394,7 +396,7 @@ python3 -B <skill-dir>/scripts/upload/save-file-by-path.py 2025001 "笔记.pdf" 
 
 ## 运行方式速查
 
-**调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令只含业务参数。
+**调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令含业务参数 + 可选 `--app-key`。
 
 ```bash
 python3 -B <skill-dir>/scripts/upload/upload-content.py "内容" "文件名.md" --confirm YES [--file-suffix md] [--folder-name "AI生成/周报"] [--project-id <project_id>]
@@ -417,4 +419,4 @@ python3 -B <skill-dir>/scripts/upload/batch-add-file-relation.py --project-id <i
 # 预览：把 --confirm YES 换成 --dry-run
 ```
 
-使用标准 `exec` 调用本 skill 目录下脚本；命令只含业务参数。
+使用标准 `exec` 调用本 skill 目录下脚本；命令含业务参数 + 可选 `--app-key`。

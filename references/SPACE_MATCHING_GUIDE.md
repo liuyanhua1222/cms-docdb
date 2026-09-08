@@ -1,6 +1,6 @@
 # 空间智能匹配使用指南
 
-> **调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令只含业务参数。
+> **调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令含业务参数 + 可选 `--app-key`。
 
 
 ## 应用通道（必读）
@@ -334,7 +334,7 @@ python3 -B <skill-dir>/scripts/query/search.py "政策文件" --project-id 10001
 
 ### 推荐调用链（标准 exec）
 
-禁止在业务脚本外再 `subprocess` 套一层。Agent 应按下列脚本依次用标准 `exec` 调用（命令只含业务参数）：
+禁止在业务脚本外再 `subprocess` 套一层。Agent 应按下列脚本依次用标准 `exec` 调用（命令含业务参数 + 可选 `--app-key`）：
 
 1. `parameter-extractor` — 用户原话
 2. 若需要空间匹配：`get-uploadable-list`

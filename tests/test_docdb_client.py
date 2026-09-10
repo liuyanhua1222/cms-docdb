@@ -465,6 +465,16 @@ class TestP0SkillFixes(AuthTestCase):
         self.assertIn("--ack-role-elevate", upd_emp.read_text(encoding="utf-8"))
         self.assertIn("/admin/updateMemberRole", upd_emp.read_text(encoding="utf-8"))
         self.assertIn("/admin/updateOrgMemberRole", upd_org.read_text(encoding="utf-8"))
+        add_emp = SCRIPTS / "admin" / "add-member.py"
+        add_text = add_emp.read_text(encoding="utf-8")
+        self.assertIn("个人知识库禁止", add_text)
+        add_org_text = add_org.read_text(encoding="utf-8")
+        self.assertIn("个人知识库禁止", add_org_text)
+        upd_text = upd_emp.read_text(encoding="utf-8")
+        self.assertIn("个人知识库禁止升权", upd_text)
+        upd_org_text = upd_org.read_text(encoding="utf-8")
+        self.assertIn("个人知识库禁止升权", upd_org_text)
+        self.assertIn('"3.3.7"', (SKILL_ROOT / "version.json").read_text(encoding="utf-8"))
 
     def test_resolve_path_script_and_navigator_confirm(self):
         resolve_path = SCRIPTS / "browse" / "resolve-path.py"
@@ -502,7 +512,7 @@ class TestP0SkillFixes(AuthTestCase):
         self.assertIn("--app-code", nav_text)
 
         version = (SKILL_ROOT / "version.json").read_text(encoding="utf-8")
-        self.assertIn('"3.3.6"', version)
+        self.assertIn('"3.3.7"', version)
 
         self.assertRegex(
             nav_text,

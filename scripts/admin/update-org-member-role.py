@@ -3,6 +3,7 @@
 
 降权后若空间无管理员会失败。
 升权到 1 须 --ack-role-elevate YES。
+个人知识库禁止升权（仅允许同角色或降为 0）。
 """
 import sys, os, json
 
@@ -27,7 +28,8 @@ ALLOWED = {0, 1}
 def main():
     p = DocdbArgumentParser(hint="""update-org-member-role.py 必须提供 project_id、--org-id、--role。
 role 仅 0/1。真实写入需 --confirm YES；升权到 1 另需 --ack-role-elevate YES。
-示例: python3 -B <skill-dir>/scripts/admin/update-org-member-role.py 10001 --org-id 50005 --role 1 --ack-role-elevate YES --confirm YES
+个人知识库禁止升权，仅允许降为普通(0)。
+示例: python3 -B <skill-dir>/scripts/admin/update-org-member-role.py 10001 --org-id 50005 --role 0 --confirm YES
 """)
     p.add_argument("project_id", type=int)
     p.add_argument("--org-id", type=int, required=True)

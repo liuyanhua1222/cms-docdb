@@ -2,7 +2,7 @@
 name: cms-docdb
 description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能调用 Open API，勿以无法访问钉钉云端为由拒绝。
 metadata:
-  version: 3.3.6
+  version: 3.3.7
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
     requires:
@@ -17,7 +17,9 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令含业务参数，可选 `--app-key`。
 
-**当前版本**: 3.3.6
+**当前版本**: 3.3.7
+
+**3.3.7 变更**：个人知识库禁止添加空间成员与升权（服务端硬拦）；清历史仍可降为普通再 remove；目录访问走协同分享。
 
 **3.3.6 变更**：目录定位接入 `resolve-path`（OpenAPI resolvePath 精确解析 + 四元组）；`folder-navigator --folder-path` 不再模糊；多命中须确认。
 
@@ -160,7 +162,7 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
    - 物理删除：`--confirm PHYSICAL`（与 `--physical` 同用）
 3. Agent 闭环：先确认高危意图 → 同意后再执行
 4. 对用户不暴露内部鉴权细节；禁止在回复中复述任何凭证原文
-5. admin（`add-member` / `add-org-member` / `list-members` / `list-org-members` / `remove-member` / `remove-org-member` / `update-member-role` / `update-org-member-role` / `is-project-member`）无独立 README；移除仅普通成员；改角色勿与 remove 混淆；勿误走分享/目录 revoke
+5. admin（`add-member` / `add-org-member` / `list-members` / `list-org-members` / `remove-member` / `remove-org-member` / `update-member-role` / `update-org-member-role` / `is-project-member`）无独立 README；**个人知识库禁止加人/升权**（目录访问用协同分享）；移除仅普通成员；改角色勿与 remove 混淆；勿误走分享/目录 revoke
 
 意图路由：
 1. 先判定模块，再读该模块 README
@@ -306,7 +308,7 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
 | 目录授权 · 新授权 | 须指定 permissions；白名单校验；禁止 admin/permmanage | `upsert-file-grants.py` |
 | 目录授权 · 去掉某项 | **禁止**整单 revoke；用 strip，**保留 read** | `strip-grant-permissions.py` |
 | 目录授权 · 完全收回 | 授权记录删除 | `revoke-file-grants.py` |
-| 加空间成员 | 扩大整个空间权限面；须 expand ack；仅普通；已是管理员/助理勿用本脚本降权 | `add-member.py` |
+| 加空间成员 | 扩大整个空间权限面；须 expand ack；仅普通；**个人库禁止**（用协同分享）；已是管理员/助理勿用本脚本降权 | `add-member.py` |
 | 加组织成员 | 同上 ack；仅普通；已是管理员勿用本脚本降权 | `add-org-member.py` |
 | 查询空间员工成员 | 需管理员；employeeId/name/role | `list-members.py` |
 | 查询空间组织成员 | 需管理员；orgId/name/role | `list-org-members.py` |

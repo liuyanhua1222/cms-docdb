@@ -19,14 +19,14 @@
 | `scripts/apply/list-pending-applies.py` | `POST .../fileGrant/apply/pending` | 待我处理（支持 `--keyword`） |
 | `scripts/apply/list-processed-applies.py` | `POST .../fileGrant/apply/processed` | 我已处理（支持 `--keyword`） |
 | `scripts/apply/review-apply.py` | `POST .../fileGrant/apply/review` | 审批（pass/refuse） |
-| `scripts/admin/add-member.py` | `POST .../admin/addMember` | 添加普通员工成员（仅 role=0；已非 0 拒绝） |
-| `scripts/admin/add-org-member.py` | `POST .../admin/addOrgMember` | 添加普通组织成员（仅 role=0；已非 0 拒绝） |
+| `scripts/admin/add-member.py` | `POST .../admin/addMember` | 添加普通员工成员（仅 role=0；已非 0 拒绝；**个人库禁止**） |
+| `scripts/admin/add-org-member.py` | `POST .../admin/addOrgMember` | 添加普通组织成员（仅 role=0；已非 0 拒绝；**个人库禁止**） |
 | `scripts/admin/list-members.py` | `GET .../admin/listMembers` | 查询空间员工成员 |
 | `scripts/admin/list-org-members.py` | `GET .../admin/listOrgMembers` | 查询空间组织成员 |
 | `scripts/admin/remove-member.py` | `POST .../admin/removeMember` | 移除普通员工成员（仅 role=0） |
 | `scripts/admin/remove-org-member.py` | `POST .../admin/removeOrgMember` | 移除普通组织成员（仅 role=0） |
-| `scripts/admin/update-member-role.py` | `POST .../admin/updateMemberRole` | 更新员工角色（0/1/3；升权须 elevate ack） |
-| `scripts/admin/update-org-member-role.py` | `POST .../admin/updateOrgMemberRole` | 更新组织角色（0/1；升权须 elevate ack） |
+| `scripts/admin/update-member-role.py` | `POST .../admin/updateMemberRole` | 更新员工角色（0/1/3；升权须 elevate ack；**个人库禁升权**） |
+| `scripts/admin/update-org-member-role.py` | `POST .../admin/updateOrgMemberRole` | 更新组织角色（0/1；升权须 elevate ack；**个人库禁升权**） |
 | `scripts/admin/is-project-member.py` | `GET .../admin/isProjectMember` | 判断是否空间成员 |
 
 > 空间成员写入须 `--confirm YES`；加成员另须 `--ack-space-expand YES`；移除另须 `--ack-space-shrink YES`；升权到管理员另须 `--ack-role-elevate YES`。改角色勿与 remove 混淆；末名管理员由服务端硬拦。

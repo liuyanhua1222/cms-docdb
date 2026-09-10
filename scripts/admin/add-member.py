@@ -2,6 +2,7 @@
 """POST /document-database/admin/addMember — 添加空间普通成员（role=0）
 
 高风险：将人员加入整个空间会扩大权限面。
+**个人知识库禁止添加成员**（服务端硬拦），目录访问请用协同分享。
 已是管理员/助理/安全员不可用本脚本降权，请用 update-member-role.py。
 非空间成员只需访问指定目录时，应优先走协同分享（默认查看列表+在线预览），不要加空间成员。
 """
@@ -27,7 +28,7 @@ API_PATH = "/document-database/admin/addMember"
 def main():
     p = DocdbArgumentParser(hint="""add-member.py 必须提供 project_id 与 --employee-id。
 真实写入还需 --confirm YES，且必须 --ack-space-expand YES（确认权限面扩大到整个空间）。
-非成员目录访问请优先: upsert-file-share-grants.py（默认查看列表+在线预览）。
+个人知识库禁止加人；非成员目录访问请优先: upsert-file-share-grants.py（默认查看列表+在线预览）。
 示例: python3 -B <skill-dir>/scripts/admin/add-member.py 10001 --employee-id 1 --ack-space-expand YES --confirm YES
 """)
     p.add_argument("project_id", type=int)

@@ -2,6 +2,7 @@
 """POST /document-database/admin/addOrgMember — 添加普通组织成员（role=0）
 
 将部门加入整个空间会扩大该部门下人员权限面。
+**个人知识库禁止添加组织成员**（服务端硬拦）。
 已是管理员组织不可用本脚本降权，请用 update-org-member-role.py。
 """
 import sys, os, json
@@ -26,6 +27,7 @@ API_PATH = "/document-database/admin/addOrgMember"
 def main():
     p = DocdbArgumentParser(hint="""add-org-member.py 必须提供 project_id 与 --org-id。
 真实写入还需 --confirm YES，且必须 --ack-space-expand YES。
+个人知识库禁止加人。
 示例: python3 -B <skill-dir>/scripts/admin/add-org-member.py 10001 --org-id 50005 --ack-space-expand YES --confirm YES
 """)
     p.add_argument("project_id", type=int)

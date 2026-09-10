@@ -2,17 +2,21 @@
 """
 manage / updateFileVersion 脚本
 
-用途：将已上传的物理文件资源绑定到已有文件，产生新版本记录。
+用途：将已上传的物理文件资源绑定到已有文件，按 versionStatus 更新或定稿版本
+      （不一定总是插入新版本行；见下方说明）。
 
-使用方式：
-    [--version-status 3] [--version-name "V2.0"] [--version-remark "修订内容"] \
-    [--suffix pdf] [--size 204800]
+使用方式（与 move-file / update-file-name 一致：主 ID 位置参数，其余带名）：
+  python3 -B .../update-file-version.py <file_id> --resource-id <rid> [--project-id <pid>] \\
+    [--version-status 3] [--version-name "V2.0"] [--version-remark "修订内容"] \\
+    [--suffix pdf] [--size 204800] --confirm YES
 
-versionStatus 说明：
-  1 = 覆盖当前草稿（默认）
-  2 = 强制新建版本
-  3 = 新建版本并立即定稿（推荐）
+versionStatus 说明（本脚本默认 3）：
+  1 = 上一版为草稿则覆盖；已定稿则新建草稿
+  2 = 强制新建未定稿版本（若需再定稿，另调 finalize-version.py）
+  3 = 本脚本默认。上一版已定稿/无历史：插入新行并定稿（涨号）；
+      上一版仍是草稿：原地覆盖并定稿（版本号不变，不会多一条历史）
 
+若必须「历史多一条再定稿」：传 --version-status 2，再调 finalize-version.py。
 """
 
 import sys
@@ -47,17 +51,37 @@ def call_api(payload: dict) -> dict:
 
 
 def main() -> None:
-    parser = DocdbArgumentParser(description="用新资源更新文件版本", hint="""update-file-version.py 必须提供 file_id project_id resource_id。
-真实写入还需 --confirm YES。
-示例: python3 -B <skill-dir>/scripts/manage/update-file-version.py 12345 10001 999 --confirm YES；缺参补齐后用同一 python 命令重试
+    parser = DocdbArgumentParser(
+        description="用新资源更新文件版本",
+        hint="""update-file-version.py 必须提供 file_id 与 --resource-id。
+--project-id 可选（省略则由 OpenAPI 从文件反查）。真实写入还需 --confirm YES。
+默认 --version-status 3（草稿上可能原地定稿、版本号不变）。
+示例: python3 -B <skill-dir>/scripts/manage/update-file-version.py 12345 --resource-id 999 --confirm YES；缺参补齐后用同一 python 命令重试
 """,
     )
     parser.add_argument("file_id", type=int, help="要更新的文件 ID")
-    parser.add_argument("project_id", type=int, help="文件所在空间 ID")
-    parser.add_argument("resource_id", type=int, help="新上传的物理资源 ID")
+    parser.add_argument(
+        "--resource-id",
+        type=int,
+        required=True,
+        help="新上传的物理资源 ID（必填）",
+    )
+    parser.add_argument(
+        "--project-id",
+        type=int,
+        help="文件所在空间 ID（可选；省略则由 OpenAPI 从 fileId 反查）",
+    )
     parser.add_argument("--name", type=str, help="文件名（可选，不传则保持原文件名）")
-    parser.add_argument("--version-status", type=int, default=3,
-                        help="版本行为：1=覆盖草稿，2=强制新建，3=新建并立即定稿（默认 3）")
+    parser.add_argument(
+        "--version-status",
+        type=int,
+        default=3,
+        help=(
+            "版本行为（默认 3）：1=草稿覆盖/已定稿则新建草稿；"
+            "2=强制新建未定稿；"
+            "3=已定稿则新行并定稿，草稿则原地覆盖并定稿（版本号可能不变）"
+        ),
+    )
     parser.add_argument("--version-name", type=str, help="版本名称，如 V2.0")
     parser.add_argument("--version-remark", type=str, help="版本说明")
     parser.add_argument("--suffix", type=str, help="文件后缀")
@@ -67,10 +91,11 @@ def main() -> None:
 
     payload = {
         "id": args.file_id,
-        "projectId": args.project_id,
         "resourceId": args.resource_id,
         "versionStatus": args.version_status,
     }
+    if args.project_id is not None:
+        payload["projectId"] = args.project_id
     if args.name:
         payload["name"] = args.name
     if args.version_name:

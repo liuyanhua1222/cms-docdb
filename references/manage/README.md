@@ -34,7 +34,7 @@
 | `scripts/manage/update-file-name.py` | `POST .../updateFileName` | 同目录改名（同步 Open API） |
 | `scripts/manage/move-file.py` | `POST .../moveFile` | 移动文件或文件夹；可选移动后改名 |
 | `scripts/manage/update-file-property.py` | `POST .../updateFileProperty` | **已废弃**；兼容旧命令行，转发到上述两脚本 |
-| `scripts/manage/update-file-version.py` | `POST /open-api/document-database/file/updateFileVersion` | 物理文件版本更新（绑定新资源产生新版本） |
+| `scripts/manage/update-file-version.py` | `POST /open-api/document-database/file/updateFileVersion` | 物理文件版本更新（绑定新资源，按 versionStatus 更新/定稿） |
 | `scripts/manage/get-version-list.py` | `GET /open-api/document-database/file/getVersionList` | 获取文件完整版本历史列表 |
 | `scripts/manage/get-last-version.py` | `GET /open-api/document-database/file/getLastVersion` | 获取文件最新版本信息 |
 | `scripts/manage/finalize-version.py` | `POST /open-api/document-database/file/finalizeVersion` | 将指定版本标记为定稿 |
@@ -47,7 +47,7 @@
 | 同目录改名 | fileId, newName | projectId, nameConflictStrategy, rootFileId |
 | 移动节点 | fileId, targetParentId | newName, projectId, nameConflictStrategy, rootFileId |
 | 纯文本版本更新 | updateFileId, content, fileName | fileSuffix, versionName, versionRemark |
-| 物理文件版本更新 | id, projectId, resourceId | versionStatus, versionName, versionRemark, suffix, size |
+| 物理文件版本更新 | fileId, resourceId | projectId, versionStatus, versionName, versionRemark, suffix, size |
 | 查看版本历史 | fileId | — |
 | 获取最新版本 | fileId | — |
 | 版本定稿 | fileId | versionNumber |
@@ -104,21 +104,27 @@
 
 ### 4. 物理文件版本更新
 - **脚本**: `update-file-version.py`
-- **用途**: 将新上传的物理文件资源绑定到已有文件
+- **用途**: 将新上传的物理文件资源绑定到已有文件，按 `versionStatus` 更新或定稿（不一定总插入新版本行）
 - **输出**: 返回文件 ID
+- **本脚本默认**: `--version-status 3`（不强调「先产生版本再显式定稿」时的默认选择）
 
-**projectId 自动补全（v2.5）**：
-- **默认行为**: 脚本默认不传 `--project-id` 参数，docdb 自动从文件 ID 反查
-- **显式传入**: 仅在需要覆盖或调试时传入
-- **失败处理**: 反查失败时 docdb 抛异常，脚本返回错误信息
+**`--version-status` 行为（对齐服务端）**：
 
-**示例**：
+| 值 | 行为 |
+|---|---|
+| `1` | 上一版为草稿则覆盖；已定稿则新建草稿 |
+| `2` | 强制新建未定稿版本；若需再定稿，另调 `finalize-version.py` |
+| `3`（默认） | 上一版已定稿/无历史：插入新行并定稿（涨号）；上一版仍是草稿：原地覆盖并定稿（版本号不变，不会多一条历史） |
+
+排障：若必须「历史多一条再定稿」，传 `--version-status 2` 后再调 `finalize-version.py`；不要指望在草稿上对 `3` 自动涨版本号。勿把「先 2 再 finalize」写成与默认 3 并列的主路径。
+
+**示例**（与其它 manage 脚本一致：`file_id` 位置参数；`--resource-id` 必填；`--project-id` 可选）：
 ```bash
-# 推荐：省略 projectId（v2.5 自动补全）
-python3 -B <skill-dir>/scripts/manage/update-file-version.py --file-id 12345 --resource-id 987654321 --version-status 3 --version-name "V2.0" --version-remark "修正了第三章内容" --confirm YES
+# 推荐：省略 projectId，由 OpenAPI 反查；默认 version-status=3
+python3 -B <skill-dir>/scripts/manage/update-file-version.py 12345 --resource-id 987654321 --version-name "V2.0" --version-remark "修正了第三章内容" --confirm YES
 
-# 旧方式（仍然支持，但非必需）
-python3 -B <skill-dir>/scripts/manage/update-file-version.py --file-id 12345 --project-id 2025001 --resource-id 987654321 --confirm YES
+# 显式传入空间与 version-status
+python3 -B <skill-dir>/scripts/manage/update-file-version.py 12345 --project-id 2025001 --resource-id 987654321 --version-status 3 --confirm YES
 ```
 
 ### 5–7. 版本历史 / 最新版本 / 定稿
@@ -168,7 +174,7 @@ python3 -B <skill-dir>/scripts/manage/move-file.py <file_id> --target-parent-id 
 python3 -B <skill-dir>/scripts/manage/update-file-property.py <file_id> --new-name "新文件名.pdf" --confirm YES
 python3 -B <skill-dir>/scripts/manage/update-file-property.py <file_id> --target-parent-id <parent_id> --cover --confirm YES
 
-python3 -B <skill-dir>/scripts/manage/update-file-version.py <file_id> <project_id> <resource_id> --version-status 3 --confirm YES
+python3 -B <skill-dir>/scripts/manage/update-file-version.py <file_id> --resource-id <resource_id> [--project-id <pid>] --confirm YES
 python3 -B <skill-dir>/scripts/manage/get-version-list.py <file_id>
 python3 -B <skill-dir>/scripts/manage/finalize-version.py <file_id> --confirm YES
 ```

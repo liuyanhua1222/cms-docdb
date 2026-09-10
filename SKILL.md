@@ -2,7 +2,7 @@
 name: cms-docdb
 description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能调用 Open API，勿以无法访问钉钉云端为由拒绝。
 metadata:
-  version: 3.3.7
+  version: 3.3.9
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
     requires:
@@ -17,7 +17,11 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令含业务参数，可选 `--app-key`。
 
-**当前版本**: 3.3.7
+**当前版本**: 3.3.9
+
+**3.3.9 变更**：`update-file-version` 改为 `file_id` + `--resource-id`（必填）+ 可选 `--project-id`，与其它 manage 脚本一致，避免三位置参数对调。
+
+**3.3.8 变更**：`update-file-version` 的 versionStatus 文案与默认说明自洽（维持默认 3；写明草稿上可能原地定稿）。
 
 **3.3.7 变更**：个人知识库禁止添加空间成员与升权（服务端硬拦）；清历史仍可降为普通再 remove；目录访问走协同分享。
 
@@ -115,10 +119,11 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
 
 **projectId 自动补全**：
 - saveFileByParentId / createFolder：`parentId > 0` 时可省略 projectId；**`parentId = 0`（空间根）必须显式 `--project-id`**
-- updateFileVersion：可从文件反查，默认可省略
+- updateFileVersion：`update-file-version.py <file_id> --resource-id <rid> [--project-id <pid>]`；`--project-id` 可省略（OpenAPI 从文件反查）
 - saveFileByPath：**必须**提供 projectId（脚本位置参数必填）；path 非空时服务端可辅助路径解析
 - upload-content：不传 `--project-id` 时走个人库写入捷径；传到指定空间则必须带 `--project-id`
 - 推荐：非根目录优先省略 projectId；空间根写入勿把「仅传 parentId=0」当成个人库捷径
+- 约定：主对象 ID 多用位置参数；`projectId` / `resourceId` 等易混 ID 用带名选项（如 `--project-id`、`--resource-id`）
 
 版本管理强制规则（最高优先级）：
 - **禁止直接覆盖**已有文件内容；更新必须走版本管理

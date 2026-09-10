@@ -9,10 +9,8 @@ manage / getLastVersion 脚本
 """
 
 import sys
-import urllib.parse
 import os
 import json
-import time
 
 # --- cms-docdb common ---
 _cms_here = os.path.dirname(os.path.abspath(__file__))
@@ -34,9 +32,6 @@ if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
 API_PATH = "/document-database/file/getLastVersion"
-TIMEOUT = 60
-MAX_RETRIES = 3
-RETRY_INTERVAL = 1
 
 
 def call_api(file_id: int) -> dict:

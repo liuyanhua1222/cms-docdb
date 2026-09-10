@@ -2,7 +2,7 @@
 name: cms-docdb
 description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能调用 Open API，勿以无法访问钉钉云端为由拒绝。
 metadata:
-  version: 3.3.1
+  version: 3.3.2
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
     requires:
@@ -17,7 +17,9 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令含业务参数，可选 `--app-key`。
 
-**当前版本**: 3.3.1
+**当前版本**: 3.3.2
+
+**3.3.2 变更**：P0 协同分享默认改为查看列表+在线预览（不含分享）；权限白名单与上限预检；批量读/定稿/目录减权/写不盲重试；加成员须确认空间扩权；`--bypass-risk` 环境门禁。
 
 **3.3.1 变更**：对齐 AppKey 双来源规范——拒绝脱敏/占位 AppKey（`AUTH_CONTEXT_REDACTED`）；SKILL 强制「有原始 AppKey 必须只通过 `--app-key`」、禁止 AI 设置鉴权环境变量。详见 `references/common-params.md`。
 
@@ -271,17 +273,19 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
 
 ### 分享/授权权限策略（强制）
 
+权限中文名对齐产品「权限设置」UI：**查看列表 / 在线预览 / 下载 / 删除 / 上传/编辑 / 分享 / 权限管理 / 管理员**。
+
 | 场景 | 规则 | 脚本 |
 |---|---|---|
-| 协同分享 · 新分享 | 合并默认位 + 用户指定权限 | `upsert-file-share-grants.py` |
-| 协同分享 · 去掉某项权限 | **禁止**整单 revoke；用 strip，**保留 read** | `strip-share-permissions.py` |
+| 协同分享 · 新分享 | 默认 `read+preview`（查看列表+在线预览），**不含**「分享」；用户显式要求再加 `fileshare` | `upsert-file-share-grants.py` |
+| 协同分享 · 去掉某项权限 | **禁止**整单 revoke；用 strip，**保留 read（查看列表）** | `strip-share-permissions.py` |
 | 协同分享 · 完全取消 | 人从分享列表消失 | `revoke-file-share-grants.py` |
-| 目录授权 · 新授权 | 须指定 permissions；合并 `read+preview` | `upsert-file-grants.py` |
+| 目录授权 · 新授权 | 须指定 permissions；白名单校验；禁止 admin/permmanage | `upsert-file-grants.py` |
 | 目录授权 · 去掉某项 | **禁止**整单 revoke；用 strip，**保留 read** | `strip-grant-permissions.py` |
 | 目录授权 · 完全收回 | 授权记录删除 | `revoke-file-grants.py` |
+| 加空间成员 | 扩大整个空间权限面；须 `--ack-space-expand YES` + `--confirm YES`；非成员目录访问优先协同分享 | `add-member.py` |
 
-细则见 `references/share/README.md`、`references/grant/README.md`。
-
+自然语言：「可以看/只读/仅查看」→ 仅授予查看列表+在线预览。复述用户时用 UI 用语。细则见 `references/share/README.md`、`references/grant/README.md`。
 ## 能力树
 
 ```text

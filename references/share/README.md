@@ -7,7 +7,7 @@
 
 - 用户要把某个知识库文件/文件夹 **分享给某个人**（协同分享/授权）
 - 用户要“给某人开权限”，并且希望 **默认发送钉钉分享通知**
-- 用户未明确权限，要求默认给到：**分享 + 在线预览 + 查看**
+- 用户未明确权限，要求默认给到：**查看列表 + 在线预览**（不含「分享」）
 - 用户在授权后还需要：**分享预览短链** 或 **查看分享记录**
 
 ## 鉴权模式
@@ -31,7 +31,7 @@
 |---|---|---|
 | `scripts/share/search-emp-by-name.py` | `GET /open-api/cwork-user/searchEmpByName` | 按姓名搜索员工并拿到 empId |
 | `scripts/share/get-my-share-permissions.py` | `GET /open-api/document-database/share/getMySharePermissions` | 查询“调用方对指定 fileId 的可分享权限上限子集” |
-| `scripts/share/upsert-file-share-grants.py` | `POST /open-api/document-database/share/upsertFileShareGrants` | **推荐**：授权分享（存在则更新、不存在则新增；不删他人；默认发钉钉通知；新建时服务端合并 read+preview+fileshare） |
+| `scripts/share/upsert-file-share-grants.py` | `POST /open-api/document-database/share/upsertFileShareGrants` | **推荐**：授权分享（存在则更新、不存在则新增；不删他人；默认发钉钉通知；默认权限为查看列表+在线预览） |
 | `scripts/share/strip-share-permissions.py` | 同上 upsert | **单项减权**：去掉 preview/fileshare/download 等，**保留 read**；**勿用于整单撤销** |
 | `scripts/share/get-file-shares.py` | `GET /open-api/document-database/share/getFileShares` | 获取文件/文件夹的协同分享记录列表（人员/部门等） |
 | `scripts/share/get-share-url.py` | `GET /open-api/document-database/share/getShareUrl` | 生成文件/文件夹的“可转发预览短链”（授权后用于链接分发） |
@@ -68,13 +68,14 @@ open-api / skill 的 **`upsertFileShareGrants` 只写 `t_file_share`**，与「�
 
 1. **权限上限约束**：被分享人的 `permissions` **不能超过调用方对该 fileId 的有效权限**。不确定时先跑 `get-my-share-permissions.py`。
 2. **自定义授权权限**：若用户明确说明要授予的权限，则 **按用户指定的 `permissions`** 发起分享；未说明时才走默认权限。
-3. **默认权限（新建）**：用户未指定时脚本传 `fileshare+preview+read`；服务端对新分享记录还会强制合并三包 + 用户指定项。
-4. **编辑减权**：去掉 `fileshare`/`preview`/`download` 等用 `strip-share-permissions.py`；`read` 必须保留；完全取消协同才用 revoke。
-5. **有效期默认永久**：默认需要传 `dueDate=20991231` 表示长期有效；如用户指定有效期，按用户提供的 `dueDate（yyyyMMdd）` 传入。
+3. **默认权限（新建）**：用户未指定时脚本传 `read+preview`（查看列表 + 在线预览），**不含** `fileshare`（分享）。仅当用户显式要求可再分享时才追加 `fileshare`。
+4. **编辑减权**：去掉 `fileshare`/`preview`/`download` 等用 `strip-share-permissions.py`；`read`（查看列表）必须保留；完全取消协同才用 revoke。
+5. **有效期默认永久**：默认需要传 `dueDate=20991231` 表示长期有效（待产品确认是否改为强制询问）；如用户指定有效期，按用户提供的 `dueDate（yyyyMMdd）` 传入。
 6. **默认通知**：默认 `isSendNotice=true`（发送钉钉分享通知）。除非用户明确要求不通知，才设置为 false。
 7. **分享对象**：仅支持内部员工 empId（不支持 cpUserId / 其他第三方用户 ID）。
 8. **重复授权**：使用 `upsert-file-share-grants.py`（对接 `upsertFileShareGrants`），对已授权对象会更新权限，不会出现“返回成功但未生效”。
 9. **整单撤销协同**：使用 `revoke-file-share-grants.py`；无分享记录的员工进入 `notFoundEmpIds`（幂等）；**不发送**钉钉通知。
+10. **权限白名单**：拒绝 `admin`/`permmanage` 及未知值；真实写入前调用 `getMySharePermissions` 做上限校验（失败则拒绝授权）。上限含 `admin` 时与服务端一致跳过逐项子集校验；否则须含 `fileshare` 且授予位 ⊆ 上限。`--dry-run` 不发该预检请求；仅排障可用 `--skip-ceiling-check`。
 
 ## 用户感知与对话输出规范（建议）
 
@@ -87,7 +88,7 @@ open-api / skill 的 **`upsertFileShareGrants` 只写 `t_file_share`**，与「�
 ```text
 你要把《{fileName}》分享给 {targetName}。
 
-默认权限：分享 + 在线预览 + 查看
+默认权限：查看列表 + 在线预览（不含「分享」）
 有效期：长期有效（20991231）
 通知方式：发送钉钉分享通知
 
@@ -120,33 +121,36 @@ open-api / skill 的 **`upsertFileShareGrants` 只写 `t_file_share`**，与「�
 - 生成短链：分享成功后立即调用 `get-share-url.py` 获取 `{shareUrl}`，在分享反馈中原样输出 URL（纯文本，不做超链）
 - 分享记录：分享成功后可继续调用 `get-file-shares.py` 回显“分享给谁/权限/有效期”
 
-## 权限枚举（permissions）常用值
+## 权限枚举（permissions）——对齐产品「权限设置」UI
 
-> 说明：最终可授予集合仍以 `get-my-share-permissions.py` 返回为准（必须是调用方对该文件的有效权限子集）。
+> 对外中文名必须与 UI 勾选项一致；最终可授予集合仍以 `get-my-share-permissions.py` 返回为准（调用方有效权限子集）。
 
-- `read`：查看（列表/元数据）
-- `preview`：在线预览
-- `download`：下载
-- `upload`：上传/更新
-- `delete`：删除
-- `fileshare`：分享
-- `permmanage`：权限管理
-- `admin`：管理员
+| 权限值 | UI 标准用语 | 能力边界 |
+|---|---|---|
+| `read` | **查看列表** | 使对象出现在目录列表/导航中；单独勾选时不能在线打开正文。缺少查看列表则通常无可用入口 |
+| `preview` | **在线预览** | 在预览器中打开内容；不含本地下载。与查看列表组成最小只读集 |
+| `download` | **下载** | 保存本地副本 |
+| `upload` | **上传/编辑** | 上传或更新源文件内容（勿称「上传/更新」） |
+| `delete` | **删除** | 删除文件/文件夹 |
+| `fileshare` | **分享** | 可将对象再分享给他人；**不属于**最小只读默认集 |
+| `permmanage` | **权限管理** | 为他人配置授权；协同分享脚本拒绝授予 |
+| `admin` | **管理员** | 管理级能力；协同分享脚本拒绝授予 |
 
-## 权限包（面向用户的权限选项，建议）
+系统位 `show`（路径点亮）、`outsend`（外发）、`create`/`workreport`/`workplan` 一般不写入协同分享默认。
 
-> 说明：底层权限较细，面向普通用户建议只暴露“权限包”。本模块的默认权限包为：**分享 + 在线预览 + 查看**。
+## 权限包（面向用户的权限选项）
 
-- **仅查看** = `read + preview + fileshare`
-- **可下载** = `read + preview + download + fileshare`
-- **可编辑** = `read + preview + download + upload + fileshare`
-- **管理员** = `admin`（表示全权限）
+- **仅查看 / 可以看** = `read + preview`（查看列表 + 在线预览）——**默认**
+- **可下载** = `read + preview + download`
+- **可编辑** = `read + preview + download + upload`
+- **可再分享** = 在对应包上追加 `fileshare`（须用户显式要求）
+- **管理员** = `admin`（表示全权限；勿经本模块随意授予）
 
-默认权限包（按我们已确认的需求）：
+默认权限包：
 
-- **默认权限**：`fileshare + preview + read`（分享 + 在线预览 + 查看）
-- 如用户要求“仅查看/可下载/可编辑/管理员”，则按上述映射转换为 `permissions`
-
+- **默认权限**：`read + preview`（查看列表 + 在线预览）
+- 如用户要求“仅查看/可下载/可编辑/可分享/管理员”，则按上述映射转换为 `permissions`
+- 向用户复述时只用 UI 用语，例如：「已授予：查看列表、在线预览」；若含「分享」须明示对方可再分享
 ## 列表接口响应字段说明（FileShareVO）
 
 `list-shared-to-me.py` 和 `list-my-shares.py` 的 `pageData` 元素字段：
@@ -184,13 +188,13 @@ python3 -B <skill-dir>/scripts/share/search-emp-by-name.py "张三"
 # 2)（可选）查询调用方对 fileId 的可分享权限上限（用于防止超额授权）
 python3 -B <skill-dir>/scripts/share/get-my-share-permissions.py 2029019008342265857
 
-# 3) 分享给某员工（upsert；默认权限：fileshare,preview,read；默认发送钉钉通知）
+# 3) 分享给某员工（upsert；默认权限：read,preview = 查看列表+在线预览；默认发送钉钉通知）
 python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py 2029019008342265857 --emp-id 10001 --confirm YES
 
 # 3.1) 分享成功后一并输出短链
 python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py 2029019008342265857 --emp-id 10001 --confirm YES --print-share-url --source "open_api"
 
-# 4) 显式指定权限（逗号分隔）
+# 4) 显式指定权限（逗号分隔）；需要「分享」时显式加 fileshare
 python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py 2029019008342265857 --emp-id 10001 --permissions "read,preview,download" --confirm YES
 
 # 4.1) 显式指定到期日（yyyyMMdd）；不传时默认会按长期有效处理（dueDate=20991231）

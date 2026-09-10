@@ -15,7 +15,6 @@ manage / finalizeVersion 脚本
 import sys
 import os
 import json
-import time
 
 # --- cms-docdb common ---
 _cms_here = os.path.dirname(os.path.abspath(__file__))
@@ -38,13 +37,12 @@ if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
 API_PATH = "/document-database/file/finalizeVersion"
-TIMEOUT = 60
-MAX_RETRIES = 3
-RETRY_INTERVAL = 1
 
 
 def call_api(payload: dict) -> dict:
-    return request_open_api(url if "url" in dir() else API_PATH, method="GET")
+    return request_open_api(API_PATH, method="POST", body=payload)
+
+
 def main() -> None:
     parser = DocdbArgumentParser(description="版本定稿", hint="""finalize-version.py 必须提供 file_id。
 真实写入还需 --confirm YES。

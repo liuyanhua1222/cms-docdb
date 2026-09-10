@@ -439,7 +439,9 @@ def _call_client(method: str, path: str, *, params: ParamsType = None, body: Any
     params_dict = dict(pairs) if pairs else None
 
     last_error: Optional[BaseException] = None
-    for attempt in range(3):
+    # 仅对安全读自动重试；写操作状态不明时不得盲重试（避免重复版本/通知/创建）
+    max_attempts = 3 if method_u == "GET" else 1
+    for attempt in range(max_attempts):
         try:
             if method_u == "GET":
                 if params_dict:
@@ -468,10 +470,16 @@ def _call_client(method: str, path: str, *, params: ParamsType = None, body: Any
             if _is_auth_error(e):
                 print(f"错误: {e}", file=sys.stderr)
                 sys.exit(1)
-            if attempt < 2:
+            if attempt < max_attempts - 1:
                 time.sleep(1)
                 continue
-            print(f"错误: {e}", file=sys.stderr)
+            if method_u != "GET":
+                print(
+                    f"错误: 写操作失败且未自动重试（避免重复提交）: {e}",
+                    file=sys.stderr,
+                )
+            else:
+                print(f"错误: {e}", file=sys.stderr)
             sys.exit(1)
     print(f"错误: {last_error}", file=sys.stderr)
     sys.exit(1)
@@ -515,7 +523,7 @@ def upload_multipart_file(
     *,
     field_name: str = "file",
     timeout: int = 120,
-    max_retries: int = 3,
+    max_retries: int = 1,
 ) -> dict:
     """
     上传本地文件（multipart）。优先客户端 upload/post_multipart；

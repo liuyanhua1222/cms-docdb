@@ -3,16 +3,18 @@
 > **调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令含业务参数 + 可选 `--app-key`。
 
 
-与 `share` 模块（`t_file_share` 协同分享）不同。被授权人**须为空间成员**；非成员须先 `add-member` 或走协同分享。
+与 `share` 模块（`t_file_share` 协同分享）不同。被授权人**须为空间成员**；非成员优先走协同分享（默认查看列表+在线预览），勿轻易 `add-member` 扩大空间权限面。
 
 **增量语义**：仅影响请求中的用户，不删除他人授权。禁止全量 replace。
+
+权限 UI 用语与 `share` 相同：查看列表 / 在线预览 / 下载 / 删除 / 上传/编辑 / 分享 / 权限管理 / 管理员。脚本拒绝授予 `admin`、`permmanage`。
 
 ## 权限策略
 
 | 阶段 | 规则 |
 |---|---|
-| 新授权 | 必须指定 permissions；服务端合并 `read+preview` + 指定项（不含 `fileshare`） |
-| 编辑减权 | `read` 兜底；`preview`/`download` 等可单独去掉 → `strip-grant-permissions.py` |
+| 新授权 | 必须指定 permissions（建议最小只读 `read,preview`）；白名单校验 |
+| 编辑减权 | `read`（查看列表）兜底；保留原 dueDate；`preview`/`download` 等可单独去掉 → `strip-grant-permissions.py` |
 | 整单收回 | `revoke-file-grants.py`（勿用于单项减权） |
 
 

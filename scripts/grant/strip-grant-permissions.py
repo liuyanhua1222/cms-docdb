@@ -38,6 +38,32 @@ READ_PERM = "read"
 def call_json(method: str, url: str, body: dict = None, params: list = None) -> dict:
     return request_open_api(url, method=method, body=body, params=params)
 
+
+def parse_csv(raw: str) -> list:
+    return [p.strip() for p in raw.split(",") if p.strip()]
+
+
+def current_permissions(grant_entry: dict) -> set:
+    """从目录授权条目提取有效权限 type（status==0 或未标 status）。"""
+    raw = grant_entry.get("permissions")
+    if isinstance(raw, list):
+        out = set()
+        for item in raw:
+            if isinstance(item, dict):
+                status = item.get("status")
+                if status is not None and status != 0:
+                    continue
+                t = item.get("type") or item.get("permission")
+                if t:
+                    out.add(str(t).strip())
+            elif item:
+                out.add(str(item).strip())
+        return {p for p in out if p}
+    if isinstance(raw, str) and raw.strip():
+        return {p.strip() for p in raw.split(",") if p.strip()}
+    return set()
+
+
 def main():
     parser = DocdbArgumentParser(
         description="去掉目录授权中的指定权限位（保留 read）",
@@ -91,7 +117,10 @@ def main():
         }, ensure_ascii=False))
         return
 
-    due_date = args.due_date if args.due_date is not None else DEFAULT_DUE_DATE
+    if args.due_date is not None:
+        due_date = args.due_date
+    else:
+        due_date = target.get("dueDate") or target.get("due_date") or DEFAULT_DUE_DATE
     body = {
         "fileId": args.file_id,
         "grants": [{

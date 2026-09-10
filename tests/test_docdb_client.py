@@ -397,5 +397,97 @@ class TestStdlibHttp(AuthTestCase):
                     self.assertNotIn(PARAM_KEY, buf.getvalue())
 
 
+class TestP0SkillFixes(AuthTestCase):
+    def test_upsert_share_registers_core_args_and_default_read_preview(self):
+        path = SCRIPTS / "share" / "upsert-file-share-grants.py"
+        proc = subprocess.run(
+            [sys.executable, "-B", str(path), "--help"],
+            capture_output=True,
+            text=True,
+            cwd=str(SKILL_ROOT),
+        )
+        help_text = (proc.stdout or "") + (proc.stderr or "")
+        self.assertEqual(proc.returncode, 0)
+        self.assertIn("file_id", help_text)
+        self.assertIn("--emp-id", help_text)
+        self.assertIn("--permissions", help_text)
+
+        import permissions as perms
+
+        self.assertEqual(perms.DEFAULT_SHARE_PERMISSIONS, ["read", "preview"])
+        self.assertEqual(perms.validate_share_permissions(["read", "preview"]), ["read", "preview"])
+        with self.assertRaises(ValueError):
+            perms.validate_share_permissions(["admin"])
+        with self.assertRaises(ValueError):
+            perms.ensure_subset_of_ceiling(["read"], None)
+        with self.assertRaises(ValueError):
+            perms.ensure_subset_of_ceiling(["read"], [])
+        # 个人空间 Owner 等：上限常仅含 admin，与服务端跳过子集校验对齐
+        perms.ensure_subset_of_ceiling(["read", "preview"], ["admin"])
+        with self.assertRaises(ValueError):
+            perms.ensure_subset_of_ceiling(["read", "preview"], ["read", "preview"])
+        perms.ensure_subset_of_ceiling(["read"], ["read", "preview", "fileshare"])
+        with self.assertRaises(ValueError):
+            perms.ensure_subset_of_ceiling(["download"], ["read", "preview", "fileshare"])
+
+    def test_permissions_module_is_packaged(self):
+        self.assertTrue((COMMON / "permissions.py").is_file())
+
+    def test_add_member_requires_space_expand_ack(self):
+        text = (SCRIPTS / "admin" / "add-member.py").read_text(encoding="utf-8")
+        self.assertIn("--ack-space-expand", text)
+        self.assertIn('ack != "YES"', text)
+
+    def test_upsert_dry_run_skips_ceiling_http(self):
+        """无鉴权环境下 --dry-run 仍应成功：证明未调用 getMySharePermissions。"""
+        path = SCRIPTS / "share" / "upsert-file-share-grants.py"
+        env = {k: v for k, v in os.environ.items() if k != RUNTIME_ENV}
+        proc = subprocess.run(
+            [sys.executable, "-B", str(path), "1", "--emp-id", "2", "--dry-run"],
+            capture_output=True,
+            text=True,
+            cwd=str(SKILL_ROOT),
+            env=env,
+        )
+        self.assertEqual(proc.returncode, 0, msg=proc.stderr)
+        payload = json.loads(proc.stdout.strip())
+        self.assertTrue(payload.get("dryRun"))
+        self.assertEqual(
+            payload.get("body", {}).get("shareGrants", [{}])[0].get("permissions"),
+            ["read", "preview"],
+        )
+
+    def test_batch_get_content_passes_dict_body(self):
+        text = (SCRIPTS / "query" / "batch-get-content.py").read_text(encoding="utf-8")
+        self.assertIn('body={"files": files}', text)
+        self.assertNotIn('.encode("utf-8")', text)
+
+    def test_finalize_version_uses_post(self):
+        text = (SCRIPTS / "manage" / "finalize-version.py").read_text(encoding="utf-8")
+        self.assertIn('method="POST"', text)
+        self.assertIn("body=payload", text)
+        self.assertNotIn('method="GET"', text)
+
+    def test_strip_grant_defines_helpers(self):
+        text = (SCRIPTS / "grant" / "strip-grant-permissions.py").read_text(encoding="utf-8")
+        self.assertIn("def parse_csv", text)
+        self.assertIn("def current_permissions", text)
+
+    def test_write_ops_do_not_blind_retry(self):
+        text = (COMMON / "docdb_open_api.py").read_text(encoding="utf-8")
+        self.assertIn('max_attempts = 3 if method_u == "GET" else 1', text)
+
+    def test_get_download_info_no_public_bypass_flag(self):
+        proc = subprocess.run(
+            [sys.executable, "-B", str(SCRIPTS / "query" / "get-download-info.py"), "--help"],
+            capture_output=True,
+            text=True,
+            cwd=str(SKILL_ROOT),
+        )
+        help_text = (proc.stdout or "") + (proc.stderr or "")
+        self.assertEqual(proc.returncode, 0)
+        self.assertNotIn("--bypass-risk", help_text)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -12,6 +12,7 @@ import sys
 import urllib.parse
 import os
 import json
+import argparse
 
 # --- cms-docdb common ---
 _cms_here = os.path.dirname(os.path.abspath(__file__))
@@ -80,8 +81,26 @@ def main():
     parser.add_argument("--see-original", action="store_true", help="预览是否查看原文")
     parser.add_argument("--source", type=str, help="来源")
     parser.add_argument("--version-number", type=int, help="版本号")
-    parser.add_argument("--bypass-risk", action="store_true", help="是否绕过风险检查")
+    parser.add_argument(
+        "--bypass-risk",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
     args = parser.parse_args()
+
+    bypass_risk = None
+    if args.bypass_risk:
+        if os.environ.get("CMS_DOCDB_ALLOW_BYPASS_RISK") != "1":
+            print(
+                "错误: --bypass-risk 已禁用；运维场景须设置 CMS_DOCDB_ALLOW_BYPASS_RISK=1",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+        print(
+            "警告: 已启用 bypassRisk（CMS_DOCDB_ALLOW_BYPASS_RISK=1），请确认具备运维授权",
+            file=sys.stderr,
+        )
+        bypass_risk = True
 
     result = call_api(
         file_id=args.file_id,
@@ -89,7 +108,7 @@ def main():
         see_original=args.see_original if "--see-original" in sys.argv else None,
         source=args.source if args.source else None,
         version_number=args.version_number if args.version_number else None,
-        bypass_risk=args.bypass_risk if args.bypass_risk else None
+        bypass_risk=bypass_risk,
     )
 
     processed_result = process_result(result)

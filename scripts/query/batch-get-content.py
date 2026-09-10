@@ -39,11 +39,11 @@ CONTENT_KEYS = {"content", "text", "markdown", "fullContent", "fileContent"}
 
 
 def call_api(files: list) -> dict:
-    """调用批量获取文件内容接口，返回原始 JSON 响应"""
-    
-    body = json.dumps({"files": files}).encode("utf-8")
+    """调用批量获取文件内容接口，返回原始 JSON 响应。
 
-    return request_open_api(API_PATH, method="POST", body=body)
+    body 必须传 dict；公共客户端负责 JSON 序列化，禁止预先 encode 成 bytes。
+    """
+    return request_open_api(API_PATH, method="POST", body={"files": files})
 def truncate_content_fields(value, state, max_chars: int, max_chars_per_file: int):
     """截断内容字段，避免批量全文结果撑爆上层上下文或传输链路。"""
     if isinstance(value, dict):

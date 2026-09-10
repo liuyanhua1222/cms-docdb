@@ -36,7 +36,7 @@ if sys.stderr.encoding != 'utf-8':
 
 # 接口完整 URL
 API_PATH = "/document-database/file/getDownloadInfo"
-CHUNK_SIZE = 5 * 1024 * 1024
+CHUNK_SIZE = 1024 * 1024
 MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = (1, 2, 4)
 
@@ -49,22 +49,21 @@ def get_download_url(file_id: int) -> dict:
     return request_open_api(url, method="GET")
 
 def download_file(download_url: str, output_path: str) -> str:
-    """下载已签发的 URL（无需 OpenAPI 鉴权头）。"""
+    """下载已签发的 URL（无需 OpenAPI 鉴权头）。读路径可重试；与写接口盲重试无关。"""
     import urllib.request
-    for attempt in range(3):
+    for attempt in range(MAX_RETRIES):
         try:
             req = urllib.request.Request(download_url, method="GET")
             with urllib.request.urlopen(req, timeout=120) as resp, open(output_path, "wb") as f:
                 while True:
-                    chunk = resp.read(1024 * 1024)
+                    chunk = resp.read(CHUNK_SIZE)
                     if not chunk:
                         break
                     f.write(chunk)
             return output_path
         except Exception as e:
-            if attempt < 2:
-                import time
-                time.sleep(1)
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_BACKOFF_SECONDS[min(attempt, len(RETRY_BACKOFF_SECONDS) - 1)])
             else:
                 print(f"错误: 下载失败 - {e}", file=sys.stderr)
                 sys.exit(1)

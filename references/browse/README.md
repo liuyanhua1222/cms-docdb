@@ -36,6 +36,7 @@
 | `scripts/browse/get-uploadable-list.py` | `GET /open-api/document-database/project/uploadableList` | 获取有上传/编辑权限的空间列表 |
 | `scripts/browse/get-level1-folders.py` | `GET /open-api/document-database/file/getLevel1Folders` | 拉取项目空间根目录下的所有内容 |
 | `scripts/browse/browse.py` | `GET /open-api/document-database/file/getChildFiles` | 浏览指定目录下的直接子项 |
+| `scripts/browse/resolve-path.py` | `GET /open-api/document-database/file/resolvePath` | 相对路径精确解析 fileId（四元组；exists=false 失败） |
 | `scripts/browse/get-recent-files.py` | `POST /open-api/document-database/project/personal/getRecentFiles` | 获取当前用户最近上传的文件列表（个人库捷径） |
 | `scripts/browse/get-my-upload-records.py` | `GET /open-api/document-database/operationLog/getMyUploadRecords` | 分页查询全空间上传/新建记录（默认近90天，无需传 operations） |
 | `scripts/browse/get-my-recent-used.py` | `GET /open-api/document-database/operationLog/getMyRecentUsed` | 最近使用（预览/下载/Agent上传，与前端主页一致） |
@@ -52,6 +53,7 @@
 | 列出可写空间 | 无（**强烈建议传 appCode**） | appCode, nameKey, bizCode |
 | 浏览项目根目录 | projectId | order, permissionQuery |
 | 浏览指定目录 | parentId | type, order, excludeFileTypes, excludeFolderNames, returnFileDesc |
+| 按路径精确解析 | projectId, path | rootFileId（默认0）, appCode（查空间名） |
 | 获取最近上传文件 | 无 | limit, searchKey |
 | 查询全空间上传记录 | 无 | pageIndex, pageSize, projectId, startTime, endTime |
 | 查询文件/文件夹基本信息 | fileId | 无 |
@@ -103,6 +105,17 @@
 | `--exclude-file-types` | String | 否 | 排除的文件业务分类 | 枚举：`work_report`、`work_plan`、`huiji`、`ai-report` 等，多个用逗号分隔 | - |
 | `--exclude-folder-names` | String | 否 | 排除的文件夹名称 | 任意文件夹名称，多个用逗号分隔 | - |
 | `--no-return-file-desc` | Boolean | 否 | 不返回文件描述 | 无值标志，存在即为 true | - |
+
+### resolve-path.py — 按相对路径精确解析（写入前优先）
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `--project-id` | Long | 是 | 空间 ID | 有效 projectId（避免跨空间误解析） | - |
+| `--path` | String | 是 | 相对路径 | 多级用 `/` 分隔，如 `集团/产品中心/归档` | 相对 `--root-file-id` |
+| `--root-file-id` | Long | 否 | 映射根 | 默认 `0`=空间根 | - |
+| `--app-code` | String | 否 | 查空间名 | 如 `kz_knowledge_base` | 仅影响 `projectName` |
+
+> 成功输出四元组：`projectName` / `projectId` / `path` / `fileId`；`exists=false` 或业务失败时非 0 退出。Skill 侧成功 `resultCode=1`（与 OpenAPI 一致，勿与部分 navigator 的 `0` 混用）。路径会做归一化（`\`→`/`、去首尾 `/`），与 `folder-navigator --folder-path` 一致；后者成功时同样带四元组（`data.projectName` + `data.resolve`）。
 
 ### get-recent-files.py — 获取最近上传文件
 
@@ -226,6 +239,12 @@
    - 浏览子目录 → `browse.py` + **非零** parentId
    - 继续下钻 → 递归调用 `browse.py`
 
+2b. **按路径精确定位（写入前强制优先）**：
+   - 已知 `projectId` + 完整相对路径 → `resolve-path.py --project-id … --path "a/b/c"`
+   - 输出四元组：`projectName` / `projectId` / `path` / `fileId`；`exists=false` 时禁止继续上传
+   - 仅有相似目录名 → `folder-navigator.py --folder-name`；若 `needs_user_confirm=true` 必须停手确认
+   - **本批 BP 归档验收钉死**（文档常量）：appCode=`kz_knowledge_base`，projectId=`2096847627596439554`，path=`集团/产品中心/20260907_产品中心BP研讨归档_V1.0`
+
 3. **快速访问**：
    - 查看最近使用（预览/下载）→ `get-my-recent-used.py`
    - 查看最近上传（个人库）→ `get-recent-files.py`
@@ -241,11 +260,13 @@
 当用户希望“打开知识库位置/打开目录/看看这个文件在哪”时，推荐做法：
 
 1. **列个人/空间根**：先 `get-personal-project-id`（或已知 projectId）→ `get-level1-folders.py <projectId>`；**禁止** `browse.py 0`
-2. 若已知目标**非零** `parentId`（保存返回或上下文里有 last_file.parentId），直接调用：
+2. **已知完整路径**：`resolve-path.py --project-id … --path "a/b/c"`，向用户展示四元组后再操作
+3. 若已知目标**非零** `parentId`（保存返回或上下文里有 last_file.parentId），直接调用：
    - `scripts/browse/browse.py <非零 parentId>`
-3. 若要给用户展示“面包屑路径”，优先使用文件对象里的：
+4. 若要给用户展示“面包屑路径”，优先使用文件对象里的：
    - `ancestorNames`（若接口返回）
-4. 若用户希望继续下钻查看更深层目录，继续递归调用 `browse.py`（仍须非零 parentId）。
+5. 若用户希望继续下钻查看更深层目录，继续递归调用 `browse.py`（仍须非零 parentId）。
+6. **禁止**仅凭相似目录名自动写入；`folder-navigator --folder-name` 多命中时必须确认。
 
 推荐输出（面向用户）：
 

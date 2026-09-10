@@ -172,51 +172,34 @@ python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-n
 - ✅ 返回完整路径
 - ✅ 支持跨空间搜索
 
-#### 场景B：按路径导航（多级目录）
+#### 场景B：按路径精确解析（写入前推荐）
 
 ```bash
+# 推荐：专用脚本（输出四元组 projectName/projectId/path/fileId）
+python3 -B <skill-dir>/scripts/browse/resolve-path.py \
+  --project-id 10001 \
+  --path "产品资料/慷彼申"
+
+# 或 folder-navigator --folder-path（内部同样走 resolvePath，禁止模糊回退）
 python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-path "产品资料/慷彼申"
 ```
 
-**输出**：
-```json
-{
-  "resultCode": 0,
-  "data": {
-    "matched_folders": [
-      {
-        "id": 20002,
-        "name": "慷彼申",
-        "parentId": 20001
-      }
-    ],
-    "match_count": 1,
-    "match_type": "exact",
-    "navigation_path": [
-      {
-        "level": 1,
-        "name": "产品资料",
-        "id": 20001,
-        "match_score": 100,
-        "match_reason": "精确匹配"
-      },
-      {
-        "level": 2,
-        "name": "慷彼申",
-        "id": 20002,
-        "match_score": 100,
-        "match_reason": "精确匹配"
-      }
-    ],
-    "project_id": 10001
-  }
-}
+**要点**：
+- 服务端按 `/` 分段**精确**匹配目录名；路径不存在则失败（非 0）
+- **禁止**用相似目录名自动当上传父目录
+- `--folder-name` 模糊搜若 `needs_user_confirm=true`，必须停手让用户确认
+
+#### 场景B0（归档验收钉死示例，仅文档）
+
+本批 BP：`appCode=kz_knowledge_base`，`projectId=2096847627596439554`，path=`集团/产品中心/20260907_产品中心BP研讨归档_V1.0`。先 resolve 再 upload。
+
+#### 场景B1：按名称发现（可能多命中）
+
+```bash
+python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料"
 ```
 
-**特性**：
-- ✅ 逐层匹配（每一层都支持模糊匹配）
-- ✅ 返回完整导航路径
-- ✅ 支持混合分隔符（/ 或 -）
+若 `data.needs_user_confirm=true`（`match_type` 为 multiple/fuzzy/best_match），**不得**直接用作 upload parent。
 
 #### 场景C：跨空间搜索目录
 

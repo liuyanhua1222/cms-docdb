@@ -2,7 +2,7 @@
 name: cms-docdb
 description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能调用 Open API，勿以无法访问钉钉云端为由拒绝。
 metadata:
-  version: 3.3.5
+  version: 3.3.6
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
     requires:
@@ -17,7 +17,9 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令含业务参数，可选 `--app-key`。
 
-**当前版本**: 3.3.5
+**当前版本**: 3.3.6
+
+**3.3.6 变更**：目录定位接入 `resolve-path`（OpenAPI resolvePath 精确解析 + 四元组）；`folder-navigator --folder-path` 不再模糊；多命中须确认。
 
 **3.3.5 变更**：补组织成员 add/remove；补员工/组织改角色（0/1/3 与 0/1，升权 ack，末名管理员由服务端硬拦）；员工/组织 add 均禁止静默降权（已非 0 须走 update-*-role）。
 
@@ -223,6 +225,7 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
 | `parameter-extractor.py` | 参数提取（含 `app_code` / `needs_app_list`） |
 | `common/app_code_router.py` | 话术→appCode；可与企业 listAll 求交 |
 | `browse/get-app-list.py` | 当前企业可用应用通道 |
+| `browse/resolve-path.py` | 按相对路径精确解析 fileId（四元组） |
 | `project-matcher.py` | 智能空间名称匹配 |
 | `folder-navigator.py` | 智能目录导航 |
 
@@ -243,7 +246,8 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
 步骤1: 空间匹配 — get-project-list / get-uploadable-list --app-code …
     → project-matcher.py
     ↓
-步骤2: 目录导航 — folder-navigator.py（如需要）
+步骤2: 目录定位 — 有完整路径时必须 resolve-path.py（或 folder-navigator --folder-path）
+    • 禁止仅靠相似目录名自动落盘；多命中须用户确认
     ↓
 路由到对应模块 → 执行脚本 → 更新上下文 → 返回结果
 ```
@@ -252,15 +256,28 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
 
 1. 企业先筛：`get-app-list` + `app_code_router` 确定 `appCode`
 2. 空间匹配：带 `--app-code` 拉列表 → `project-matcher`
-3. 目录：优先 `folder-navigator`（`--project-id` + `--folder-name` 或 `--folder-path`）
+3. 目录定位：
+   - **已知 projectId + 完整路径**：必须 `scripts/browse/resolve-path.py`（输出空间名/projectId/path/fileId 四元组）；或 `folder-navigator.py --folder-path`（内部走 resolvePath，**非模糊**）
+   - **仅有目录名**：`folder-navigator.py --folder-name` 仅用于发现；若 `needs_user_confirm=true`（multiple/fuzzy/best_match）**禁止**直接当 upload parent
+   - 写入前须向用户展示：空间名 + projectId + 完整路径 + fileId
 
-细则见 `references/SPACE_MATCHING_GUIDE.md`、`references/SMART_NAVIGATION_GUIDE.md`。
+#### 本批 BP 归档验收钉死（仅文档常量，非全局锁）
+
+| 项 | 值 |
+|---|---|
+| appCode | `kz_knowledge_base` |
+| projectId | `2096847627596439554`（空间「集团SP&BP」） |
+| path | `集团/产品中心/20260907_产品中心BP研讨归档_V1.0` |
+
+先 `resolve-path` 取得 `fileId`，再 `upload-content` / `create-folder` 的 `--parent-id`。
+
+细则见 `references/SPACE_MATCHING_GUIDE.md`、`references/SMART_NAVIGATION_GUIDE.md`、`references/browse/README.md`。
 
 ## 模块路由与能力索引
 
 | 用户意图 | 模块 | 能力摘要 | 说明 | 代表脚本 |
 |---|---|---|---|---|
-| 打开知识库/资料库/法务、浏览目录、最近使用/上传、按 fileId 查空间 | `browse` | 应用/空间/目录/最近/元数据 | `references/browse/README.md` | `scripts/browse/browse.py`、`scripts/browse/get-app-list.py`、`scripts/browse/get-uploadable-list.py` |
+| 打开知识库/资料库/法务、浏览目录、最近使用/上传、按 fileId 查空间、按路径定位 | `browse` | 应用/空间/目录/路径解析/最近/元数据 | `references/browse/README.md` | `scripts/browse/resolve-path.py`、`scripts/browse/browse.py`、`scripts/browse/get-app-list.py` |
 | 搜索、查询、读取、总结文件 | `query` | 搜索与内容/下载预览 | `references/query/README.md` | `scripts/query/search.py`、`scripts/query/get-full-content.py` |
 | 上传、保存、归档、新建文件夹 | `upload` | 新建（更新走 manage） | `references/upload/README.md` | `scripts/upload/upload-content.py`、`scripts/upload/create-folder.py`、`scripts/upload/add-third-file.py`、`scripts/upload/update-file-relation.py`、`scripts/upload/batch-add-file-relation.py` |
 | 挂慧记/汇报/链接到知识库 | `upload` | 虚拟文件归档 | `references/upload/README.md` | 同上三脚本（勿用 upload-content） |
@@ -315,6 +332,7 @@ cms-docdb/
     │   └── app_code_router.py
     ├── browse/
     │   ├── browse.py
+    │   ├── resolve-path.py
     │   ├── get-app-list.py
     │   ├── get-level1-folders.py
     │   ├── get-personal-project-id.py

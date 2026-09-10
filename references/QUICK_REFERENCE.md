@@ -13,6 +13,7 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py
 python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当前用户AppKey>"
 python3 -B <skill-dir>/scripts/browse/get-level1-folders.py <projectId>
 python3 -B <skill-dir>/scripts/browse/browse.py 12345
+python3 -B <skill-dir>/scripts/browse/resolve-path.py --project-id 10001 --path "产品资料/慷彼申"
 python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料"
 python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-path "产品资料/慷彼申"
 ```

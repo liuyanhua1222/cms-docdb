@@ -465,8 +465,61 @@ class TestP0SkillFixes(AuthTestCase):
         self.assertIn("--ack-role-elevate", upd_emp.read_text(encoding="utf-8"))
         self.assertIn("/admin/updateMemberRole", upd_emp.read_text(encoding="utf-8"))
         self.assertIn("/admin/updateOrgMemberRole", upd_org.read_text(encoding="utf-8"))
-        self.assertIn('"3.3.5"', (SKILL_ROOT / "version.json").read_text(encoding="utf-8"))
 
+    def test_resolve_path_script_and_navigator_confirm(self):
+        resolve_path = SCRIPTS / "browse" / "resolve-path.py"
+        self.assertTrue(resolve_path.is_file())
+        help_proc = subprocess.run(
+            [sys.executable, "-B", str(resolve_path), "--help"],
+            capture_output=True,
+            text=True,
+            cwd=str(SKILL_ROOT),
+        )
+        help_text = (help_proc.stdout or "") + (help_proc.stderr or "")
+        self.assertEqual(help_proc.returncode, 0)
+        self.assertIn("--project-id", help_text)
+        self.assertIn("--path", help_text)
+        self.assertIn("--root-file-id", help_text)
+        resolve_text = resolve_path.read_text(encoding="utf-8")
+        self.assertIn("/document-database/file/resolvePath", resolve_text)
+        self.assertIn("projectName", resolve_text)
+        self.assertIn("projectId", resolve_text)
+        self.assertIn("exists=false", resolve_text)
+        self.assertIn("sys.exit(1)", resolve_text)
+        self.assertIn("def normalize_relative_path", resolve_text)
+        self.assertIn('replace("\\\\", "/")', resolve_text)
+
+        nav_path = SCRIPTS / "folder-navigator.py"
+        nav_text = nav_path.read_text(encoding="utf-8")
+        self.assertIn("resolve_path_exact", nav_text)
+        self.assertIn("/document-database/file/resolvePath", nav_text)
+        self.assertIn("needs_user_confirm", nav_text)
+        self.assertIn('match_type in ("multiple", "fuzzy", "best_match")', nav_text)
+        self.assertIn("needs_confirm = match_type in", nav_text)
+        self.assertIn("def normalize_relative_path", nav_text)
+        self.assertIn("lookup_project_name", nav_text)
+        self.assertIn('"projectName": project_name', nav_text)
+        self.assertIn("--app-code", nav_text)
+
+        version = (SKILL_ROOT / "version.json").read_text(encoding="utf-8")
+        self.assertIn('"3.3.6"', version)
+
+        self.assertRegex(
+            nav_text,
+            r'needs_confirm = match_type in \("multiple", "fuzzy", "best_match"\)',
+        )
+
+        # 路径归一规则与两脚本调用点一致
+        samples = [
+            ("/a/b/", "a/b"),
+            ("a\\b\\c", "a/b/c"),
+            ("  集团/产品中心/  ", "集团/产品中心"),
+        ]
+        for raw, expect in samples:
+            got = (raw or "").replace("\\", "/").strip().strip("/")
+            self.assertEqual(got, expect, raw)
+        self.assertIn("normalize_relative_path(args.path)", resolve_text)
+        self.assertIn("normalize_relative_path(folder_path)", nav_text)
     def test_upsert_dry_run_skips_ceiling_http(self):
         """无鉴权环境下 --dry-run 仍应成功：证明未调用 getMySharePermissions。"""
         path = SCRIPTS / "share" / "upsert-file-share-grants.py"

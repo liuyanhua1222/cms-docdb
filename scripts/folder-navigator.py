@@ -5,37 +5,23 @@ folder-navigator.py - 智能目录导航器
 
 用途：
   根据用户输入的目录名称，在指定空间内智能查找匹配的目录
-  支持模糊匹配、路径导航、权限检查
+  --folder-path：走 OpenAPI resolvePath 精确解析（禁止模糊）
+  --folder-name：模糊发现；多命中/非精确须用户确认，不得直接当 upload parent
 
 使用方式：
-  # 方式1: 在指定空间查找目录
-    --project-id 10001 \
-    --folder-name "产品资料"
-  
-  # 方式2: 在多个空间查找目录
-    --project-ids "10001,10002" \
-    --folder-name "AI生成"
-  
-  # 方式3: 路径导航（支持层级）
-    --project-id 10001 \
-    --folder-path "产品资料/慷彼申"
+  # 方式1: 在指定空间查找目录（可能多命中，须确认）
+    --project-id 10001 --folder-name "产品资料"
 
-返回格式：
-  {
-    "resultCode": 0,
-    "resultMsg": "success",
-    "data": {
-      "matched_folders": [...],   # 匹配到的目录列表
-      "match_count": 1,            # 匹配数量
-      "match_type": "exact|fuzzy|multiple|none",  # 匹配类型
-      "navigation_path": [...]     # 导航路径（如果提供）
-    }
-  }
+  # 方式2: 精确路径（推荐写入前定位）
+    --project-id 10001 --folder-path "产品资料/慷彼申"
+
+返回格式见 stdout JSON；路径解析失败或需确认时见 needs_user_confirm。
 """
 
 import sys
 import json
 import os
+import urllib.parse
 from difflib import SequenceMatcher
 
 # --- cms-docdb common ---
@@ -56,6 +42,60 @@ if sys.stdout.encoding != 'utf-8':
     sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
 if sys.stderr.encoding != 'utf-8':
     sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
+
+RESOLVE_PATH_API = "/document-database/file/resolvePath"
+PROJECT_LIST_PATH = "/document-database/project/list"
+
+
+def normalize_relative_path(path):
+    """与 browse/resolve-path 对齐：反斜杠→/，去首尾空白与 /。"""
+    return (path or "").replace("\\", "/").strip().strip("/")
+
+
+def lookup_project_name(project_id, app_code=None):
+    """Best-effort：从 project/list 取空间名；失败返回空串。"""
+    params = []
+    if app_code:
+        params.append(("appCode", app_code))
+    url = PROJECT_LIST_PATH
+    if params:
+        url = f"{PROJECT_LIST_PATH}?{urllib.parse.urlencode(params)}"
+    try:
+        result = request_open_api(url, method="GET")
+    except Exception as ex:
+        print(f"警告: 查询空间名失败 — {ex}", file=sys.stderr)
+        return ""
+    if not isinstance(result, dict) or result.get("resultCode") != 1:
+        print("警告: 查询空间名失败（project/list）", file=sys.stderr)
+        return ""
+    data = result.get("data") or []
+    if not isinstance(data, list):
+        return ""
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        if item.get("id") == project_id or str(item.get("id")) == str(project_id):
+            return item.get("name") or item.get("projectName") or ""
+    return ""
+
+
+def resolve_path_exact(project_id, folder_path, root_file_id=0):
+    """调用 OpenAPI resolvePath；精确分段匹配，不回退模糊。"""
+    path = normalize_relative_path(folder_path)
+    if not path:
+        raise ValueError("folder-path 不能为空")
+    params = [
+        ("projectId", str(project_id)),
+        ("rootFileId", str(root_file_id)),
+        ("path", path),
+    ]
+    url = f"{RESOLVE_PATH_API}?{urllib.parse.urlencode(params)}"
+    raw = request_open_api(url, method="GET")
+    if not isinstance(raw, dict) or raw.get("resultCode") != 1:
+        msg = raw.get("resultMsg") if isinstance(raw, dict) else str(raw)
+        raise RuntimeError(f"resolvePath 失败: {msg}")
+    data = raw.get("data") or {}
+    return path, data
 
 
 def _is_folder_item(item):
@@ -280,7 +320,9 @@ def main():
     parser = DocdbArgumentParser(
         description="智能目录导航器",
         hint="""folder-navigator.py 须提供 --project-id（或 --project-ids）以及 --folder-name 或 --folder-path。
-示例: python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料"；缺参补齐后用同一 python 命令重试
+写入前定位请优先 --folder-path（走 resolvePath 精确解析）或 browse/resolve-path.py。
+--folder-name 仅用于发现；多命中/非精确时 needs_user_confirm=true，禁止直接当上传父目录。
+示例: python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-path "产品资料/慷彼申"
 """,
     )
     parser.add_argument("--project-id", type=int, help="项目空间 ID")
@@ -288,6 +330,7 @@ def main():
     parser.add_argument("--folder-name", type=str, help="目录名称（单层匹配）")
     parser.add_argument("--folder-path", type=str, help="目录路径（多层导航，如 '产品资料/慷彼申'）")
     parser.add_argument("--max-depth", type=int, default=3, help="最大搜索深度（默认3层）")
+    parser.add_argument("--app-code", type=str, default="", help="可选：查空间名时传入 appCode（仅 --folder-path）")
     args = parser.parse_args()
     
     try:
@@ -301,41 +344,77 @@ def main():
         if not project_ids:
             raise ValueError("必须提供 --project-id 或 --project-ids")
         
-        # 场景1: 路径导航
+        # 场景1: 路径导航 — 必须走 resolvePath 精确解析
         if args.folder_path:
             if len(project_ids) > 1:
-                raise ValueError("路径导航仅支持单个项目空间")
-            
+                raise ValueError("路径导航仅支持单个项目空间；请用 --project-id")
+
             project_id = project_ids[0]
-            target_folder, navigation = navigate_by_path(project_id, args.folder_path)
-            
-            if target_folder:
-                result = {
-                    "resultCode": 0,
-                    "resultMsg": "success",
-                    "data": {
-                        "matched_folders": [target_folder],
-                        "match_count": 1,
-                        "match_type": "exact",
-                        "navigation_path": navigation,
-                        "project_id": project_id
-                    }
-                }
-            else:
-                result = {
-                    "resultCode": 0,
-                    "resultMsg": "success",
+            path, resolved = resolve_path_exact(project_id, args.folder_path)
+            exists = bool(resolved.get("exists"))
+            file_id = resolved.get("fileId")
+            file_type = resolved.get("type")
+            project_name = lookup_project_name(project_id, args.app_code or None)
+
+            if not exists or file_id is None:
+                print(json.dumps({
+                    "resultCode": -1,
+                    "resultMsg": f"路径不存在: projectId={project_id} path={path}",
                     "data": {
                         "matched_folders": [],
                         "match_count": 0,
                         "match_type": "none",
-                        "navigation_path": navigation,
+                        "projectName": project_name,
                         "project_id": project_id,
-                        "error": f"路径导航失败，已导航到第 {len(navigation)} 层"
-                    }
-                }
-        
-        # 场景2: 名称搜索（多空间时允许部分成功）
+                        "projectId": project_id,
+                        "path": path,
+                        "fileId": file_id,
+                        "needs_user_confirm": False,
+                        "resolve": resolved,
+                    },
+                }, ensure_ascii=False))
+                sys.exit(1)
+
+            leaf_name = path.split("/")[-1] if path else ""
+            target_folder = {
+                "id": file_id,
+                "name": leaf_name,
+                "type": file_type,
+                "project_id": project_id,
+                "path": path,
+                "match_score": 100,
+                "match_reason": "resolvePath精确匹配",
+            }
+            resolve_block = {
+                "exists": True,
+                "projectName": project_name,
+                "projectId": project_id,
+                "path": path,
+                "fileId": file_id,
+                "type": file_type,
+            }
+            if not project_name:
+                resolve_block["projectNameWarning"] = (
+                    "未能解析空间名；请核对 projectId / --app-code"
+                )
+            result = {
+                "resultCode": 0,
+                "resultMsg": "success",
+                "data": {
+                    "matched_folders": [target_folder],
+                    "match_count": 1,
+                    "match_type": "exact",
+                    "projectName": project_name,
+                    "project_id": project_id,
+                    "projectId": project_id,
+                    "path": path,
+                    "fileId": file_id,
+                    "needs_user_confirm": False,
+                    "resolve": resolve_block,
+                },
+            }
+
+        # 场景2: 名称搜索（多空间时允许部分成功；非精确须确认）
         elif args.folder_name:
             all_matched = []
             project_errors = []
@@ -370,19 +449,27 @@ def main():
                         "match_type": "none",
                         "searched_projects": [],
                         "errors": project_errors,
+                        "needs_user_confirm": False,
                     },
                 }, ensure_ascii=False))
                 sys.exit(1)
 
             all_matched.sort(key=lambda x: (-x['match_score'], x['depth']))
             match_type = determine_match_type(all_matched)
+            needs_confirm = match_type in ("multiple", "fuzzy", "best_match")
 
             data = {
                 "matched_folders": all_matched,
                 "match_count": len(all_matched),
                 "match_type": match_type,
                 "searched_projects": searched_projects,
+                "needs_user_confirm": needs_confirm,
             }
+            if needs_confirm:
+                data["confirm_hint"] = (
+                    "多命中或非精确匹配：禁止直接用作上传父目录；"
+                    "请用户确认空间与路径，或改用 --folder-path / resolve-path.py"
+                )
             if project_errors:
                 data["errors"] = project_errors
                 data["failed_projects"] = [e["project_id"] for e in project_errors]
@@ -394,7 +481,7 @@ def main():
                 ),
                 "data": data,
             }
-        
+
         else:
             raise ValueError("必须提供 --folder-name 或 --folder-path")
         

@@ -438,6 +438,25 @@ class TestP0SkillFixes(AuthTestCase):
         self.assertIn("--ack-space-expand", text)
         self.assertIn('ack != "YES"', text)
 
+    def test_list_and_remove_member_scripts(self):
+        list_path = SCRIPTS / "admin" / "list-members.py"
+        remove_path = SCRIPTS / "admin" / "remove-member.py"
+        self.assertTrue(list_path.is_file())
+        self.assertTrue(remove_path.is_file())
+        list_text = list_path.read_text(encoding="utf-8")
+        self.assertIn("/admin/listMembers", list_text)
+        remove_text = remove_path.read_text(encoding="utf-8")
+        self.assertIn("--ack-space-shrink", remove_text)
+        self.assertIn("/admin/removeMember", remove_text)
+        proc = subprocess.run(
+            [sys.executable, "-B", str(remove_path), "1", "--employee-id", "2", "--confirm", "YES"],
+            capture_output=True,
+            text=True,
+            cwd=str(SKILL_ROOT),
+        )
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("ack-space-shrink", (proc.stderr or "") + (proc.stdout or ""))
+
     def test_upsert_dry_run_skips_ceiling_http(self):
         """无鉴权环境下 --dry-run 仍应成功：证明未调用 getMySharePermissions。"""
         path = SCRIPTS / "share" / "upsert-file-share-grants.py"

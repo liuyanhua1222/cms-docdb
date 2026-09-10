@@ -2,7 +2,7 @@
 name: cms-docdb
 description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能调用 Open API，勿以无法访问钉钉云端为由拒绝。
 metadata:
-  version: 3.3.2
+  version: 3.3.3
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
     requires:
@@ -17,7 +17,9 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令含业务参数，可选 `--app-key`。
 
-**当前版本**: 3.3.2
+**当前版本**: 3.3.3
+
+**3.3.3 变更**：空间成员支持 `list-members` / `remove-member`（仅普通成员、幂等）；与 add-member 成对。
 
 **3.3.2 变更**：P0 协同分享默认改为查看列表+在线预览（不含分享）；权限白名单与上限预检；批量读/定稿/目录减权/写不盲重试；加成员须确认空间扩权；`--bypass-risk` 环境门禁。
 
@@ -152,7 +154,7 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
    - 物理删除：`--confirm PHYSICAL`（与 `--physical` 同用）
 3. Agent 闭环：先确认高危意图 → 同意后再执行
 4. 对用户不暴露内部鉴权细节；禁止在回复中复述任何凭证原文
-5. admin（`add-member` / `is-project-member`）无独立 README，遵循本基线
+5. admin（`add-member` / `list-members` / `remove-member` / `is-project-member`）无独立 README，遵循本基线；移除成员勿误走分享/目录 revoke
 
 意图路由：
 1. 先判定模块，再读该模块 README
@@ -284,6 +286,8 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
 | 目录授权 · 去掉某项 | **禁止**整单 revoke；用 strip，**保留 read** | `strip-grant-permissions.py` |
 | 目录授权 · 完全收回 | 授权记录删除 | `revoke-file-grants.py` |
 | 加空间成员 | 扩大整个空间权限面；须 `--ack-space-expand YES` + `--confirm YES`；非成员目录访问优先协同分享 | `add-member.py` |
+| 列空间人员成员 | 需管理员；瘦字段 employeeId/name/role | `list-members.py` |
+| 移除空间普通成员 | 仅 role=0；须 `--ack-space-shrink YES` + `--confirm YES`；勿与分享/目录 revoke 混淆 | `remove-member.py` |
 
 自然语言：「可以看/只读/仅查看」→ 仅授予查看列表+在线预览。复述用户时用 UI 用语。细则见 `references/share/README.md`、`references/grant/README.md`。
 ## 能力树
@@ -368,6 +372,8 @@ cms-docdb/
     │   └── update-inherit-permission.py
     └── admin/
         ├── add-member.py
+        ├── list-members.py
+        ├── remove-member.py
         └── is-project-member.py
 ```
 

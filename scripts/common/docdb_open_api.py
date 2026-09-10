@@ -3,7 +3,7 @@
 cms-docdb Open API 公共工具。
 
 鉴权由公共层按固定优先级选择：运行时 AppKey 优先，缺失时使用可选 --app-key。
-业务脚本不得手写鉴权头。401 / AUTH_CONTEXT_MISSING 不换 Key 重试。
+业务脚本不得手写鉴权头。401 / AUTH_CONTEXT_* 不换 Key 重试。
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ import importlib.util
 import json
 import mimetypes
 import os
+import re
 import ssl
 import sys
 import time
@@ -42,6 +43,28 @@ AUTH_MISSING_TEXT = (
 )
 AUTH_INVALID_TEXT = (
     "AUTH_CONTEXT_INVALID: 企业知识库 AppKey 格式非法，不得自动修剪或换用其他来源"
+)
+AUTH_REDACTED_TEXT = (
+    "AUTH_CONTEXT_REDACTED: 企业知识库 AppKey 为脱敏或占位值；"
+    "请重新提供原始 AppKey，不得复用历史命令或日志"
+)
+
+_REDACTED_PLACEHOLDERS = frozenset(
+    {
+        "redacted",
+        "masked",
+        "[redacted_app_key]",
+        "<app_key>",
+        "<当前用户appkey>",
+        "<your_app_key>",
+        "<your-app-key>",
+    }
+)
+_REDACTED_STARS_RE = re.compile(r"\*{3,}")
+# 文档/命令示例里的尖括号占位（整串形如 <...>，内含 appkey/app_key/app-key 字样）
+_REDACTED_ANGLE_PLACEHOLDER_RE = re.compile(
+    r"^<[^>]*(?:app[_-]?key|appkey)[^>]*>$",
+    re.IGNORECASE,
 )
 
 _cli_app_key: Optional[str] = None
@@ -100,6 +123,12 @@ def _classify_app_key(value: Optional[str]) -> str:
         return "invalid"
     if len(value) > MAX_APP_KEY_LENGTH:
         return "invalid"
+    if value.replace("*", "") == "" or _REDACTED_STARS_RE.search(value):
+        return "redacted"
+    if value.casefold() in _REDACTED_PLACEHOLDERS:
+        return "redacted"
+    if _REDACTED_ANGLE_PLACEHOLDER_RE.match(value):
+        return "redacted"
     return "valid"
 
 
@@ -138,6 +167,8 @@ def resolve_app_key() -> Tuple[str, str]:
 
     if runtime_kind == "invalid":
         _fail(AUTH_INVALID_TEXT)
+    if runtime_kind == "redacted":
+        _fail(AUTH_REDACTED_TEXT)
     if runtime_kind == "valid":
         if cli_present:
             _log_auth(
@@ -150,6 +181,8 @@ def resolve_app_key() -> Tuple[str, str]:
 
     if cli_kind == "invalid":
         _fail(AUTH_INVALID_TEXT)
+    if cli_kind == "redacted":
+        _fail(AUTH_REDACTED_TEXT)
     if cli_kind == "valid":
         _log_auth(
             "OPENAPI_AUTH_FALLBACK=parameter",
@@ -336,8 +369,11 @@ def get_openapi_client(timeout: int = 60):
             _fail(AUTH_MISSING_TEXT)
         if "AUTH_CONTEXT_INVALID" in msg:
             _fail(AUTH_INVALID_TEXT)
+        if "AUTH_CONTEXT_REDACTED" in msg:
+            _fail(AUTH_REDACTED_TEXT)
         _fail(f"OPENAPI_CLIENT_INIT_FAILED: 共享客户端初始化失败（{type(exc).__name__}）")
         raise AssertionError("unreachable")
+
 
 
 def create_openapi_client(*, timeout: int = 60):
@@ -380,6 +416,7 @@ def _is_auth_error(exc: BaseException) -> bool:
     markers = (
         "AUTH_CONTEXT_MISSING",
         "AUTH_CONTEXT_INVALID",
+        "AUTH_CONTEXT_REDACTED",
         "HTTP 401",
         "status=401",
         "status code 401",

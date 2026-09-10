@@ -159,6 +159,68 @@ class TestSourcePriority(AuthTestCase):
         self.assertTrue(payload.get("dryRun"))
 
 
+class TestRedactedMatrix(AuthTestCase):
+    def test_classify_redacted_forms(self):
+        self.assertEqual(api._classify_app_key("***"), "redacted")
+        self.assertEqual(api._classify_app_key("********"), "redacted")
+        self.assertEqual(api._classify_app_key("abc***def"), "redacted")
+        self.assertEqual(api._classify_app_key("REDACTED"), "redacted")
+        self.assertEqual(api._classify_app_key("masked"), "redacted")
+        self.assertEqual(api._classify_app_key("[REDACTED_APP_KEY]"), "redacted")
+        self.assertEqual(api._classify_app_key("<APP_KEY>"), "redacted")
+        self.assertEqual(api._classify_app_key("<当前用户AppKey>"), "redacted")
+        self.assertEqual(api._classify_app_key("<your-app-key>"), "redacted")
+        self.assertEqual(api._classify_app_key(PARAM_KEY), "valid")
+
+    def test_runtime_redacted_not_overridden_by_valid_param(self):
+        os.environ[RUNTIME_ENV] = "***"
+        api.stash_cli_app_key(PARAM_KEY)
+        code, err, _ = self._stderr_resolve(api.resolve_app_key)
+        self.assertEqual(code, 1)
+        self.assertIn("AUTH_CONTEXT_REDACTED", err)
+        self.assertNotIn(PARAM_KEY, err)
+
+    def test_param_redacted_when_runtime_missing(self):
+        for value in ("***", "REDACTED", "<APP_KEY>", "<当前用户AppKey>"):
+            with self.subTest(value=value):
+                api.reset_auth_state()
+                api.stash_cli_app_key(value)
+                code, err, _ = self._stderr_resolve(api.resolve_app_key)
+                self.assertEqual(code, 1)
+                self.assertIn("AUTH_CONTEXT_REDACTED", err)
+                # 错误文案不得回显候选原值（REDACTED 可能出现在错误码中，需剔除后再比）
+                residual = err.replace("AUTH_CONTEXT_REDACTED", "")
+                self.assertNotIn(value, residual)
+
+    def test_runtime_valid_ignores_redacted_param(self):
+        os.environ[RUNTIME_ENV] = RUNTIME_KEY
+        api.stash_cli_app_key("***")
+        code, err, result = self._stderr_resolve(api.resolve_app_key)
+        self.assertEqual(code, 0)
+        self.assertEqual(result[0], RUNTIME_KEY)
+        self.assertEqual(result[1], "environment")
+        self.assertIn("parameter_ignored=true", err)
+        self.assertNotIn(RUNTIME_KEY, err)
+
+    def test_is_auth_error_recognizes_redacted(self):
+        self.assertTrue(api._is_auth_error(RuntimeError("AUTH_CONTEXT_REDACTED: x")))
+
+    def test_get_openapi_client_maps_redacted_from_shared_client(self):
+        os.environ[RUNTIME_ENV] = RUNTIME_KEY
+        mock_mod = MagicMock()
+        mock_mod.OpenApiClient.from_runtime.side_effect = RuntimeError(
+            "AUTH_CONTEXT_REDACTED: injected"
+        )
+        with patch.object(api, "_shared_client_spec_exists", return_value=True):
+            with patch.dict(sys.modules, {"xg_openapi_client": mock_mod}):
+                code, err, _ = self._stderr_resolve(lambda: api.get_openapi_client())
+        self.assertEqual(code, 1)
+        self.assertIn("AUTH_CONTEXT_REDACTED", err)
+        self.assertIn("企业知识库 AppKey", err)
+        self.assertNotIn("injected", err)
+        self.assertNotIn(RUNTIME_KEY, err)
+
+
 class TestMaskAndBaseUrl(AuthTestCase):
     def test_mask_short_and_long(self):
         self.assertEqual(api.mask_app_key("abcd"), "****")

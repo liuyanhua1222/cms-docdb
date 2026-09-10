@@ -9,6 +9,7 @@ python3 -B <skill-dir>/scripts/browse/get-app-list.py
 python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py --app-code kz_knowledge_base
 python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledge_base
 python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py
+# 下式为占位示意，不可原样传入；有原始 AppKey 时再附加 --app-key
 python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当前用户AppKey>"
 python3 -B <skill-dir>/scripts/browse/get-level1-folders.py <projectId>
 python3 -B <skill-dir>/scripts/browse/browse.py 12345
@@ -42,9 +43,10 @@ python3 -B <skill-dir>/scripts/manage/move-file.py 12345 --target-parent-id 0 --
 
 | 现象 | 做法 |
 |------|------|
-| 脚本公开错误 | 展示给用户；仅 `AUTH_CONTEXT_MISSING` 时请用户提供 AppKey |
+| 脚本公开错误 | 展示给用户；`AUTH_CONTEXT_MISSING` 时请用户提供 AppKey；`AUTH_CONTEXT_REDACTED` 时请重新提供原始值 |
 | `AUTH_CONTEXT_MISSING` | 告知未获取到企业知识库 AppKey，请提供或完成配置后重试 |
-| `AUTH_CONTEXT_INVALID` | 告知配置值非法，不得自动修剪 |
+| `AUTH_CONTEXT_INVALID` | 告知配置值非法，不得自动修剪或换用低优先级参数 |
+| `AUTH_CONTEXT_REDACTED` | 请用户重新提供原始 AppKey，不得复用历史命令或日志 |
 | 缺业务参数 | 按 stderr 补齐后重试同一命令 |
 | 须 `--confirm YES` | 先获用户确认再执行 |
 

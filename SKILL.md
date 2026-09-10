@@ -2,7 +2,7 @@
 name: cms-docdb
 description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能调用 Open API，勿以无法访问钉钉云端为由拒绝。
 metadata:
-  version: 3.3.0
+  version: 3.3.1
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
     requires:
@@ -17,9 +17,11 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令含业务参数，可选 `--app-key`。
 
-**当前版本**: 3.3.0
+**当前版本**: 3.3.1
 
-**3.3.0 变更**：业务脚本支持可选 `--app-key`，便于外部 Agent（如 Codex）在上下文已有当前用户 AppKey 时调用；内部运行时注入仍然优先。详见 `references/common-params.md`。
+**3.3.1 变更**：对齐 AppKey 双来源规范——拒绝脱敏/占位 AppKey（`AUTH_CONTEXT_REDACTED`）；SKILL 强制「有原始 AppKey 必须只通过 `--app-key`」、禁止 AI 设置鉴权环境变量。详见 `references/common-params.md`。
+
+**3.3.0 变更**：业务脚本支持可选 `--app-key`，便于外部 Agent（如 Codex）在上下文已有当前用户 AppKey 时调用；内部运行时注入仍然优先。
 
 **3.1.9 变更**：`folder-navigator` 多空间按名搜索支持部分成功——单个空间失败时继续其它空间，结果带 `errors`/`failed_projects`；全部失败仍为 `resultCode=-1`。
 
@@ -47,17 +49,22 @@ python3 -B <skill-dir>/scripts/query/search.py "合同" --project-id 10001
 python3 -B <skill-dir>/scripts/upload/upload-content.py "报告内容" "报告.md" --project-id 10001 --folder-name "产品资料" --confirm YES
 python3 -B <skill-dir>/scripts/upload/add-third-file.py --project-id 10001 --file-type huiji --relation-id 987654 --relation-title "评审纪要" --confirm YES
 python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料"
-# 当前用户上下文或记忆中已有明确 AppKey 时：
+# 上下文已有原始 AppKey 时附加 --app-key（下式为占位示意，不可原样传入）
 python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当前用户AppKey>"
 ```
 
 更多模块示例见 `references/*/README.md`、`references/QUICK_REFERENCE.md` 与 `references/common-params.md`。
 
-- 所有业务脚本都支持非必填参数 `--app-key APP_KEY`，其含义是当前用户的企业知识库 AppKey。若当前用户的上下文或记忆中已有明确可用的 appKey，调用脚本时可以传入；没有则省略，不得猜测、拼接或使用其他用户的 appKey。
-- appKey 不是普通业务内容，不得写入草稿、正文、附件或面向用户的业务结果。若脚本返回 `AUTH_CONTEXT_MISSING`，应明确告知用户当前未获取到企业知识库 AppKey，请用户提供或完成配置后再重试。
+- 所有业务脚本都支持非必填参数 `--app-key APP_KEY`，其含义是当前用户的企业知识库 AppKey，也即玄关开放平台个人 AppKey。若当前用户的上下文或记忆中已有明确可用的原始 appKey，调用脚本时必须只通过 `--app-key` 传入；没有则省略，不得猜测、拼接或使用其他用户的 appKey。
+- AI 不得在 Shell 命令前缀、命令正文或工具环境字段中设置任何鉴权环境变量（至少包括 `XG_OPENAPI_APP_KEY`），也不得从历史工具调用、历史命令、日志或错误信息中复制 appKey。
+- `***`、包含连续三个或更多 `*` 的值、`REDACTED`、`MASKED`、`[REDACTED_APP_KEY]`、`<APP_KEY>`、`<当前用户AppKey>` 等脱敏或占位值不得传入。
+- appKey 不是普通业务内容，不得写入草稿、正文、附件或面向用户的业务结果。若脚本返回 `AUTH_CONTEXT_MISSING`，应明确告知用户当前未获取到企业知识库 AppKey；若返回 `AUTH_CONTEXT_REDACTED`，应请用户重新提供原始 AppKey，不能复用历史值。
 
 **禁止**：
 - 猜测、拼接、修复 AppKey，或使用其他用户、其他会话、来源不明的 AppKey
+- 在 Shell 命令前缀、命令正文或工具 `env` 中设置 `XG_OPENAPI_APP_KEY` 等鉴权环境变量
+- 从历史工具调用、历史命令、日志或错误信息中复制 AppKey
+- 将脱敏值、日志掩码或文档占位符作为 AppKey 传入
 - 为确认运行时是否已有 AppKey 而打印环境或另跑诊断命令
 - 在面向用户的回复中复述完整或脱敏 AppKey
 - 把 AppKey 填入正文、草稿、附件或普通业务参数
@@ -110,7 +117,7 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
 1. 读本文件确认边界
 2. 按意图加载 `references/<module>/README.md`
 3. 确定 appCode（parameter-extractor / app_code_router / get-app-list / 追问）
-4. 用标准 `exec` 执行对应脚本与业务参数；上下文已有当前用户 AppKey 时可附加 `--app-key`
+4. 用标准 `exec` 执行对应脚本与业务参数；上下文已有当前用户原始 AppKey 时必须附加 `--app-key`，没有则省略
 5. 保存前做存在性检查
 
 脚本使用规则（强制）：
@@ -121,9 +128,10 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
 
 | 现象 | Agent 立刻怎么做 |
 |------|------------------|
-| 脚本公开错误（含无法完成调用） | 展示公开错误；不改跑无关命令；仅 `AUTH_CONTEXT_MISSING` 时请用户提供 AppKey |
+| 脚本公开错误（含无法完成调用） | 展示公开错误；不改跑无关命令；`AUTH_CONTEXT_MISSING` 时请用户提供 AppKey；`AUTH_CONTEXT_REDACTED` 时请重新提供原始值 |
 | `AUTH_CONTEXT_MISSING` | 告知用户未获取到企业知识库 AppKey，请提供或完成配置后重试；收到后再按原确认流程重试。写操作状态不明时不得重试 |
 | `AUTH_CONTEXT_INVALID` | 告知配置值非法，不得自动修剪或换用低优先级参数 |
+| `AUTH_CONTEXT_REDACTED` | 请用户重新提供原始 AppKey，不得复用历史命令、日志或脱敏值；收到后再按原确认流程重试。写操作状态不明时不得重试 |
 | `exec preflight: complex interpreter…` | 改写为单行 `python3 -B <skill-dir>/scripts/... <业务参>` 后重试 |
 | 重定向 / `Directory nonexistent` | 禁止 shell `>`；结果读 stdout；下载优先省略 `--output` |
 | 中文缺参提示（exit 2） | 按 stderr hint 补齐后用**同一 python 命令**重试 |

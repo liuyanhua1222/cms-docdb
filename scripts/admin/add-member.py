@@ -2,6 +2,7 @@
 """POST /document-database/admin/addMember — 添加空间普通成员（role=0）
 
 高风险：将人员加入整个空间会扩大权限面。
+已是管理员/助理/安全员不可用本脚本降权，请用 update-member-role.py。
 非空间成员只需访问指定目录时，应优先走协同分享（默认查看列表+在线预览），不要加空间成员。
 """
 import sys, os, json

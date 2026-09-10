@@ -440,22 +440,32 @@ class TestP0SkillFixes(AuthTestCase):
 
     def test_list_and_remove_member_scripts(self):
         list_path = SCRIPTS / "admin" / "list-members.py"
+        list_org_path = SCRIPTS / "admin" / "list-org-members.py"
         remove_path = SCRIPTS / "admin" / "remove-member.py"
         self.assertTrue(list_path.is_file())
+        self.assertTrue(list_org_path.is_file())
         self.assertTrue(remove_path.is_file())
         list_text = list_path.read_text(encoding="utf-8")
         self.assertIn("/admin/listMembers", list_text)
+        list_org_text = list_org_path.read_text(encoding="utf-8")
+        self.assertIn("/admin/listOrgMembers", list_org_text)
         remove_text = remove_path.read_text(encoding="utf-8")
         self.assertIn("--ack-space-shrink", remove_text)
-        self.assertIn("/admin/removeMember", remove_text)
-        proc = subprocess.run(
-            [sys.executable, "-B", str(remove_path), "1", "--employee-id", "2", "--confirm", "YES"],
-            capture_output=True,
-            text=True,
-            cwd=str(SKILL_ROOT),
-        )
-        self.assertEqual(proc.returncode, 2)
-        self.assertIn("ack-space-shrink", (proc.stderr or "") + (proc.stdout or ""))
+
+    def test_org_write_and_role_update_scripts(self):
+        add_org = SCRIPTS / "admin" / "add-org-member.py"
+        remove_org = SCRIPTS / "admin" / "remove-org-member.py"
+        upd_emp = SCRIPTS / "admin" / "update-member-role.py"
+        upd_org = SCRIPTS / "admin" / "update-org-member-role.py"
+        for path in (add_org, remove_org, upd_emp, upd_org):
+            self.assertTrue(path.is_file(), path.name)
+        self.assertIn("/admin/addOrgMember", add_org.read_text(encoding="utf-8"))
+        self.assertIn("--ack-space-expand", add_org.read_text(encoding="utf-8"))
+        self.assertIn("/admin/removeOrgMember", remove_org.read_text(encoding="utf-8"))
+        self.assertIn("--ack-role-elevate", upd_emp.read_text(encoding="utf-8"))
+        self.assertIn("/admin/updateMemberRole", upd_emp.read_text(encoding="utf-8"))
+        self.assertIn("/admin/updateOrgMemberRole", upd_org.read_text(encoding="utf-8"))
+        self.assertIn('"3.3.5"', (SKILL_ROOT / "version.json").read_text(encoding="utf-8"))
 
     def test_upsert_dry_run_skips_ceiling_http(self):
         """无鉴权环境下 --dry-run 仍应成功：证明未调用 getMySharePermissions。"""

@@ -8,7 +8,8 @@ project-matcher.py - 智能空间名称匹配器
   避免因分词错误导致的匹配失败
 
 使用方式：
-  
+  python3 -B <skill-dir>/scripts/project-matcher.py --candidates "康哲,知识库" --project-list '[{"projectId":1,"projectName":"康哲知识库"}]'
+
 返回格式：
   {
     "resultCode": 0,
@@ -181,7 +182,7 @@ def main():
     parser = DocdbArgumentParser(
         description="智能空间名称匹配器",
         hint="""project-matcher.py 必须提供 --candidates 与 --project-list。
-示例: python3 -B <skill-dir>/scripts/project-matcher.py"]；缺参补齐后用同一 python 命令重试
+示例: python3 -B <skill-dir>/scripts/project-matcher.py --candidates "康哲,知识库" --project-list '[{"projectId":1,"projectName":"康哲知识库"}]'；缺参补齐后用同一 python 命令重试
 """,
     )
     parser.add_argument("--candidates", type=str, required=True,

@@ -5,6 +5,7 @@ browse / browse 脚本
 用途：浏览指定目录下的直接子项（文件和文件夹）
 
 使用方式：
+  python3 -B <skill-dir>/scripts/browse/browse.py --parent-id 12345
 
 """
 
@@ -77,15 +78,14 @@ def process_result(result):
 def main():
     parser = DocdbArgumentParser(
         description="浏览目录下的文件和文件夹",
-        hint="""browse.py 必须提供非零 parent_id（已知文件夹 ID，或空间 rootFileId）。
+        hint="""browse.py 必须提供非零 --parent-id（已知文件夹 ID，或空间 rootFileId）。
 禁止传 0：0 不是个人/空间根捷径。
-列个人库根：先 get-personal-project-id.py，再 get-level1-folders.py <projectId>。
-列已知项目空间根：get-level1-folders.py <projectId>，或 browse.py <该空间 rootFileId>。
-示例: python3 -B <skill-dir>/scripts/browse/browse.py 12345；缺参补齐后用同一 python 命令重试
+列个人库根：先 get-personal-project-id.py，再 get-level1-folders.py --project-id <projectId>。
+列已知项目空间根：get-level1-folders.py --project-id <projectId>，或 browse.py --parent-id <该空间 rootFileId>。
+示例: python3 -B <skill-dir>/scripts/browse/browse.py --parent-id 12345；缺参补齐后用同一 python 命令重试
 """
     )
-    parser.add_argument(
-        "parent_id",
+    parser.add_argument("--parent-id", dest="parent_id", required=True,
         type=int,
         help="父目录 ID：已知非零文件夹 ID，或空间 rootFileId（禁止传 0）",
     )
@@ -101,9 +101,9 @@ def main():
             "错误: browse.py 禁止 parent_id=0（0 不是个人/空间根捷径）。\n"
             "列个人库根请改用：\n"
             "  python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py\n"
-            "  python3 -B <skill-dir>/scripts/browse/get-level1-folders.py <projectId>\n"
-            "列已知项目空间根：get-level1-folders.py <projectId>，"
-            "或 browse.py <该空间非零 rootFileId>。",
+            "  python3 -B <skill-dir>/scripts/browse/get-level1-folders.py --project-id <projectId>\n"
+            "列已知项目空间根：get-level1-folders.py --project-id <projectId>，"
+            "或 browse.py --parent-id <该空间非零 rootFileId>。",
             file=sys.stderr,
         )
         sys.exit(2)

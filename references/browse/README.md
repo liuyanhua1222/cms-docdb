@@ -91,7 +91,7 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `project_id` | Long | 是 | 项目/空间 ID | 有效项目 ID（可通过 get-project-list.py 获取） | - |
+| `--project-id` | Long | 是 | 项目/空间 ID | 有效项目 ID（可通过 get-project-list.py 获取） | - |
 | `--order` | Integer | 否 | 排序规则 | 枚举：`1`（更新倒序）、`2`（更新顺序）、`5`（名字倒序）、`6`（名字顺序） | - |
 | `--permission-query` | String | 否 | 权限查询条件 | 权限标识字符串 | - |
 
@@ -99,7 +99,7 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `parent_id` | Long | 是 | 父目录 ID | **已知非零**文件夹 ID，或空间 `rootFileId`；**禁止传 0**（列根见 get-level1-folders） | 缺参或传 0 会中文提示；空间 rootFileId 来自 get-project-list / 上下文 |
+| `--parent-id` | Long | 是 | 父目录 ID | **已知非零**文件夹 ID，或空间 `rootFileId`；**禁止传 0**（列根见 get-level1-folders） | 缺参或传 0 会中文提示；空间 rootFileId 来自 get-project-list / 上下文 |
 | `--type` | Integer | 否 | 查询类型 | 枚举：`1`（只查文件夹）、`2`（只查文件） | - |
 | `--order` | Integer | 否 | 排序规则 | 枚举：`1`（更新倒序）、`2`（更新顺序）、`3`（创建倒序）、`4`（创建顺序）、`5`（名字倒序）、`6`（名字顺序） | - |
 | `--exclude-file-types` | String | 否 | 排除的文件业务分类 | 枚举：`work_report`、`work_plan`、`huiji`、`ai-report` 等，多个用逗号分隔 | - |
@@ -150,7 +150,7 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `file_id` | Long | 是 | 文件或文件夹 ID | 有效 fileId | 上传前反查 projectId 时常用 |
+| `--file-id` | Long | 是 | 文件或文件夹 ID | 有效 fileId | 上传前反查 projectId 时常用 |
 
 > 返回 `projectId`、`type`、`parentId` 等，不含正文与权限子集，详见 dev-guide **1.17**。
 
@@ -234,7 +234,7 @@
    - 保存文件前查看可写空间 → `get-uploadable-list.py`
 
 2. **目录浏览（强制）**：
-   - **个人库根** → `get-personal-project-id.py`，再 `get-level1-folders.py` + projectId（**禁止** `browse.py 0`）
+   - **个人库根** → `get-personal-project-id.py`，再 `get-level1-folders.py` + projectId（**禁止** `browse.py --parent-id 0`）
    - **项目/共享空间根** → `get-level1-folders.py` + projectId（或 `browse.py` + 该空间非零 `rootFileId`）
    - 浏览子目录 → `browse.py` + **非零** parentId
    - 继续下钻 → 递归调用 `browse.py`
@@ -259,10 +259,10 @@
 
 当用户希望“打开知识库位置/打开目录/看看这个文件在哪”时，推荐做法：
 
-1. **列个人/空间根**：先 `get-personal-project-id`（或已知 projectId）→ `get-level1-folders.py <projectId>`；**禁止** `browse.py 0`
+1. **列个人/空间根**：先 `get-personal-project-id`（或已知 projectId）→ `get-level1-folders.py --project-id <projectId>`；**禁止** `browse.py --parent-id 0`
 2. **已知完整路径**：`resolve-path.py --project-id … --path "a/b/c"`，向用户展示四元组后再操作
 3. 若已知目标**非零** `parentId`（保存返回或上下文里有 last_file.parentId），直接调用：
-   - `scripts/browse/browse.py <非零 parentId>`
+   - `scripts/browse/browse.py --parent-id <非零 parentId>`
 4. 若要给用户展示“面包屑路径”，优先使用文件对象里的：
    - `ancestorNames`（若接口返回）
 5. 若用户希望继续下钻查看更深层目录，继续递归调用 `browse.py`（仍须非零 parentId）。
@@ -298,12 +298,12 @@
 python3 -B <skill-dir>/scripts/browse/get-project-list.py （无业务参可传空数组）
 python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py （无业务参可传空数组）
 python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py （无业务参可传空数组）
-python3 -B <skill-dir>/scripts/browse/get-level1-folders.py <project_id> [--order 1|2|5|6] [--permission-query <query>]
-# 个人库根（强制两步；禁止 browse.py 0）：
+python3 -B <skill-dir>/scripts/browse/get-level1-folders.py --project-id <project_id> [--order 1|2|5|6] [--permission-query <query>]
+# 个人库根（强制两步；禁止 browse.py --parent-id 0）：
 python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py
-python3 -B <skill-dir>/scripts/browse/get-level1-folders.py <projectId>
-# 项目空间根：get-level1-folders.py <projectId>；或先取空间 rootFileId，再：
-python3 -B <skill-dir>/scripts/browse/browse.py <rootFileId> [--type 1|2] [--order 1|2|3|4|5|6] [--exclude-file-types "work_report,huiji"] [--exclude-folder-names "临时文件"]
+python3 -B <skill-dir>/scripts/browse/get-level1-folders.py --project-id <projectId>
+# 项目空间根：get-level1-folders.py --project-id <projectId>；或先取空间 rootFileId，再：
+python3 -B <skill-dir>/scripts/browse/browse.py --parent-id <rootFileId> [--type 1|2] [--order 1|2|3|4|5|6] [--exclude-file-types "work_report,huiji"] [--exclude-folder-names "临时文件"]
 python3 -B <skill-dir>/scripts/browse/get-recent-files.py [--limit 10] [--search-key "关键词"]
 python3 -B <skill-dir>/scripts/browse/get-my-upload-records.py [--page-index 1] [--page-size 20] [--project-id <id>]
 python3 -B <skill-dir>/scripts/browse/get-my-recent-used.py [--page-index 1] [--page-size 20] [--biz-code pmo]
@@ -311,5 +311,5 @@ python3 -B <skill-dir>/scripts/browse/get-app-list.py （无业务参可传空�
 python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code fw_doc
 python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_doc
 python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledge_base
-python3 -B <skill-dir>/scripts/browse/get-file-basic-info.py <file_id>
+python3 -B <skill-dir>/scripts/browse/get-file-basic-info.py --file-id <file_id>
 ```

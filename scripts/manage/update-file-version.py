@@ -5,8 +5,8 @@ manage / updateFileVersion 脚本
 用途：将已上传的物理文件资源绑定到已有文件，按 versionStatus 更新或定稿版本
       （不一定总是插入新版本行；见下方说明）。
 
-使用方式（与 move-file / update-file-name 一致：主 ID 位置参数，其余带名）：
-  python3 -B .../update-file-version.py <file_id> --resource-id <rid> [--project-id <pid>] \\
+使用方式（面向 AI：全带名）：
+  python3 -B .../update-file-version.py --file-id <fid> --resource-id <rid> [--project-id <pid>] \\
     [--version-status 3] [--version-name "V2.0"] [--version-remark "修订内容"] \\
     [--suffix pdf] [--size 204800] --confirm YES
 
@@ -53,13 +53,13 @@ def call_api(payload: dict) -> dict:
 def main() -> None:
     parser = DocdbArgumentParser(
         description="用新资源更新文件版本",
-        hint="""update-file-version.py 必须提供 file_id 与 --resource-id。
+        hint="""update-file-version.py 必须提供 --file-id 与 --resource-id。
 --project-id 可选（省略则由 OpenAPI 从文件反查）。真实写入还需 --confirm YES。
 默认 --version-status 3（草稿上可能原地定稿、版本号不变）。
-示例: python3 -B <skill-dir>/scripts/manage/update-file-version.py 12345 --resource-id 999 --confirm YES；缺参补齐后用同一 python 命令重试
+示例: python3 -B <skill-dir>/scripts/manage/update-file-version.py --file-id 12345 --resource-id 999 --confirm YES；缺参补齐后用同一 python 命令重试
 """,
     )
-    parser.add_argument("file_id", type=int, help="要更新的文件 ID")
+    parser.add_argument("--file-id", type=int, required=True, help="要更新的文件 ID")
     parser.add_argument(
         "--resource-id",
         type=int,

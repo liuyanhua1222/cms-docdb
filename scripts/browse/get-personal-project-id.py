@@ -5,6 +5,7 @@ browse / getPersonalProjectId 脚本
 用途：获取当前用户的个人知识库空间 ID
 
 使用方式：
+  python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py
 
 说明：
   --app-code 为产品通道；不传则由后端按企业默认解析（勿理解为固定默认 kz_doc）。

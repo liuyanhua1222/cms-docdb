@@ -183,32 +183,32 @@ open-api / skill 的 **`upsertFileShareGrants` 只写 `t_file_share`**，与「�
 
 ```bash
 # 1) 通过姓名搜索员工，拿到 empId
-python3 -B <skill-dir>/scripts/share/search-emp-by-name.py "张三"
+python3 -B <skill-dir>/scripts/share/search-emp-by-name.py --search-key "张三"
 
 # 2)（可选）查询调用方对 fileId 的可分享权限上限（用于防止超额授权）
-python3 -B <skill-dir>/scripts/share/get-my-share-permissions.py 2029019008342265857
+python3 -B <skill-dir>/scripts/share/get-my-share-permissions.py --file-id 2029019008342265857
 
 # 3) 分享给某员工（upsert；默认权限：read,preview = 查看列表+在线预览；默认发送钉钉通知）
-python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py 2029019008342265857 --emp-id 10001 --confirm YES
+python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py --file-id 2029019008342265857 --emp-id 10001 --confirm YES
 
 # 3.1) 分享成功后一并输出短链
-python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py 2029019008342265857 --emp-id 10001 --confirm YES --print-share-url --source "open_api"
+python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py --file-id 2029019008342265857 --emp-id 10001 --confirm YES --print-share-url --source "open_api"
 
 # 4) 显式指定权限（逗号分隔）；需要「分享」时显式加 fileshare
-python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py 2029019008342265857 --emp-id 10001 --permissions "read,preview,download" --confirm YES
+python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py --file-id 2029019008342265857 --emp-id 10001 --permissions "read,preview,download" --confirm YES
 
 # 4.1) 显式指定到期日（yyyyMMdd）；不传时默认会按长期有效处理（dueDate=20991231）
-python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py 2029019008342265857 --emp-id 10001 --permissions "read,preview" --due-date 20991231 --confirm YES
+python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py --file-id 2029019008342265857 --emp-id 10001 --permissions "read,preview" --due-date 20991231 --confirm YES
 
 # 5) 不发送钉钉通知（用户明确要求时才用）
-python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py 2029019008342265857 --emp-id 10001 --no-notice --confirm YES
+python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py --file-id 2029019008342265857 --emp-id 10001 --no-notice --confirm YES
 
 # 6) 授权后生成可转发的预览短链接（用于分发给他人打开）
-python3 -B <skill-dir>/scripts/share/get-share-url.py 2029019008342265857 --source "external"
+python3 -B <skill-dir>/scripts/share/get-share-url.py --file-id 2029019008342265857 --source "external"
 
 # 7) 查看该文件/文件夹当前协同分享列表（谁被授权了哪些权限、有效期等）
-python3 -B <skill-dir>/scripts/share/get-file-shares.py 2029019008342265857
+python3 -B <skill-dir>/scripts/share/get-file-shares.py --file-id 2029019008342265857
 
 # 8) 撤销指定员工的分享（empId 逗号分隔）
-python3 -B <skill-dir>/scripts/share/revoke-file-share-grants.py 2029019008342265857 --emp-ids 10002,10003 --confirm YES
+python3 -B <skill-dir>/scripts/share/revoke-file-share-grants.py --file-id 2029019008342265857 --emp-ids 10002,10003 --confirm YES
 ```

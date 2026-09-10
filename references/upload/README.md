@@ -75,8 +75,8 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `content` | String | 是 | 文件内容 | 任意文本内容（Markdown/HTML/纯文本） | - |
-| `file_name` | String | 是 | 文件名 | 建议带扩展名，如 `总结.md`、`报告.html` | - |
+| `--content` | String | 是 | 文件内容 | 任意文本内容（Markdown/HTML/纯文本） | - |
+| `--file-name` | String | 是 | 文件名 | 建议带扩展名，如 `总结.md`、`报告.html` | - |
 | `--file-suffix` | String | 否 | 文件后缀 | 枚举：`md`（默认）、`html`、`txt`、`json` | - |
 | `--folder-name` | String | 否 | 逻辑目录路径 | 支持多级，如 `AI生成/周报`，仅新建模式有效 | 不能与 --update-file-id 同时使用 |
 | `--project-id` | Long | 否 | 目标项目空间 ID | 有效项目 ID（可通过 get-project-list.py 获取） | 不传则保存到个人知识库 |
@@ -140,7 +140,7 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `file_path` | String | 是 | 本地文件路径 | 有效文件路径，建议≤20MB | - |
+| `--file-path` | String | 是 | 本地文件路径 | 有效文件路径，建议≤20MB | - |
 
 文件体采用 5MB 分块发送，避免一次性读入内存。大文件优先建议使用分片流程，但脚本不做 20MB 硬限制。
 
@@ -148,34 +148,32 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `parent_id` | Long | 是 | 父目录 ID | 有效文件夹 ID；空间根传 **0** | `parentId≠0` 时脚本自动调 **1.17 getFileBasicInfo** 解析 projectId |
+| `--parent-id` | Long | 是 | 父目录 ID | 有效文件夹 ID；空间根传 **0** | `parentId≠0` 时脚本自动调 **1.17 getFileBasicInfo** 解析 projectId |
 | `--project-id` | Long | 条件 | 空间 ID | 有效 projectId | `parentId=0` 时必填；否则可省略 |
 | `--no-resolve-project-id` | Flag | 否 | 跳过自动反查 | - | 不推荐；须同时传 `--project-id` |
-| `resource_id` | Long | 是 | 物理资源 ID | 通过 upload-whole-file.py 或 merge-resource.py 获取 | - |
-| `name` | String | 是 | 文件名 | 建议带扩展名，如 `报告.pdf` | - |
-| `--file-type` | String | 否 | 文件业务类型 | 枚举：`file`（默认，物理文件）、`doc`（文档） | - |
+| `--resource-id` | Long | 是 | 物理资源 ID | 通过 upload-whole-file.py 或 merge-resource.py 获取 | - |
+| `--name` | String | 是 | 文件名 | 建议带扩展名，如 `报告.pdf` | - |
 | `--suffix` | String | 否 | 文件后缀 | 如 `pdf`、`docx`、`xlsx` | - |
 | `--size` | Long | 否 | 文件大小（字节） | 文件实际大小 | - |
-| `--is-sensitive` | Boolean | 否 | 是否敏感文件 | true/false | - |
+| `--is-sensitive` | Integer | 否 | 是否敏感文件 | 0/1 | - |
 
 ### save-file-by-path.py — 按路径保存
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `project_id` | Long | 是 | 项目/空间 ID | 有效项目 ID | - |
-| `name` | String | 是 | 文件名 | 建议带扩展名 | - |
-| `resource_id` | Long | 是 | 物理资源 ID | 通过 upload-whole-file.py 或 merge-resource.py 获取 | - |
+| `--project-id` | Long | 是 | 项目/空间 ID | 有效项目 ID | - |
+| `--name` | String | 是 | 文件名 | 建议带扩展名 | - |
+| `--resource-id` | Long | 是 | 物理资源 ID | 通过 upload-whole-file.py 或 merge-resource.py 获取 | - |
 | `--path` | String | 否 | 逻辑目录路径 | 如 `AI生成/周报`，不存在自动创建 | - |
-| `--file-type` | String | 否 | 文件业务类型 | 枚举：`file`（默认）、`doc` | - |
 | `--suffix` | String | 否 | 文件后缀 | 如 `pdf`、`docx` | - |
 | `--size` | Long | 否 | 文件大小（字节） | 文件实际大小 | - |
-| `--is-sensitive` | Boolean | 否 | 是否敏感文件 | true/false | - |
+| `--is-sensitive` | Integer | 否 | 是否敏感文件 | 0/1 | - |
 
 ### check-slice.py — 大文件分片预检
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `md5` | String | 是 | 文件 MD5 值 | 32位十六进制字符串 | - |
+| `--md5` | String | 是 | 文件 MD5 值 | 32位十六进制字符串 | - |
 | `--size` | Long | 否 | 文件大小（字节） | 文件实际大小 | - |
 | `--suffix` | String | 否 | 文件后缀 | 如 `pdf`、`mp4` | - |
 
@@ -184,7 +182,7 @@
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
 | `full_path` | String | 是 | 分片临时文件路径 | 有效文件路径 | - |
-| `md5` | String | 是 | 分片 MD5 值 | 32位十六进制字符串 | - |
+| `--md5` | String | 是 | 分片 MD5 值 | 32位十六进制字符串 | - |
 | `size` | Long | 是 | 分片大小（字节） | 分片实际大小 | - |
 | `storage_type` | String | 是 | 存储类型 | 枚举：`MINIO`（固定值） | - |
 
@@ -192,8 +190,8 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `name` | String | 是 | 文件名 | 建议带扩展名 | - |
-| `slice_ids` | String | 是 | 分片 ID 列表 | 通过 register-slice.py 获取，多个用逗号分隔，如 `sliceId1,sliceId2` | - |
+| `--name` | String | 是 | 文件名 | 建议带扩展名 | - |
+| `--slice-ids` | String | 是 | 分片 ID 列表 | 通过 register-slice.py 获取，多个用逗号分隔，如 `sliceId1,sliceId2` | - |
 | `--suffix` | String | 否 | 文件后缀 | 如 `pdf` | - |
 | `--size` | Long | 否 | 文件总大小（字节） | 所有分片大小之和 | - |
 
@@ -201,10 +199,10 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `parent_id` | Long | 是 | 父目录 ID | 空间根传 **0** | `parentId≠0` 时自动反查 projectId |
+| `--parent-id` | Long | 是 | 父目录 ID | 空间根传 **0** | `parentId≠0` 时自动反查 projectId |
 | `--project-id` | Long | 条件 | 空间 ID | 有效 projectId | `parentId=0` 时必填 |
 | `--no-resolve-project-id` | Flag | 否 | 跳过自动反查 | - | 不推荐 |
-| `name` | String | 是 | 文件夹名 | 勿含 `/`、`\` | - |
+| `--name` | String | 是 | 文件夹名 | 勿含 `/`、`\` | - |
 | `--cover` | Boolean | 否 | 同名覆盖 | 默认 false | 与 auto-rename 互斥策略见 API |
 | `--auto-rename` | Boolean | 否 | 同名自动重命名 | 默认 false | - |
 
@@ -212,7 +210,7 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `resource_id` | Long | 是 | 物理资源 ID | 通过 upload-whole-file.py 或 merge-resource.py 获取 | - |
+| `--resource-id` | Long | 是 | 物理资源 ID | 通过 upload-whole-file.py 或 merge-resource.py 获取 | - |
 
 ## 动作列表
 
@@ -276,11 +274,11 @@ docdb 后端已实现智能 `projectId` 补全，以下脚本受益：
 
 **示例**：
 ```text
-# 推荐：省略 projectId（parentId > 0 时）；位置参数：parent_id resource_id name
-python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py 10086 987654321 "技术方案.pdf" --confirm YES
+# 推荐：省略 projectId（parentId > 0 时）；全带名
+python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py --parent-id 10086 --resource-id 987654321 --name "技术方案.pdf" --confirm YES
 
 # 必填：parentId=0 时必须传 --project-id
-python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py 0 987654321 "根目录文件.pdf" --project-id 2025001 --confirm YES
+python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py --parent-id 0 --resource-id 987654321 --name "根目录文件.pdf" --project-id 2025001 --confirm YES
 ```
 
 ### 2. create-folder.py
@@ -290,25 +288,25 @@ python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py 0 987654321 "根
 
 **示例**：
 ```text
-# 推荐：省略 projectId（parentId > 0 时）；位置参数：parent_id name
-python3 -B <skill-dir>/scripts/upload/create-folder.py 10086 "新建文件夹" --confirm YES
+# 推荐：省略 projectId（parentId > 0 时）；全带名
+python3 -B <skill-dir>/scripts/upload/create-folder.py --parent-id 10086 --name "新建文件夹" --confirm YES
 
 # 必填：parentId=0 时必须传 --project-id
-python3 -B <skill-dir>/scripts/upload/create-folder.py 0 "空间根文件夹" --project-id 2025001 --confirm YES
+python3 -B <skill-dir>/scripts/upload/create-folder.py --parent-id 0 --name "空间根文件夹" --project-id 2025001 --confirm YES
 ```
 
 ### 3. save-file-by-path.py
-- **必填位置参数**：`project_id` `name` `resource_id`
+- **必填带名参数**：`--project-id` `--name` `--resource-id`
 - **可选**：`--path` 逻辑目录（多级不存在则自动创建）
-- **说明**：脚本要求显式 `project_id`；勿省略为「默认个人库」式调用
+- **说明**：脚本要求显式 `--project-id`；勿省略为「默认个人库」式调用
 
 **示例**：
 ```text
-# 位置参数：project_id name resource_id；目录用 --path
-python3 -B <skill-dir>/scripts/upload/save-file-by-path.py 2025001 "方案.pdf" 987654321 --path "工程档案/设计图纸" --confirm YES
+# 全带名：--project-id --name --resource-id；目录用 --path
+python3 -B <skill-dir>/scripts/upload/save-file-by-path.py --project-id 2025001 --name "方案.pdf" --resource-id 987654321 --path "工程档案/设计图纸" --confirm YES
 
 # 指定空间根（无 path）
-python3 -B <skill-dir>/scripts/upload/save-file-by-path.py 2025001 "笔记.pdf" 987654321 --confirm YES
+python3 -B <skill-dir>/scripts/upload/save-file-by-path.py --project-id 2025001 --name "笔记.pdf" --resource-id 987654321 --confirm YES
 ```
 
 ### 4. upload-content.py
@@ -383,7 +381,7 @@ python3 -B <skill-dir>/scripts/upload/save-file-by-path.py 2025001 "笔记.pdf" 
 2. 小文件整传（建议 20MB 以下）：调用 `upload-whole-file.py` → 获得 resourceId
 3. 大文件或整传失败：`check-slice.py` → `register-slice.py` → `merge-resource.py` → 获得 resourceId
 4. 绑定到知识库：
-   - 已知 **parentId**：`save-file-by-parent-id.py <parent_id> <resource_id> "文件名.pdf"`（自动反查 projectId）
+   - 已知 **parentId**：`save-file-by-parent-id.py --parent-id <parent_id> --resource-id <resource_id> --name "文件名.pdf"`（自动反查 projectId）
    - 已知 **路径**：`save-file-by-path.py`（须传 projectId）
 5. 返回 fileId
 
@@ -399,19 +397,19 @@ python3 -B <skill-dir>/scripts/upload/save-file-by-path.py 2025001 "笔记.pdf" 
 **调用方式（强制）**：标准 `exec` + python3 -B <skill-dir>/scripts/...；将 `<skill-dir>` 换成本 skill 根目录绝对路径；命令含业务参数 + 可选 `--app-key`。
 
 ```bash
-python3 -B <skill-dir>/scripts/upload/upload-content.py "内容" "文件名.md" --confirm YES [--file-suffix md] [--folder-name "AI生成/周报"] [--project-id <project_id>]
-python3 -B <skill-dir>/scripts/upload/upload-content.py "新内容" "文件名.md" --update-file-id <file_id> --confirm YES [--version-name "V2.0"] [--version-remark "修订说明"]
-python3 -B <skill-dir>/scripts/upload/upload-whole-file.py <file_path> --confirm YES
-python3 -B <skill-dir>/scripts/upload/check-slice.py <md5> --confirm YES [--size <size>] [--suffix <suffix>]
-python3 -B <skill-dir>/scripts/upload/register-slice.py <full_path> <md5> <size> MINIO --confirm YES
-python3 -B <skill-dir>/scripts/upload/merge-resource.py "文件名.pdf" "sliceId1,sliceId2,..." --confirm YES [--suffix pdf] [--size <size>]
-python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py <parent_id> <resource_id> "文件名.pdf" --confirm YES [--suffix pdf]
+python3 -B <skill-dir>/scripts/upload/upload-content.py --content "内容" --file-name "文件名.md" --confirm YES [--file-suffix md] [--folder-name "AI生成/周报"] [--project-id <project_id>]
+python3 -B <skill-dir>/scripts/upload/upload-content.py --content "新内容" --file-name "文件名.md" --update-file-id <file_id> --confirm YES [--version-name "V2.0"] [--version-remark "修订说明"]
+python3 -B <skill-dir>/scripts/upload/upload-whole-file.py --file-path <file_path> --confirm YES
+python3 -B <skill-dir>/scripts/upload/check-slice.py --md5 <md5> --confirm YES [--size <size>] [--suffix <suffix>]
+python3 -B <skill-dir>/scripts/upload/register-slice.py --file-path <full_path> --md5 <md5> --size <size> --storage-type MINIO --confirm YES
+python3 -B <skill-dir>/scripts/upload/merge-resource.py --name "文件名.pdf" --slice-ids "sliceId1,sliceId2,..." --confirm YES [--suffix pdf] [--size <size>]
+python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py --parent-id <parent_id> --resource-id <resource_id> --name "文件名.pdf" --confirm YES [--suffix pdf]
 # parentId≠0 时可省略 --project-id；parentId=0（空间根）必须带：
-python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py 0 <resource_id> "文件名.pdf" --project-id <id> --confirm YES [--suffix pdf]
-python3 -B <skill-dir>/scripts/upload/save-file-by-path.py <project_id> "文件名.pdf" <resource_id> --confirm YES [--path "目录"] [--suffix pdf]
-python3 -B <skill-dir>/scripts/upload/create-folder.py <parent_id> "文件夹名" --confirm YES [--cover] [--auto-rename]
+python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py --parent-id 0 --resource-id <resource_id> --name "文件名.pdf" --project-id <id> --confirm YES [--suffix pdf]
+python3 -B <skill-dir>/scripts/upload/save-file-by-path.py --project-id <project_id> --name "文件名.pdf" --resource-id <resource_id> --confirm YES [--path "目录"] [--suffix pdf]
+python3 -B <skill-dir>/scripts/upload/create-folder.py --parent-id <parent_id> --name "文件夹名" --confirm YES [--cover] [--auto-rename]
 # parentId≠0 时可省略 --project-id；parentId=0（空间根）必须带：
-python3 -B <skill-dir>/scripts/upload/create-folder.py 0 "文件夹名" --project-id <id> --confirm YES [--cover] [--auto-rename]
+python3 -B <skill-dir>/scripts/upload/create-folder.py --parent-id 0 --name "文件夹名" --project-id <id> --confirm YES [--cover] [--auto-rename]
 # 虚拟文件（慧记/汇报等；勿用 upload-content 冒充）
 python3 -B <skill-dir>/scripts/upload/add-third-file.py --project-id <id> --file-type huiji --relation-id <id> --relation-title "标题" --confirm YES [--folder-path "AI慧记"]
 python3 -B <skill-dir>/scripts/upload/update-file-relation.py --project-id <id> --file-type work_report --relation-id <id> --relation-title "周报" --confirm YES [--parent-file-id <pid>]

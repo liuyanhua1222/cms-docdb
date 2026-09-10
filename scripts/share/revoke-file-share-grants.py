@@ -7,6 +7,7 @@ share / revokeFileShareGrants 脚本
 勿用于「去掉 fileshare/预览/下载等单项权限」——请用 strip-share-permissions.py。
 
 使用方式：
+  python3 -B <skill-dir>/scripts/share/revoke-file-share-grants.py --file-id 12345 --emp-ids "1,2" --confirm YES
 
 """
 
@@ -61,12 +62,12 @@ def parse_emp_ids(raw: str) -> list:
     return ids
 
 def main():
-    parser = DocdbArgumentParser(description="撤销协同分享", hint="""revoke-file-share-grants.py 必须提供 file_id，且必须带 --emp-ids。
+    parser = DocdbArgumentParser(description="撤销协同分享", hint="""revoke-file-share-grants.py 必须提供 --file-id，且必须带 --emp-ids。
 真实写入还需 --confirm YES。
-示例: python3 -B <skill-dir>/scripts/share/revoke-file-share-grants.py 12345 --emp-ids "1,2" --confirm YES；缺参补齐后用同一 python 命令重试
+示例: python3 -B <skill-dir>/scripts/share/revoke-file-share-grants.py --file-id 12345 --emp-ids "1,2" --confirm YES；缺参补齐后用同一 python 命令重试
 """,
     )
-    parser.add_argument("file_id", type=int, help="文件/文件夹 ID")
+    parser.add_argument("--file-id", dest="file_id", required=True, type=int, help="文件/文件夹 ID")
     parser.add_argument("--emp-ids", type=str, required=True, help="员工 empId 列表，逗号分隔")
     add_safety_args(parser)
     args = parser.parse_args()

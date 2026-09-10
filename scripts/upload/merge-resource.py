@@ -5,6 +5,7 @@ upload / merge-resource 脚本
 用途：合并所有已注册的分片，生成最终的 resourceId
 
 使用方式：
+  python3 -B <skill-dir>/scripts/upload/merge-resource.py --name "报告.pdf" --slice-ids "slice1,slice2" --confirm YES
 
 """
 
@@ -70,11 +71,11 @@ def process_result(result):
 def main():
     import argparse
     parser = DocdbArgumentParser(description="合并分片生成最终 resourceId",
-        hint="""merge-resource.py 必须提供 name 与 slice_ids；真实写入还需 --confirm YES。
-示例: python3 -B <skill-dir>/scripts/upload/merge-resource.py "报告.pdf" "slice1,slice2" --confirm YES；缺参补齐后用同一 python 命令重试
+        hint="""merge-resource.py 必须提供 --name 与 --slice-ids；真实写入还需 --confirm YES。
+示例: python3 -B <skill-dir>/scripts/upload/merge-resource.py --name "报告.pdf" --slice-ids "slice1,slice2" --confirm YES；缺参补齐后用同一 python 命令重试
 """)
-    parser.add_argument("name", type=str, help="文件名（含后缀）")
-    parser.add_argument("slice_ids", type=str, help="分片 ID 列表，逗号分隔")
+    parser.add_argument("--name", type=str, required=True, help="文件名（含后缀）")
+    parser.add_argument("--slice-ids", dest="slice_ids", type=str, required=True, help="分片 ID 列表，逗号分隔")
     parser.add_argument("--suffix", type=str, help="文件后缀")
     parser.add_argument("--size", type=int, help="文件总大小（字节）")
     add_safety_args(parser)

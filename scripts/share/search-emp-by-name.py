@@ -5,6 +5,7 @@ share / searchEmpByName 脚本
 用途：按姓名/关键词搜索员工，获取 empId（inside.empList[].id）
 
 使用方式：
+  python3 -B <skill-dir>/scripts/share/search-emp-by-name.py --search-key 张三
 
 """
 
@@ -53,11 +54,11 @@ def main():
     parser = DocdbArgumentParser(
         description="按姓名搜索员工",
         hint=(
-            "search-emp-by-name.py 必须提供 search_key。\n"
-            "示例: python3 -B <skill-dir>/scripts/share/search-emp-by-name.py；缺参补齐后用同一 python 命令重试"
+            "search-emp-by-name.py 必须提供 --search-key。\n"
+            "示例: python3 -B <skill-dir>/scripts/share/search-emp-by-name.py --search-key 张三；缺参补齐后用同一 python 命令重试"
         ),
     )
-    parser.add_argument("search_key", type=str, help="搜索关键词（姓名等；中文会自动 URL 编码）")
+    parser.add_argument("--search-key", dest="search_key", required=True, type=str, help="搜索关键词（姓名等；中文会自动 URL 编码）")
     args = parser.parse_args()
 
     result = call_api(args.search_key)

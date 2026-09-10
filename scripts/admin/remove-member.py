@@ -27,12 +27,12 @@ API_PATH = "/document-database/admin/removeMember"
 
 
 def main():
-    p = DocdbArgumentParser(hint="""remove-member.py 必须提供 project_id 与 --employee-id。
+    p = DocdbArgumentParser(hint="""remove-member.py 必须提供 --project-id 与 --employee-id。
 真实写入还需 --confirm YES，且必须 --ack-space-shrink YES（确认缩小对方整空间权限面）。
 仅普通成员；目录级减权请用 strip/revoke 分享或目录授权脚本。
-示例: python3 -B <skill-dir>/scripts/admin/remove-member.py 10001 --employee-id 1 --ack-space-shrink YES --confirm YES
+示例: python3 -B <skill-dir>/scripts/admin/remove-member.py --project-id 10001 --employee-id 1 --ack-space-shrink YES --confirm YES
 """)
-    p.add_argument("project_id", type=int)
+    p.add_argument("--project-id", dest="project_id", required=True, type=int)
     p.add_argument("--employee-id", type=int, required=True)
     p.add_argument(
         "--ack-space-shrink",

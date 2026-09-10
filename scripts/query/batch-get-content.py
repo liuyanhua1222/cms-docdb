@@ -5,6 +5,7 @@ query / batchGetContent 脚本
 用途：批量获取多个文件的全文内容，减少 RAG 场景交互次数
 
 使用方式：
+  python3 -B <skill-dir>/scripts/query/batch-get-content.py --files-json '[{"fileId":123},{"fileId":456}]'
 
 """
 
@@ -99,11 +100,11 @@ def process_result(result, max_chars: int, max_chars_per_file: int):
     return result
 
 def main():
-    parser = DocdbArgumentParser(description="批量获取文件内容", hint="""batch-get-content.py 必须提供 files_json。
-示例: python3 -B <skill-dir>/scripts/query/batch-get-content.py"]；缺参补齐后用同一 python 命令重试
+    parser = DocdbArgumentParser(description="批量获取文件内容", hint="""batch-get-content.py 必须提供 --files-json。
+示例: python3 -B <skill-dir>/scripts/query/batch-get-content.py --files-json '[{"fileId":123},{"fileId":456}]'；缺参补齐后用同一 python 命令重试
 """,
     )
-    parser.add_argument("files_json", type=str, help='文件列表 JSON，如 [{"fileId":123},{"fileId":456}]')
+    parser.add_argument("--files-json", dest="files_json", required=True, type=str, help='文件列表 JSON，如 [{"fileId":123},{"fileId":456}]')
     parser.add_argument("--max-chars", type=int, default=DEFAULT_MAX_CHARS, help="内容字段总字符上限，<=0 表示不限制")
     parser.add_argument("--max-chars-per-file", type=int, default=DEFAULT_MAX_CHARS_PER_FILE, help="单个内容字段字符上限，<=0 表示不限制")
     args = parser.parse_args()

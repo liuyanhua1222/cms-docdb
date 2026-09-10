@@ -5,6 +5,7 @@ upload / uploadContent 脚本
 用途：一键快速保存纯文本内容到个人知识库（AI 内容入库首选）
 
 使用方式：
+  python3 -B <skill-dir>/scripts/upload/upload-content.py --content "正文" --file-name "报告.md" --confirm YES
 
 """
 
@@ -80,12 +81,12 @@ def process_result(result):
     return result
 
 def main():
-    parser = DocdbArgumentParser(description="一键保存纯文本内容到个人知识库或指定项目空间", hint="""upload-content.py 必须提供 content 与 file_name。
+    parser = DocdbArgumentParser(description="一键保存纯文本内容到个人知识库或指定项目空间", hint="""upload-content.py 必须提供 --content 与 --file-name。
 真实写入还需 --confirm YES（可先 --dry-run）。
-示例: python3 -B <skill-dir>/scripts/upload/upload-content.py "正文" "报告.md" --confirm YES；缺参补齐后用同一 python 命令重试
+示例: python3 -B <skill-dir>/scripts/upload/upload-content.py --content "正文" --file-name "报告.md" --confirm YES；缺参补齐后用同一 python 命令重试
 """)
-    parser.add_argument("content", type=str, help="文件内容")
-    parser.add_argument("file_name", type=str, help="文件名（建议带扩展名）")
+    parser.add_argument("--content", type=str, required=True, help="文件内容")
+    parser.add_argument("--file-name", dest="file_name", type=str, required=True, help="文件名（建议带扩展名）")
     parser.add_argument("--file-suffix", type=str, help="文件后缀（md/html/txt/json）")
     parser.add_argument("--folder-name", type=str, help="逻辑目录路径，支持多级（仅新建模式有效）")
     parser.add_argument("--project-id", type=int, help="目标项目空间 ID，不传则保存到个人知识库")

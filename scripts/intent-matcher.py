@@ -188,29 +188,14 @@ if __name__ == "__main__":
 
     parser = DocdbArgumentParser(
         description="意图识别和关键词提取",
-        hint="""intent-matcher.py 必须提供 user_input。
-示例: python3 -B <skill-dir>/scripts/intent-matcher.py "打开康哲知识库"；缺参补齐后用同一 python 命令重试
+        hint="""intent-matcher.py 必须提供 --user-input。
+示例: python3 -B <skill-dir>/scripts/intent-matcher.py --user-input "打开康哲知识库"；缺参补齐后用同一 python 命令重试
 """,
     )
-    parser.add_argument("user_input", type=str, nargs='?', help="用户输入（位置参数）")
-    parser.add_argument("--user-input", type=str, dest="user_input_opt", help="用户输入（命名参数）")
+    parser.add_argument("--user-input", type=str, required=True, help="用户输入")
     args = parser.parse_args()
-    
-    user_input = args.user_input or args.user_input_opt
-    if user_input is None:
-        print(
-            "错误: 缺少用户输入。\n"
-            "intent-matcher.py 需要位置参数或 --user-input。\n"
-            "示例: python3 -B <skill-dir>/scripts/intent-matcher.py；缺参补齐后用同一 python 命令重试",
-            file=sys.stderr,
-        )
-        print(json.dumps({
-            "resultCode": -1,
-            "resultMsg": "缺少输入参数",
-            "data": {}
-        }, ensure_ascii=False))
-        sys.exit(1)
-    
+
+    user_input = args.user_input
     intent = match_intent(user_input)
     keywords = extract_keywords(user_input)
     

@@ -5,6 +5,7 @@ browse / getRecentFiles 脚本
 用途：获取当前用户最近上传的文件列表
 
 使用方式：
+  python3 -B <skill-dir>/scripts/browse/get-recent-files.py --limit 10
 
 """
 

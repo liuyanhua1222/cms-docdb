@@ -182,17 +182,21 @@ def intersect_with_apps(route: dict, apps: list) -> dict:
 def main():
     from cli_args import DocdbArgumentParser
 
-    parser = DocdbArgumentParser(description="应用通道路由（话术→appCode）")
-    parser.add_argument("user_input", nargs="?", help="用户输入")
-    parser.add_argument("--user-input", dest="user_input_opt")
+    parser = DocdbArgumentParser(
+        description="应用通道路由（话术→appCode）",
+        hint="""app_code_router.py 必须提供 --user-input。
+示例: python3 -B <skill-dir>/scripts/common/app_code_router.py --user-input "打开康哲知识库" [--apps '<listAll JSON>']；缺参补齐后用同一 python 命令重试
+""",
+    )
+    parser.add_argument("--user-input", dest="user_input", required=True, help="用户输入（必填）")
     parser.add_argument(
         "--apps",
         type=str,
         help='企业 listAll JSON，如 \'[{"name":"康哲资料库","appCode":"kz_doc"}]\'',
     )
     args = parser.parse_args()
-    user_input = args.user_input or args.user_input_opt
-    if user_input is None:
+    user_input = args.user_input
+    if not user_input:
         print(json.dumps({
             "resultCode": -1,
             "resultMsg": "缺少输入参数",

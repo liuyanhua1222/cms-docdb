@@ -22,14 +22,14 @@ API_PATH = "/document-database/fileGrant/updateInheritPermission"
 
 def main():
     p = DocdbArgumentParser(
-        hint="""update-inherit-permission.py 必须提供 file_id、--cancel-inherit；真实写入还需 --confirm YES。
+        hint="""update-inherit-permission.py 必须提供 --file-id、--cancel-inherit；真实写入还需 --confirm YES。
 预检优先用 preview-inherit-change.py；本脚本 --dry-run 只打印拟发请求。
 本级无管理员时可加 --promote-caller-as-admin；也可 --server-dry-run 走接口 dryRun=true。
-示例: python3 -B <skill-dir>/scripts/grant/update-inherit-permission.py 12345 --cancel-inherit true --dry-run
-示例: python3 -B <skill-dir>/scripts/grant/update-inherit-permission.py 12345 --cancel-inherit true --promote-caller-as-admin --confirm YES
+示例: python3 -B <skill-dir>/scripts/grant/update-inherit-permission.py --file-id 12345 --cancel-inherit true --dry-run
+示例: python3 -B <skill-dir>/scripts/grant/update-inherit-permission.py --file-id 12345 --cancel-inherit true --promote-caller-as-admin --confirm YES
 """
     )
-    p.add_argument("file_id", type=int)
+    p.add_argument("--file-id", dest="file_id", required=True, type=int)
     p.add_argument(
         "--cancel-inherit",
         required=True,

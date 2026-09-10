@@ -23,11 +23,11 @@ API_PATH = "/document-database/fileGrant/previewInheritChange"
 def main():
     parser = DocdbArgumentParser(
         description="切换权限继承前预检",
-        hint="""preview-inherit-change.py 必须提供 file_id 与 --cancel-inherit true|false。
-示例: python3 -B <skill-dir>/scripts/grant/preview-inherit-change.py 12345 --cancel-inherit true
+        hint="""preview-inherit-change.py 必须提供 --file-id 与 --cancel-inherit true|false。
+示例: python3 -B <skill-dir>/scripts/grant/preview-inherit-change.py --file-id 12345 --cancel-inherit true
 """,
     )
-    parser.add_argument("file_id", type=int, help="文件夹 ID")
+    parser.add_argument("--file-id", dest="file_id", required=True, type=int, help="文件夹 ID")
     parser.add_argument(
         "--cancel-inherit",
         required=True,

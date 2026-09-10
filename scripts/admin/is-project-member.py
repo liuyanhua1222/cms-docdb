@@ -20,10 +20,10 @@ API_PATH = "/document-database/admin/isProjectMember"
 
 
 def main():
-    p = DocdbArgumentParser(hint="""is-project-member.py 必须提供 project_id。
-示例: python3 -B <skill-dir>/scripts/admin/is-project-member.py 10001；缺参补齐后用同一 python 命令重试
+    p = DocdbArgumentParser(hint="""is-project-member.py 必须提供 --project-id。
+示例: python3 -B <skill-dir>/scripts/admin/is-project-member.py --project-id 10001；缺参补齐后用同一 python 命令重试
 """)
-    p.add_argument("project_id", type=int)
+    p.add_argument("--project-id", dest="project_id", required=True, type=int)
     args = p.parse_args()
     url = f"{API_PATH}?{urllib.parse.urlencode({'projectId': str(args.project_id)})}"
     result = request_open_api(url, method="GET")

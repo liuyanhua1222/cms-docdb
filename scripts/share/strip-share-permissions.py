@@ -5,6 +5,8 @@ share / strip-share-permissions 脚本
 用途：从已有协同分享记录中去掉指定权限位（保留 read）；勿用于整单撤销协同。
 
 使用方式：
+  python3 -B <skill-dir>/scripts/share/strip-share-permissions.py --file-id 12345 --emp-id 1 --remove "fileshare" --confirm YES
+
 """
 
 import sys
@@ -57,11 +59,11 @@ def normalize_permissions(raw) -> set:
 def main():
     parser = DocdbArgumentParser(
         description="去掉协同分享中的指定权限位（保留 read）",
-        hint="""strip-share-permissions.py 必须提供 file_id、--emp-id、--remove；真实写入还需 --confirm YES。
-示例: python3 -B <skill-dir>/scripts/share/strip-share-permissions.py 12345 --emp-id 1 --remove "fileshare" --confirm YES；缺参补齐后用同一 python 命令重试
+        hint="""strip-share-permissions.py 必须提供 --file-id、--emp-id、--remove；真实写入还需 --confirm YES。
+示例: python3 -B <skill-dir>/scripts/share/strip-share-permissions.py --file-id 12345 --emp-id 1 --remove "fileshare" --confirm YES；缺参补齐后用同一 python 命令重试
 """,
     )
-    parser.add_argument("file_id", type=int, help="文件/文件夹 ID")
+    parser.add_argument("--file-id", dest="file_id", required=True, type=int, help="文件/文件夹 ID")
     parser.add_argument("--emp-id", type=int, required=True, help="被分享员工 empId")
     parser.add_argument("--remove", type=str, required=True, help="要去掉的权限，逗号分隔（不可含 read）")
     parser.add_argument("--due-date", type=int, help="到期日 yyyyMMdd；不传则沿用原值或 20991231")

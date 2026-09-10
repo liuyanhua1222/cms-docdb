@@ -6,10 +6,10 @@ manage / finalizeVersion 脚本
       不传 version_number 则定稿最新版本。
 
 使用方式：
+  python3 -B <skill-dir>/scripts/manage/finalize-version.py --file-id 12345 --confirm YES
+
   # 定稿最新版本
-
   # 定稿指定版本号
-
 """
 
 import sys
@@ -44,12 +44,12 @@ def call_api(payload: dict) -> dict:
 
 
 def main() -> None:
-    parser = DocdbArgumentParser(description="版本定稿", hint="""finalize-version.py 必须提供 file_id。
+    parser = DocdbArgumentParser(description="版本定稿", hint="""finalize-version.py 必须提供 --file-id。
 真实写入还需 --confirm YES。
-示例: python3 -B <skill-dir>/scripts/manage/finalize-version.py 12345 --confirm YES；缺参补齐后用同一 python 命令重试
+示例: python3 -B <skill-dir>/scripts/manage/finalize-version.py --file-id 12345 --confirm YES；缺参补齐后用同一 python 命令重试
 """,
     )
-    parser.add_argument("file_id", type=int, help="文件 ID")
+    parser.add_argument("--file-id", dest="file_id", required=True, type=int, help="文件 ID")
     parser.add_argument("--version-number", type=int, default=0,
                         help="要定稿的版本号（不传或传 0 则定稿最新版本）")
     add_safety_args(parser)

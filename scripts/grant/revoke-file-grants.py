@@ -20,10 +20,10 @@ API_PATH = "/document-database/fileGrant/revokeGrants"
 
 
 def main():
-    p = DocdbArgumentParser(hint="""revoke-file-grants.py 必须提供 file_id 与 --emp-ids；真实写入还需 --confirm YES。
-示例: python3 -B <skill-dir>/scripts/grant/revoke-file-grants.py 12345 --emp-ids "1,2" --confirm YES；缺参补齐后用同一 python 命令重试
+    p = DocdbArgumentParser(hint="""revoke-file-grants.py 必须提供 --file-id 与 --emp-ids；真实写入还需 --confirm YES。
+示例: python3 -B <skill-dir>/scripts/grant/revoke-file-grants.py --file-id 12345 --emp-ids "1,2" --confirm YES；缺参补齐后用同一 python 命令重试
 """)
-    p.add_argument("file_id", type=int)
+    p.add_argument("--file-id", dest="file_id", required=True, type=int)
     p.add_argument("--emp-ids", required=True, help="逗号分隔的 employeeId")
     add_safety_args(p)
     args = p.parse_args()

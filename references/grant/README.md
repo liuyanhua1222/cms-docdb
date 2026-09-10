@@ -38,11 +38,11 @@
 保密子目录闭环：`get-inherit-permission` → `preview-inherit-change` → `update-inherit-permission`（可 `--promote-caller-as-admin`）→ `upsert`/`revoke` 配本级权。
 
 ```bash
-python3 -B <skill-dir>/scripts/grant/get-inherit-permission.py 123456
-python3 -B <skill-dir>/scripts/grant/preview-inherit-change.py 123456 --cancel-inherit true
-python3 -B <skill-dir>/scripts/grant/update-inherit-permission.py 123456 --cancel-inherit true --dry-run
-python3 -B <skill-dir>/scripts/grant/update-inherit-permission.py 123456 --cancel-inherit true --server-dry-run --confirm YES
-python3 -B <skill-dir>/scripts/grant/update-inherit-permission.py 123456 --cancel-inherit true --promote-caller-as-admin --confirm YES
+python3 -B <skill-dir>/scripts/grant/get-inherit-permission.py --file-id 123456
+python3 -B <skill-dir>/scripts/grant/preview-inherit-change.py --file-id 123456 --cancel-inherit true
+python3 -B <skill-dir>/scripts/grant/update-inherit-permission.py --file-id 123456 --cancel-inherit true --dry-run
+python3 -B <skill-dir>/scripts/grant/update-inherit-permission.py --file-id 123456 --cancel-inherit true --server-dry-run --confirm YES
+python3 -B <skill-dir>/scripts/grant/update-inherit-permission.py --file-id 123456 --cancel-inherit true --promote-caller-as-admin --confirm YES
 ```
 
 ## 示例
@@ -51,12 +51,12 @@ python3 -B <skill-dir>/scripts/grant/update-inherit-permission.py 123456 --cance
 
 
 ```bash
-python3 -B <skill-dir>/scripts/admin/is-project-member.py 888
-python3 -B <skill-dir>/scripts/grant/upsert-file-grants.py 123456 --emp-id 10002 --permissions "read,preview,download" --dry-run
-python3 -B <skill-dir>/scripts/grant/upsert-file-grants.py 123456 --emp-id 10002 --permissions "download" --confirm YES
-python3 -B <skill-dir>/scripts/grant/get-file-grants.py 123456
-python3 -B <skill-dir>/scripts/grant/strip-grant-permissions.py 123456 --emp-id 10002 --remove download --confirm YES
-python3 -B <skill-dir>/scripts/grant/revoke-file-grants.py 123456 --emp-ids 10002 --confirm YES
+python3 -B <skill-dir>/scripts/admin/is-project-member.py --project-id 888
+python3 -B <skill-dir>/scripts/grant/upsert-file-grants.py --file-id 123456 --emp-id 10002 --permissions "read,preview,download" --dry-run
+python3 -B <skill-dir>/scripts/grant/upsert-file-grants.py --file-id 123456 --emp-id 10002 --permissions "download" --confirm YES
+python3 -B <skill-dir>/scripts/grant/get-file-grants.py --file-id 123456
+python3 -B <skill-dir>/scripts/grant/strip-grant-permissions.py --file-id 123456 --emp-id 10002 --remove download --confirm YES
+python3 -B <skill-dir>/scripts/grant/revoke-file-grants.py --file-id 123456 --emp-ids 10002 --confirm YES
 ```
 
 写入类须先获用户确认，再带 `--confirm YES`；可用 `--dry-run` 预览。

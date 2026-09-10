@@ -5,6 +5,7 @@ share / getFileShares 脚本
 用途：获取文件/文件夹的协同分享记录列表（人员/部门等）
 
 使用方式：
+  python3 -B <skill-dir>/scripts/share/get-file-shares.py --file-id 12345
 
 """
 
@@ -49,11 +50,11 @@ def process_result(result):
     return result
 
 def main():
-    parser = DocdbArgumentParser(description="查询文件分享列表", hint="""get-file-shares.py 必须提供 file_id。
-示例: python3 -B <skill-dir>/scripts/share/get-file-shares.py 12345；缺参补齐后用同一 python 命令重试
+    parser = DocdbArgumentParser(description="查询文件分享列表", hint="""get-file-shares.py 必须提供 --file-id。
+示例: python3 -B <skill-dir>/scripts/share/get-file-shares.py --file-id 12345；缺参补齐后用同一 python 命令重试
 """,
     )
-    parser.add_argument("file_id", type=int, help="文件/文件夹 ID")
+    parser.add_argument("--file-id", dest="file_id", required=True, type=int, help="文件/文件夹 ID")
     args = parser.parse_args()
 
     result = call_api(args.file_id)

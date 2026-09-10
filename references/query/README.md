@@ -55,7 +55,7 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `name_key` | String | 是 | 搜索关键词，支持模糊匹配 | 任意字符串，中文需 URL 编码（UTF-8） | - |
+| `--name-key` | String | 是 | 搜索关键词，支持模糊匹配 | 任意字符串，中文需 URL 编码（UTF-8） | - |
 | `--project-id` | Long | 是 | 项目/空间 ID，限定搜索范围 | 有效项目 ID（可通过 get-project-list.py 获取） | - |
 | `--root-file-id` | Long | 否 | 指定根目录 ID，在此目录下搜索 | 有效文件 ID（文件夹类型） | 需在 project-id 对应的项目内 |
 | `--start-time` | Long | 否 | 创建时间-开始时间戳（毫秒） | Unix 时间戳（毫秒），如 1704067200000 | 通常与 --end-time 配对使用 |
@@ -69,7 +69,7 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `file_id` | Long | 是 | 文件 ID | 有效文件 ID（可通过 search.py 获取） | - |
+| `--file-id` | Long | 是 | 文件 ID | 有效文件 ID（可通过 search.py 获取） | - |
 | `--relation-id` | String | 否 | 业务关联 ID | 业务系统中的关联标识 | - |
 | `--file-type` | String | 否 | 业务类型 | 枚举：`doc`（文档）、`file`（物理文件）、`work_report`（工作汇报）等 | - |
 
@@ -77,7 +77,7 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `file_id` | Long | 是 | 文件 ID | 有效文件 ID | - |
+| `--file-id` | Long | 是 | 文件 ID | 有效文件 ID | - |
 | `--force-download` | Boolean | 否 | 强制获取下载链接（而非预览链接） | 无值标志，存在即为 true | - |
 | `--version-number` | Integer | 否 | 指定版本号 | 有效版本号（可通过 get-version-list.py 获取） | - |
 
@@ -85,7 +85,7 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `file_id` | Long | 是 | 文件 ID | 有效文件 ID | - |
+| `--file-id` | Long | 是 | 文件 ID | 有效文件 ID | - |
 | `--output` | String | 否 | 本地保存路径 | 有效本地路径；不传则保存到系统临时目录 | - |
 
 下载采用 5MB 分块写入，下载阶段最多重试 3 次，退避间隔为 1 秒、2 秒、4 秒。
@@ -94,7 +94,7 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `file_id` | Long | 是 | 文件 ID | 有效文件 ID（文档类型，非物理文件） | - |
+| `--file-id` | Long | 是 | 文件 ID | 有效文件 ID（文档类型，非物理文件） | - |
 | `--page-number` | Integer | 否 | 页码 | ≥1（默认 1） | - |
 
 ### batch-get-content.py — 批量获取文件全文
@@ -184,11 +184,11 @@
 
 
 ```bash
-python3 -B <skill-dir>/scripts/query/search.py "关键词" --project-id <project_id> [--root-file-id <root_id>] [--start-time <ts>] [--end-time <ts>] [--exclude-file-types "work_report,huiji"]
-python3 -B <skill-dir>/scripts/query/get-full-content.py <file_id> [--relation-id <relation_id>] [--file-type <file_type>]
-python3 -B <skill-dir>/scripts/query/get-download-info.py <file_id>
-python3 -B <skill-dir>/scripts/query/get-download-info.py <file_id> --force-download
-python3 -B <skill-dir>/scripts/query/download-file.py <file_id> [--output /path/to/save.pdf]
-python3 -B <skill-dir>/scripts/query/get-file-content.py <file_id> [--page-number 1]
-python3 -B <skill-dir>/scripts/query/batch-get-content.py '[{"fileId":123},{"fileId":456}]' [--max-chars 60000] [--max-chars-per-file 20000]
+python3 -B <skill-dir>/scripts/query/search.py --name-key "关键词" --project-id <project_id> [--root-file-id <root_id>] [--start-time <ts>] [--end-time <ts>] [--exclude-file-types "work_report,huiji"]
+python3 -B <skill-dir>/scripts/query/get-full-content.py --file-id <file_id> [--relation-id <relation_id>] [--file-type <file_type>]
+python3 -B <skill-dir>/scripts/query/get-download-info.py --file-id <file_id>
+python3 -B <skill-dir>/scripts/query/get-download-info.py --file-id <file_id> --force-download
+python3 -B <skill-dir>/scripts/query/download-file.py --file-id <file_id> [--output /path/to/save.pdf]
+python3 -B <skill-dir>/scripts/query/get-file-content.py --file-id <file_id> [--page-number 1]
+python3 -B <skill-dir>/scripts/query/batch-get-content.py --files-json '[{"fileId":123},{"fileId":456}]' [--max-chars 60000] [--max-chars-per-file 20000]
 ```

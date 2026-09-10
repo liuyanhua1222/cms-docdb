@@ -5,6 +5,7 @@ browse / getMyUploadRecords 脚本
 用途：分页查询当前用户在全空间的上传/新建记录（固定操作类型，默认近 90 天）
 
 使用方式：
+  python3 -B <skill-dir>/scripts/browse/get-my-upload-records.py --page-index 1
 
 """
 

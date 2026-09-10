@@ -42,10 +42,10 @@ def run_script(script_name: str, args: list) -> dict:
 
 def main():
     parser = DocdbArgumentParser(description="[已废弃] 转发到 update-file-name / move-file",
-        hint="""update-file-property.py 已废弃；优先直接调用 update-file-name / move-file。若仍用本工具须提供 file_id。
-示例: python3 -B <skill-dir>/scripts/manage/update-file-property.py 12345 --new-name "新名.pdf" --confirm YES（已废弃，优先 update-file-name / move-file）；缺参补齐后用同一 python 命令重试
+        hint="""update-file-property.py 已废弃；优先直接调用 update-file-name / move-file。若仍用本工具须提供 --file-id。
+示例: python3 -B <skill-dir>/scripts/manage/update-file-property.py --file-id 12345 --new-name "新名.pdf" --confirm YES（已废弃，优先 update-file-name / move-file）；缺参补齐后用同一 python 命令重试
 """)
-    parser.add_argument("file_id", type=int)
+    parser.add_argument("--file-id", dest="file_id", required=True, type=int)
     parser.add_argument("--new-name", type=str)
     parser.add_argument("--target-parent-id", type=int)
     parser.add_argument("--cover", action="store_true")

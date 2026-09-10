@@ -116,11 +116,10 @@ def main():
     parser = DocdbArgumentParser(
         description="上下文管理和状态维护",
         hint="""context-manager.py 须提供 cmd（get/update/set_folder/...）。
-示例: python3 -B <skill-dir>/scripts/context-manager.py "get"；缺参补齐后用同一 python 命令重试
+示例: python3 -B <skill-dir>/scripts/context-manager.py --cmd get；缺参补齐后用同一 python 命令重试
 """,
     )
-    parser.add_argument("cmd", type=str, nargs='?', help="命令：get/update/set_folder/set_file/set_project/set_app_code/clear")
-    parser.add_argument("--cmd", type=str, dest="cmd_opt", help="命令（命名参数）")
+    parser.add_argument("--cmd", type=str, required=True, help="命令：get/update/set_folder/set_file/set_project/set_app_code/clear")
     parser.add_argument("--user-id", type=str, default="default", help="用户 ID（可选）")
     parser.add_argument("--user-input", type=str, help="用户输入（update 命令）")
     parser.add_argument("--action", type=str, help="动作（update 命令）")
@@ -135,13 +134,7 @@ def main():
     parser.add_argument("--app-name", type=str, help="应用显示名（set_app_code 命令）")
     args = parser.parse_args()
 
-    cmd = args.cmd or args.cmd_opt
-    if cmd is None:
-        print(json.dumps({
-            "resultCode": -1,
-            "resultMsg": "缺少命令参数"
-        }, ensure_ascii=False))
-        sys.exit(1)
+    cmd = args.cmd
 
     user_id = args.user_id
     result = {"resultCode": 0, "resultMsg": "success", "data": {}}

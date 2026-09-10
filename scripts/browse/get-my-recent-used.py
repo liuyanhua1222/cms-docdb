@@ -5,6 +5,7 @@ browse / getMyRecentUsed 脚本
 用途：分页查询当前用户最近使用记录（固定 file_online_read、file_download、upload2agent）
 
 使用方式：
+  python3 -B <skill-dir>/scripts/browse/get-my-recent-used.py --page-index 1
 
 """
 

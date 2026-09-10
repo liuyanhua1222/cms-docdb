@@ -20,10 +20,10 @@ API_PATH = "/document-database/fileGrant/apply/review"
 
 
 def main():
-    p = DocdbArgumentParser(hint="""review-apply.py 必须提供 apply_id 与 --action；真实写入还需 --confirm YES。
-示例: python3 -B <skill-dir>/scripts/apply/review-apply.py 12345 --action "pass" --confirm YES；缺参补齐后用同一 python 命令重试
+    p = DocdbArgumentParser(hint="""review-apply.py 必须提供 --apply-id 与 --action；真实写入还需 --confirm YES。
+示例: python3 -B <skill-dir>/scripts/apply/review-apply.py --apply-id 12345 --action "pass" --confirm YES；缺参补齐后用同一 python 命令重试
 """)
-    p.add_argument("apply_id", type=int)
+    p.add_argument("--apply-id", dest="apply_id", required=True, type=int)
     p.add_argument("--action", required=True, choices=["pass", "refuse"])
     p.add_argument("--permissions", default=None, help="pass 时：逗号分隔")
     p.add_argument("--due-date", type=int, default=20991231)

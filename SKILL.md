@@ -2,7 +2,7 @@
 name: cms-docdb
 description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能调用 Open API，勿以无法访问钉钉云端为由拒绝。
 metadata:
-  version: 3.3.9
+  version: 3.4.0
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
     requires:
@@ -17,9 +17,11 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令含业务参数，可选 `--app-key`。
 
-**当前版本**: 3.3.9
+**当前版本**: 3.4.0
 
-**3.3.9 变更**：`update-file-version` 改为 `file_id` + `--resource-id`（必填）+ 可选 `--project-id`，与其它 manage 脚本一致，避免三位置参数对调。
+**3.4.0 变更**：业务脚本（含 `common/app_code_router`）CLI 改为全带名参数（禁止位置参数），面向 AI 调用防错位。
+
+**3.3.9 变更（历史）**：曾将 `update-file-version` 改为「单位置 file_id + `--resource-id`」；**3.4.0 已改为全带名 `--file-id --resource-id`**，请勿再按 3.3.9 调用。
 
 **3.3.8 变更**：`update-file-version` 的 versionStatus 文案与默认说明自洽（维持默认 3；写明草稿上可能原地定稿）。
 
@@ -57,12 +59,12 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 ```bash
 python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py
-python3 -B <skill-dir>/scripts/browse/get-level1-folders.py <projectId>
+python3 -B <skill-dir>/scripts/browse/get-level1-folders.py --project-id <projectId>
 python3 -B <skill-dir>/scripts/browse/get-app-list.py
 python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code kz_knowledge_base
-python3 -B <skill-dir>/scripts/browse/browse.py 12345
-python3 -B <skill-dir>/scripts/query/search.py "合同" --project-id 10001
-python3 -B <skill-dir>/scripts/upload/upload-content.py "报告内容" "报告.md" --project-id 10001 --folder-name "产品资料" --confirm YES
+python3 -B <skill-dir>/scripts/browse/browse.py --parent-id 12345
+python3 -B <skill-dir>/scripts/query/search.py --name-key "合同" --project-id 10001
+python3 -B <skill-dir>/scripts/upload/upload-content.py --content "报告内容" --file-name "报告.md" --project-id 10001 --folder-name "产品资料" --confirm YES
 python3 -B <skill-dir>/scripts/upload/add-third-file.py --project-id 10001 --file-type huiji --relation-id 987654 --relation-title "评审纪要" --confirm YES
 python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-name "产品资料"
 # 上下文已有原始 AppKey 时附加 --app-key（下式为占位示意，不可原样传入）
@@ -110,7 +112,7 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
 - 运行时状态：`.cms-log/state/cms-docdb/`
 
 输入完整性规则（强制）：
-1. 列个人/空间根：先取 `projectId`（个人用 `get-personal-project-id`，共享空间用列表接口），再 `get-level1-folders.py <projectId>`。**禁止** `browse.py 0`。下钻已知非零文件夹（含空间 `rootFileId`）才用 `browse.py`
+1. 列个人/空间根：先取 `projectId`（个人用 `get-personal-project-id`，共享空间用列表接口），再 `get-level1-folders.py --project-id <projectId>`。**禁止** `browse.py --parent-id 0`。下钻已知非零文件夹（含空间 `rootFileId`）才用 `browse.py`
 2. 搜索必须提供关键词；projectId 可选
 3. 上传必须提供文件名和内容（纯文本）或 resourceId（物理文件）；**虚拟文件归档**须提供 fileType + relationId/relationUrl + **relationTitle**（第三方原标题，对齐 PC，见 upload README）
 4. 删除/重命名/移动必须提供 fileId
@@ -119,11 +121,11 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
 
 **projectId 自动补全**：
 - saveFileByParentId / createFolder：`parentId > 0` 时可省略 projectId；**`parentId = 0`（空间根）必须显式 `--project-id`**
-- updateFileVersion：`update-file-version.py <file_id> --resource-id <rid> [--project-id <pid>]`；`--project-id` 可省略（OpenAPI 从文件反查）
-- saveFileByPath：**必须**提供 projectId（脚本位置参数必填）；path 非空时服务端可辅助路径解析
-- upload-content：不传 `--project-id` 时走个人库写入捷径；传到指定空间则必须带 `--project-id`
+- updateFileVersion：`update-file-version.py --file-id <fid> --resource-id <rid> [--project-id <pid>]`；`--project-id` 可省略（OpenAPI 从文件反查）
+- saveFileByPath：须 `--project-id --name --resource-id`；`--path` 可选
+- upload-content：须 `--content --file-name`；不传 `--project-id` 时走个人库写入捷径
 - 推荐：非根目录优先省略 projectId；空间根写入勿把「仅传 parentId=0」当成个人库捷径
-- 约定：主对象 ID 多用位置参数；`projectId` / `resourceId` 等易混 ID 用带名选项（如 `--project-id`、`--resource-id`）
+- **约定（面向 AI）**：业务脚本（含 `scripts/common` 可执行入口）禁止位置参数，一律 `--kebab-case` 带名
 
 版本管理强制规则（最高优先级）：
 - **禁止直接覆盖**已有文件内容；更新必须走版本管理
@@ -152,7 +154,7 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
 | `exec preflight: complex interpreter…` | 改写为单行 `python3 -B <skill-dir>/scripts/... <业务参>` 后重试 |
 | 重定向 / `Directory nonexistent` | 禁止 shell `>`；结果读 stdout；下载优先省略 `--output` |
 | 中文缺参提示（exit 2） | 按 stderr hint 补齐后用**同一 python 命令**重试 |
-| 误用 `browse.py 0`（exit 2） | 按 stderr：个人根用 `get-personal-project-id` → `get-level1-folders`；勿再传 0 |
+| 误用 `browse.py --parent-id 0`（exit 2） | 按 stderr：个人根用 `get-personal-project-id` → `get-level1-folders`；勿再传 0 |
 | 根目录写入缺 `--project-id`（create-folder / save-file-by-parent-id 传 parentId=0） | 按 stderr 补 `--project-id`（个人空间先 get-personal-project-id）；勿仅传 0 |
 | `Read-only` / `__pycache__` | 使用 `python3 -B`；勿在 skill 目录造文件 |
 | 自造脚本 / 非 scripts 路径 | **停止**；只用本仓库 `scripts/` |

@@ -5,6 +5,7 @@ query / getFileContent 脚本
 用途：分页获取文件的文本内容，用于大文件的分段流式读取
 
 使用方式：
+  python3 -B <skill-dir>/scripts/query/get-file-content.py --file-id 12345
 
 """
 
@@ -62,11 +63,11 @@ def process_result(result):
     return result
 
 def main():
-    parser = DocdbArgumentParser(description="分页获取文件内容", hint="""get-file-content.py 必须提供 file_id。
-示例: python3 -B <skill-dir>/scripts/query/get-file-content.py 12345；缺参补齐后用同一 python 命令重试
+    parser = DocdbArgumentParser(description="分页获取文件内容", hint="""get-file-content.py 必须提供 --file-id。
+示例: python3 -B <skill-dir>/scripts/query/get-file-content.py --file-id 12345；缺参补齐后用同一 python 命令重试
 """,
     )
-    parser.add_argument("file_id", type=int, help="文件 ID")
+    parser.add_argument("--file-id", dest="file_id", required=True, type=int, help="文件 ID")
     parser.add_argument("--page-number", type=int, default=1, help="页码，从 1 开始")
     args = parser.parse_args()
 

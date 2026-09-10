@@ -20,10 +20,10 @@ API_PATH = "/document-database/fileGrant/apply/submit"
 
 
 def main():
-    p = DocdbArgumentParser(hint="""submit-apply.py 必须提供 file_id、--permissions、--reason、--approver-ids；真实写入还需 --confirm YES。
-示例: python3 -B <skill-dir>/scripts/apply/submit-apply.py 12345 --permissions "read,preview" --reason "需要查阅" --approver-ids 1 --confirm YES；缺参补齐后用同一 python 命令重试
+    p = DocdbArgumentParser(hint="""submit-apply.py 必须提供 --file-id、--permissions、--reason、--approver-ids；真实写入还需 --confirm YES。
+示例: python3 -B <skill-dir>/scripts/apply/submit-apply.py --file-id 12345 --permissions "read,preview" --reason "需要查阅" --approver-ids 1 --confirm YES；缺参补齐后用同一 python 命令重试
 """)
-    p.add_argument("file_id", type=int)
+    p.add_argument("--file-id", dest="file_id", required=True, type=int)
     p.add_argument("--permissions", required=True, help="逗号分隔，如 read,preview,download")
     p.add_argument("--reason", required=True)
     p.add_argument("--approver-ids", required=True, help="逗号分隔的 employeeId")

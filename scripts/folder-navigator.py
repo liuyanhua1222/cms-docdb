@@ -9,12 +9,12 @@ folder-navigator.py - 智能目录导航器
   --folder-name：模糊发现；多命中/非精确须用户确认，不得直接当 upload parent
 
 使用方式：
+  python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-path "产品资料/慷彼申"
+
   # 方式1: 在指定空间查找目录（可能多命中，须确认）
     --project-id 10001 --folder-name "产品资料"
-
   # 方式2: 精确路径（推荐写入前定位）
     --project-id 10001 --folder-path "产品资料/慷彼申"
-
 返回格式见 stdout JSON；路径解析失败或需确认时见 needs_user_confirm。
 """
 

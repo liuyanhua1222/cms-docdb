@@ -5,6 +5,7 @@ browse / getFileBasicInfo 脚本
 用途：根据 fileId 查询文件或文件夹的基础元数据（含 projectId、type、parentId 等）
 
 使用方式：
+  python3 -B <skill-dir>/scripts/browse/get-file-basic-info.py --file-id 12345
 
 """
 
@@ -26,11 +27,11 @@ from cli_args import DocdbArgumentParser
 
 
 def main():
-    p = DocdbArgumentParser(description="根据 fileId 查询文件/文件夹基本信息", hint="""get-file-basic-info.py 必须提供 file_id。
-示例: python3 -B <skill-dir>/scripts/browse/get-file-basic-info.py 12345；缺参补齐后用同一 python 命令重试
+    p = DocdbArgumentParser(description="根据 fileId 查询文件/文件夹基本信息", hint="""get-file-basic-info.py 必须提供 --file-id。
+示例: python3 -B <skill-dir>/scripts/browse/get-file-basic-info.py --file-id 12345；缺参补齐后用同一 python 命令重试
 """,
     )
-    p.add_argument("file_id", type=int, help="文件或文件夹 ID")
+    p.add_argument("--file-id", dest="file_id", required=True, type=int, help="文件或文件夹 ID")
     args = p.parse_args()
     data = get_file_basic_info(args.file_id)
     print(json.dumps({"resultCode": 1, "resultMsg": None, "data": data}, ensure_ascii=False))

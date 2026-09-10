@@ -5,7 +5,7 @@ browse / getProjectList 脚本
 用途：获取当前账号有权限访问的所有空间列表
 
 使用方式：
-
+  python3 -B <skill-dir>/scripts/browse/get-project-list.py --app-code "kz_knowledge_base"
 
 说明：
   --app-code 为产品通道（t_doc_app）；不传则由后端按企业默认解析（康哲常为 kz_knowledge_base）。

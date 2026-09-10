@@ -24,11 +24,11 @@ API_PATH = "/document-database/admin/removeOrgMember"
 
 
 def main():
-    p = DocdbArgumentParser(hint="""remove-org-member.py 必须提供 project_id 与 --org-id。
+    p = DocdbArgumentParser(hint="""remove-org-member.py 必须提供 --project-id 与 --org-id。
 真实写入还需 --confirm YES，且必须 --ack-space-shrink YES。
-示例: python3 -B <skill-dir>/scripts/admin/remove-org-member.py 10001 --org-id 50005 --ack-space-shrink YES --confirm YES
+示例: python3 -B <skill-dir>/scripts/admin/remove-org-member.py --project-id 10001 --org-id 50005 --ack-space-shrink YES --confirm YES
 """)
-    p.add_argument("project_id", type=int)
+    p.add_argument("--project-id", dest="project_id", required=True, type=int)
     p.add_argument("--org-id", type=int, required=True)
     p.add_argument(
         "--ack-space-shrink",

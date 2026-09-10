@@ -8,8 +8,8 @@
 意图或通道不明时，**禁止**直接猜 appCode：
 
 1. `get-app-list.py` 拉本企业可用应用
-2. `app_code_router.py "用户话术" --apps '<listAll data JSON>'` 求交
-3. 唯一则直用并 `context-manager.py set_app_code --app-code …`；多个则追问（只列本企业）
+2. `app_code_router.py --user-input "用户话术" --apps '<listAll data JSON>'` 求交
+3. 唯一则直用并 `context-manager.py --cmd set_app_code --app-code …`；多个则追问（只列本企业）
 4. 再 `get-project-list.py --app-code …`
 
 | 说法 | appCode |
@@ -95,7 +95,7 @@
 ### 步骤1️⃣：参数提取
 
 ```bash
-python3 -B <skill-dir>/scripts/parameter-extractor.py "保存到康哲知识库的产品资料目录"
+python3 -B <skill-dir>/scripts/parameter-extractor.py --user-input "保存到康哲知识库的产品资料目录"
 ```
 
 **输出**：
@@ -306,7 +306,7 @@ if match_type == "none":
 **AI 执行**：
 ```bash
 # 1. 提取参数
-python3 -B <skill-dir>/scripts/parameter-extractor.py "..."
+python3 -B <skill-dir>/scripts/parameter-extractor.py --user-input "..."
 # → project: ["康哲","知识库"], folder: ["产品资料"]
 
 # 2. 匹配空间
@@ -319,7 +319,7 @@ python3 -B <skill-dir>/scripts/folder-navigator.py --project-id 10001 --folder-n
 # → folder_id: 20001, name: "产品资料"
 
 # 4. 执行上传
-python3 -B <skill-dir>/scripts/upload/upload-content.py "报告内容" "报告.md" --project-id 10001 --folder-name "产品资料" --confirm YES
+python3 -B <skill-dir>/scripts/upload/upload-content.py --content "报告内容" --file-name "报告.md" --project-id 10001 --folder-name "产品资料" --confirm YES
 ```
 
 **AI 输出**：
@@ -343,7 +343,7 @@ python3 -B <skill-dir>/scripts/upload/upload-content.py "报告内容" "报告.m
 **AI 执行**：
 ```bash
 # 1. 提取参数
-python3 -B <skill-dir>/scripts/parameter-extractor.py "..."
+python3 -B <skill-dir>/scripts/parameter-extractor.py --user-input "..."
 # → folder: ["AI生成"], 无 project
 
 # 2. 策略选择：
@@ -377,7 +377,7 @@ python3 -B <skill-dir>/scripts/folder-navigator.py --project-ids "10001,10002,10
 **AI 执行**：
 ```bash
 # 1. 提取参数
-python3 -B <skill-dir>/scripts/parameter-extractor.py "..."
+python3 -B <skill-dir>/scripts/parameter-extractor.py --user-input "..."
 # → folder_path: "产品资料/慷彼申/临床研究"
 
 # 2. 需要空间上下文

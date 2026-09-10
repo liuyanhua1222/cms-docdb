@@ -5,6 +5,7 @@ query / downloadFile 脚本
 用途：下载文件到本地（先获取下载链接，再下载文件）
 
 使用方式：
+  python3 -B <skill-dir>/scripts/query/download-file.py --file-id 12345
 
 """
 
@@ -69,12 +70,12 @@ def download_file(download_url: str, output_path: str) -> str:
                 sys.exit(1)
 
 def main():
-    parser = DocdbArgumentParser(description="下载文件到本地", hint="""download-file.py 必须提供 file_id。
+    parser = DocdbArgumentParser(description="下载文件到本地", hint="""download-file.py 必须提供 --file-id。
 优先省略 --output（默认写系统临时目录，读 stdout 路径）；禁止 shell 重定向。
-示例: python3 -B <skill-dir>/scripts/query/download-file.py 12345；缺参补齐后用同一 python 命令重试
+示例: python3 -B <skill-dir>/scripts/query/download-file.py --file-id 12345；缺参补齐后用同一 python 命令重试
 """,
     )
-    parser.add_argument("file_id", type=int, help="文件 ID")
+    parser.add_argument("--file-id", dest="file_id", required=True, type=int, help="文件 ID")
     parser.add_argument("--output", type=str, help="输出文件路径（可选，默认保存到临时目录）")
     args = parser.parse_args()
 

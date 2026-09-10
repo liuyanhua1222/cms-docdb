@@ -5,10 +5,10 @@ upload / saveFileByParentId 脚本
 用途：已知目标文件夹 ID 时，将物理文件保存到项目目录（比 saveFileByPath 少一次路径解析）
 
 使用方式：
+  python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py --parent-id 0 --resource-id 999 --name "报告.pdf" --project-id 10001 --confirm YES
 
   parentId != 0 时默认通过 getFileBasicInfo 自动解析 projectId（避免 projectId 与 parentId 不一致）。
   parentId == 0（空间根）时必须传 --project-id。
-
 """
 
 import sys
@@ -77,14 +77,14 @@ def process_result(result):
     return result
 
 def main():
-    parser = DocdbArgumentParser(description="将物理文件保存到指定父目录", hint="""save-file-by-parent-id.py 必须提供 parent_id resource_id name。
-空间根传 0 时必须 --project-id（禁止仅传 0 当作个人库捷径）。
+    parser = DocdbArgumentParser(description="将物理文件保存到指定父目录", hint="""save-file-by-parent-id.py 必须提供 --parent-id --resource-id --name。
+空间根 --parent-id 0 时必须 --project-id（禁止仅传 0 当作个人库捷径）。
 真实写入还需 --confirm YES（可先 --dry-run）。
-示例: python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py 0 999 "报告.pdf" --project-id 10001 --confirm YES；缺参补齐后用同一 python 命令重试
+示例: python3 -B <skill-dir>/scripts/upload/save-file-by-parent-id.py --parent-id 0 --resource-id 999 --name "报告.pdf" --project-id 10001 --confirm YES；缺参补齐后用同一 python 命令重试
 """)
-    parser.add_argument("parent_id", type=int, help="目标文件夹 ID；空间根传 0 时必须同时传 --project-id")
-    parser.add_argument("resource_id", type=int, help="资源 ID（必须）")
-    parser.add_argument("name", type=str, help="保存的文件名")
+    parser.add_argument("--parent-id", type=int, required=True, help="目标文件夹 ID；空间根传 0 时必须同时传 --project-id")
+    parser.add_argument("--resource-id", type=int, required=True, help="资源 ID（必须）")
+    parser.add_argument("--name", type=str, required=True, help="保存的文件名")
     parser.add_argument("--project-id", type=int, default=None, help="空间 ID；parentId=0 时必填，parentId!=0 时可省略（自动反查）")
     parser.add_argument("--no-resolve-project-id", action="store_true",
                         help="不调用 getFileBasicInfo，直接使用 --project-id（不推荐）")

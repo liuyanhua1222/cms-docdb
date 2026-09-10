@@ -5,6 +5,7 @@ browse / getUploadableList 脚本
 用途：获取当前账号有上传/编辑权限的空间列表
 
 使用方式：
+  python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py --app-code "kz_knowledge_base"
 
 """
 

@@ -5,6 +5,8 @@ grant / strip-grant-permissions 脚本
 用途：从目录授权中去掉指定权限位（保留 read）；勿用于整单收回授权。
 
 使用方式：
+  python3 -B <skill-dir>/scripts/grant/strip-grant-permissions.py --file-id 12345 --emp-id 1 --remove "download" --confirm YES
+
 """
 
 import sys
@@ -67,11 +69,11 @@ def current_permissions(grant_entry: dict) -> set:
 def main():
     parser = DocdbArgumentParser(
         description="去掉目录授权中的指定权限位（保留 read）",
-        hint="""strip-grant-permissions.py 必须提供 file_id、--emp-id、--remove；真实写入还需 --confirm YES。
-示例: python3 -B <skill-dir>/scripts/grant/strip-grant-permissions.py 12345 --emp-id 1 --remove "download" --confirm YES；缺参补齐后用同一 python 命令重试
+        hint="""strip-grant-permissions.py 必须提供 --file-id、--emp-id、--remove；真实写入还需 --confirm YES。
+示例: python3 -B <skill-dir>/scripts/grant/strip-grant-permissions.py --file-id 12345 --emp-id 1 --remove "download" --confirm YES；缺参补齐后用同一 python 命令重试
 """,
     )
-    parser.add_argument("file_id", type=int)
+    parser.add_argument("--file-id", dest="file_id", required=True, type=int)
     parser.add_argument("--emp-id", type=int, required=True)
     parser.add_argument("--remove", type=str, required=True)
     parser.add_argument("--due-date", type=int)

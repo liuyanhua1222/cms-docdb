@@ -5,7 +5,7 @@
 
 ## 流程（提交申请）
 
-1. `get-approvers.py <file_id>` — 获取可选审批人（支持 `--keyword`）
+1. `get-approvers.py --file-id <file_id>` — 获取可选审批人（支持 `--keyword`）
 2. **用户选择** `approverIds`（禁止默认全员）
 3. `submit-apply.py` — 提交申请
 
@@ -91,17 +91,17 @@
 
 
 ```bash
-python3 -B <skill-dir>/scripts/apply/get-approvers.py 123456 --keyword "张"
-python3 -B <skill-dir>/scripts/apply/submit-apply.py 123456 --permissions "read,preview" --reason "查阅方案" --approver-ids 1001 --confirm YES
+python3 -B <skill-dir>/scripts/apply/get-approvers.py --file-id 123456 --keyword "张"
+python3 -B <skill-dir>/scripts/apply/submit-apply.py --file-id 123456 --permissions "read,preview" --reason "查阅方案" --approver-ids 1001 --confirm YES
 python3 -B <skill-dir>/scripts/apply/list-my-applies.py --page-index 1 --page-size 20
 python3 -B <skill-dir>/scripts/apply/list-my-applies.py --keyword "技术方案" --page-index 1 --page-size 20
 python3 -B <skill-dir>/scripts/apply/list-pending-applies.py --page-index 1 --page-size 20
 python3 -B <skill-dir>/scripts/apply/list-pending-applies.py --keyword "张三" --status 1
-python3 -B <skill-dir>/scripts/apply/review-apply.py 99 --action pass --permissions "read,preview" --confirm YES
-python3 -B <skill-dir>/scripts/apply/review-apply.py 99 --action refuse --reason "理由不充分" --confirm YES
-python3 -B <skill-dir>/scripts/admin/add-member.py 888 --employee-id 10002 --ack-space-expand YES --confirm YES
-python3 -B <skill-dir>/scripts/admin/add-org-member.py 888 --org-id 50005 --ack-space-expand YES --confirm YES
-python3 -B <skill-dir>/scripts/admin/list-org-members.py 888
-python3 -B <skill-dir>/scripts/admin/update-member-role.py 888 --employee-id 10002 --role 1 --ack-role-elevate YES --confirm YES
-python3 -B <skill-dir>/scripts/admin/remove-org-member.py 888 --org-id 50005 --ack-space-shrink YES --confirm YES
+python3 -B <skill-dir>/scripts/apply/review-apply.py --apply-id 99 --action pass --permissions "read,preview" --confirm YES
+python3 -B <skill-dir>/scripts/apply/review-apply.py --apply-id 99 --action refuse --reason "理由不充分" --confirm YES
+python3 -B <skill-dir>/scripts/admin/add-member.py --project-id 888 --employee-id 10002 --ack-space-expand YES --confirm YES
+python3 -B <skill-dir>/scripts/admin/add-org-member.py --project-id 888 --org-id 50005 --ack-space-expand YES --confirm YES
+python3 -B <skill-dir>/scripts/admin/list-org-members.py --project-id 888
+python3 -B <skill-dir>/scripts/admin/update-member-role.py --project-id 888 --employee-id 10002 --role 1 --ack-role-elevate YES --confirm YES
+python3 -B <skill-dir>/scripts/admin/remove-org-member.py --project-id 888 --org-id 50005 --ack-space-shrink YES --confirm YES
 ```

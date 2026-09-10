@@ -5,6 +5,7 @@ query / getDownloadInfo 脚本
 用途：获取文件的下载链接或在线预览凭据
 
 使用方式：
+  python3 -B <skill-dir>/scripts/query/get-download-info.py --file-id 12345
 
 """
 
@@ -73,10 +74,10 @@ def process_result(result):
     return result
 
 def main():
-    parser = DocdbArgumentParser(description="获取下载或预览凭据", hint="""get-download-info.py 必须提供 file_id。
-示例: python3 -B <skill-dir>/scripts/query/get-download-info.py 12345；缺参补齐后用同一 python 命令重试
+    parser = DocdbArgumentParser(description="获取下载或预览凭据", hint="""get-download-info.py 必须提供 --file-id。
+示例: python3 -B <skill-dir>/scripts/query/get-download-info.py --file-id 12345；缺参补齐后用同一 python 命令重试
 """)
-    parser.add_argument("file_id", type=int, help="文件 ID")
+    parser.add_argument("--file-id", dest="file_id", required=True, type=int, help="文件 ID")
     parser.add_argument("--force-download", action="store_true", help="true 则返回下载链接，false 则返回预览凭据")
     parser.add_argument("--see-original", action="store_true", help="预览是否查看原文")
     parser.add_argument("--source", type=str, help="来源")

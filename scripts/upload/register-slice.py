@@ -5,6 +5,7 @@ upload / register-slice 脚本
 用途：在分片物理上传到 MinIO 完成后，在服务端注册分片元信息，换取 sliceId
 
 使用方式：
+  python3 -B <skill-dir>/scripts/upload/register-slice.py --file-path "/tmp/a.bin" --md5 "md5hex" --size 1024 --storage-type "MINIO" --confirm YES
 
 """
 
@@ -68,33 +69,21 @@ def process_result(result):
 def main():
     import argparse
     parser = DocdbArgumentParser(description="注册文件分片",
-        hint="""register-slice.py 必须提供 file_path md5 size storage_type；真实写入还需 --confirm YES。
-示例: python3 -B <skill-dir>/scripts/upload/register-slice.py "/tmp/a.bin" "md5hex" 1024 "MINIO" --confirm YES；缺参补齐后用同一 python 命令重试
+        hint="""register-slice.py 必须提供 --file-path --md5 --size --storage-type；真实写入还需 --confirm YES。
+示例: python3 -B <skill-dir>/scripts/upload/register-slice.py --file-path "/tmp/a.bin" --md5 "md5hex" --size 1024 --storage-type "MINIO" --confirm YES；缺参补齐后用同一 python 命令重试
 """)
-    parser.add_argument("file_path", type=str, nargs='?', help="文件完整路径（位置参数）")
-    parser.add_argument("md5", type=str, nargs='?', help="文件 MD5（位置参数）")
-    parser.add_argument("size", type=int, nargs='?', help="文件大小（位置参数）")
-    parser.add_argument("storage_type", type=str, nargs='?', help="存储类型（位置参数）")
-    parser.add_argument("--file-path", type=str, dest="file_path_opt", help="文件完整路径（命名参数）")
-    parser.add_argument("--md5", type=str, dest="md5_opt", help="文件 MD5（命名参数）")
-    parser.add_argument("--size", type=int, dest="size_opt", help="文件大小（命名参数）")
-    parser.add_argument("--storage-type", type=str, dest="storage_type_opt", help="存储类型（命名参数）")
+    parser.add_argument("--file-path", type=str, required=True, help="文件完整路径")
+    parser.add_argument("--md5", type=str, required=True, help="文件 MD5")
+    parser.add_argument("--size", type=int, required=True, help="文件大小")
+    parser.add_argument("--storage-type", dest="storage_type", type=str, required=True, help="存储类型")
     add_safety_args(parser)
     args = parser.parse_args()
-    
-    file_path = args.file_path or args.file_path_opt
-    md5 = args.md5 or args.md5_opt
-    size = args.size or args.size_opt
-    storage_type = args.storage_type or args.storage_type_opt
-    
-    if None in [file_path, md5, size, storage_type]:
-        print(
-            "错误: 缺少参数。用法 argv: [<full_path>, <md5>, <size>, <storage_type>]；"
-            "python3 -B <skill-dir>/scripts/upload/register-slice.py",
-            file=sys.stderr,
-        )
-        sys.exit(1)
 
+    file_path = args.file_path
+    md5 = args.md5
+    size = args.size
+    storage_type = args.storage_type
+    
     body = {
         "filePath": file_path,
         "md5": md5,

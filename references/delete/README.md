@@ -31,7 +31,7 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `file_id` | Long | 是 | 文件 ID | 有效文件 ID | - |
+| `--file-id` | Long | 是 | 文件 ID | 有效文件 ID | - |
 | `--physical` | Boolean | 否 | 物理彻底删除（不可恢复） | 无值标志，存在即为 true | - |
 | `--dry-run` | Flag | 否 | 仅打印拟发请求 JSON，不发 HTTP | - | 无需凭证 |
 | `--confirm` | String | 条件 | 真实调用必填 | 逻辑删除=`YES`；物理删除=`PHYSICAL` | 与 `--physical` 联动 |
@@ -77,7 +77,7 @@
 
 
 ```bash
-python3 -B <skill-dir>/scripts/delete/delete-file.py <file_id> --dry-run
-python3 -B <skill-dir>/scripts/delete/delete-file.py <file_id> --confirm YES
-python3 -B <skill-dir>/scripts/delete/delete-file.py <file_id> --physical --confirm PHYSICAL
+python3 -B <skill-dir>/scripts/delete/delete-file.py --file-id <file_id> --dry-run
+python3 -B <skill-dir>/scripts/delete/delete-file.py --file-id <file_id> --confirm YES
+python3 -B <skill-dir>/scripts/delete/delete-file.py --file-id <file_id> --physical --confirm PHYSICAL
 ```

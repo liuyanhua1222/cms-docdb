@@ -22,12 +22,12 @@ API_PATH = "/document-database/admin/listOrgMembers"
 
 
 def main():
-    p = DocdbArgumentParser(hint="""list-org-members.py 必须提供 project_id。
+    p = DocdbArgumentParser(hint="""list-org-members.py 必须提供 --project-id。
 需空间管理员。返回按部门/组织加入的成员（orgId/name/role）。
 员工成员请用 list-members.py。
-示例: python3 -B <skill-dir>/scripts/admin/list-org-members.py 10001；缺参补齐后用同一 python 命令重试
+示例: python3 -B <skill-dir>/scripts/admin/list-org-members.py --project-id 10001；缺参补齐后用同一 python 命令重试
 """)
-    p.add_argument("project_id", type=int)
+    p.add_argument("--project-id", dest="project_id", required=True, type=int)
     args = p.parse_args()
     url = f"{API_PATH}?{urllib.parse.urlencode({'projectId': str(args.project_id)})}"
     result = request_open_api(url, method="GET")

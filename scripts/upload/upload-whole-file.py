@@ -45,18 +45,14 @@ def main():
     import argparse
 
     parser = DocdbArgumentParser(description="上传完整文件到知识库",
-        hint="""upload-whole-file.py 必须提供 file_path；真实写入还需 --confirm YES。
-示例: python3 -B <skill-dir>/scripts/upload/upload-whole-file.py "/tmp/a.pdf" --confirm YES；缺参补齐后用同一 python 命令重试
+        hint="""upload-whole-file.py 必须提供 --file-path；真实写入还需 --confirm YES。
+示例: python3 -B <skill-dir>/scripts/upload/upload-whole-file.py --file-path "/tmp/a.pdf" --confirm YES；缺参补齐后用同一 python 命令重试
 """)
-    parser.add_argument("file_path", type=str, nargs="?", help="文件路径（位置参数）")
-    parser.add_argument("--file-path", type=str, dest="file_path_opt", help="文件路径（命名参数）")
+    parser.add_argument("--file-path", type=str, required=True, help="文件路径")
     add_safety_args(parser)
     args = parser.parse_args()
 
-    file_path = args.file_path or args.file_path_opt
-    if file_path is None:
-        print("错误: 请提供文件路径", file=sys.stderr)
-        sys.exit(1)
+    file_path = args.file_path
     if not os.path.isfile(file_path):
         print(f"错误: 文件不存在: {file_path}", file=sys.stderr)
         sys.exit(1)

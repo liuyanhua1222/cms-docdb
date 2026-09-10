@@ -5,6 +5,7 @@ browse / getLevel1Folders 脚本
 用途：拉取指定项目空间的根目录下的所有文件夹及文件
 
 使用方式：
+  python3 -B <skill-dir>/scripts/browse/get-level1-folders.py --project-id 10001
 
 """
 
@@ -67,11 +68,11 @@ def process_result(result):
     return result
 
 def main():
-    parser = DocdbArgumentParser(description="获取项目空间一级文件夹", hint="""get-level1-folders.py 必须提供 project_id。
+    parser = DocdbArgumentParser(description="获取项目空间一级文件夹", hint="""get-level1-folders.py 必须提供 --project-id。
 个人库根：先 get-personal-project-id.py 取得 projectId，再对本脚本传入该 ID。
-示例: python3 -B <skill-dir>/scripts/browse/get-level1-folders.py 10001；缺参补齐后用同一 python 命令重试
+示例: python3 -B <skill-dir>/scripts/browse/get-level1-folders.py --project-id 10001；缺参补齐后用同一 python 命令重试
 """)
-    parser.add_argument("project_id", type=int, help="项目/空间 ID")
+    parser.add_argument("--project-id", dest="project_id", required=True, type=int, help="项目/空间 ID")
     parser.add_argument("--order", type=int, choices=[1, 2, 5, 6], help="排序规则：1 更新倒序，2 更新顺序，5 名字倒序，6 名字顺序")
     parser.add_argument("--permission-query", type=str, help="权限查询条件")
     args = parser.parse_args()

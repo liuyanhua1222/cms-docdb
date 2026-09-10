@@ -3,6 +3,7 @@
 manage / updateFileName — 同目录改名（同步 Open API）
 
 使用方式：
+  python3 -B <skill-dir>/scripts/manage/update-file-name.py --file-id 12345 --new-name "新名称" --confirm YES
 
 """
 
@@ -38,12 +39,12 @@ def post_json(body: dict) -> dict:
     return request_open_api(API_PATH, method="POST", body=body)
 
 def main():
-    parser = DocdbArgumentParser(description="重命名文件或文件夹", hint="""update-file-name.py 必须提供 file_id，且必须带 --new-name。
+    parser = DocdbArgumentParser(description="重命名文件或文件夹", hint="""update-file-name.py 必须提供 --file-id，且必须带 --new-name。
 真实写入还需 --confirm YES。
-示例: python3 -B <skill-dir>/scripts/manage/update-file-name.py 12345 --new-name "新名称" --confirm YES；缺参补齐后用同一 python 命令重试
+示例: python3 -B <skill-dir>/scripts/manage/update-file-name.py --file-id 12345 --new-name "新名称" --confirm YES；缺参补齐后用同一 python 命令重试
 """,
     )
-    parser.add_argument("file_id", type=int, help="文件或文件夹 ID")
+    parser.add_argument("--file-id", dest="file_id", required=True, type=int, help="文件或文件夹 ID")
     parser.add_argument("--new-name", required=True, help="新名称")
     parser.add_argument("--project-id", type=int, help="空间 ID（建议传入）")
     parser.add_argument("--name-conflict-strategy", type=int, default=1,

@@ -5,6 +5,7 @@ upload / saveFileByPath 脚本
 用途：将物理文件保存到指定项目空间的指定逻辑目录路径（路径不存在自动创建）
 
 使用方式：
+  python3 -B <skill-dir>/scripts/upload/save-file-by-path.py --project-id 10001 --name "报告.pdf" --resource-id 999 --confirm YES
 
 """
 
@@ -76,13 +77,13 @@ def process_result(result):
     return result
 
 def main():
-    parser = DocdbArgumentParser(description="按逻辑路径保存物理文件", hint="""save-file-by-path.py 必须提供 project_id name resource_id。
+    parser = DocdbArgumentParser(description="按逻辑路径保存物理文件", hint="""save-file-by-path.py 必须提供 --project-id --name --resource-id。
 真实写入还需 --confirm YES（可先 --dry-run）。
-示例: python3 -B <skill-dir>/scripts/upload/save-file-by-path.py 10001 "报告.pdf" 999 --confirm YES；缺参补齐后用同一 python 命令重试
+示例: python3 -B <skill-dir>/scripts/upload/save-file-by-path.py --project-id 10001 --name "报告.pdf" --resource-id 999 --confirm YES；缺参补齐后用同一 python 命令重试
 """)
-    parser.add_argument("project_id", type=int, help="目标项目空间 ID")
-    parser.add_argument("name", type=str, help="保存的文件名")
-    parser.add_argument("resource_id", type=int, help="资源 ID（必须，先通过 upload-whole-file 获得）")
+    parser.add_argument("--project-id", type=int, required=True, help="目标项目空间 ID")
+    parser.add_argument("--name", type=str, required=True, help="保存的文件名")
+    parser.add_argument("--resource-id", type=int, required=True, help="资源 ID（必须，先通过 upload-whole-file 获得）")
     parser.add_argument("--path", type=str, help="逻辑目录路径，支持多级，不存在自动创建")
     parser.add_argument("--suffix", type=str, help="文件后缀")
     parser.add_argument("--size", type=int, help="文件大小（字节）")

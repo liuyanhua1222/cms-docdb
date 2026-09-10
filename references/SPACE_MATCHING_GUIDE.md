@@ -15,7 +15,7 @@
 | 康哲/德镁知识库 | `kz_knowledge_base` |
 | 仅说「知识库」 | 先 `get-app-list.py`，企业可用应用求交后再定 |
 
-流程：`get-app-list.py` → `app_code_router.py --apps '...'` → `get-project-list.py --app-code <code>`。
+流程：`get-app-list.py` → `app_code_router.py --user-input "…" --apps '...'` → `get-project-list.py --app-code <code>`。
 
 `bizCode`（如 `pmo`）是空间业务线，**不是** appCode；禁止写 `--biz-code kz_doc`。
 
@@ -45,7 +45,7 @@
 
 #### 步骤1：意图识别
 ```bash
-python3 -B <skill-dir>/scripts/intent-matcher.py "保存到康哲知识库"
+python3 -B <skill-dir>/scripts/intent-matcher.py --user-input "保存到康哲知识库"
 ```
 
 输出：
@@ -61,7 +61,7 @@ python3 -B <skill-dir>/scripts/intent-matcher.py "保存到康哲知识库"
 
 #### 步骤2：参数提取（识别空间名候选词）
 ```bash
-python3 -B <skill-dir>/scripts/parameter-extractor.py "保存到康哲知识库"
+python3 -B <skill-dir>/scripts/parameter-extractor.py --user-input "保存到康哲知识库"
 ```
 
 输出：
@@ -254,7 +254,7 @@ python3 -B <skill-dir>/scripts/project-matcher.py --candidates "康哲,知识库
 # 返回：match_type="exact", matched_projects=[{"id":10001,"name":"康哲知识库"}]
 
 # 5. 直接使用匹配结果
-python3 -B <skill-dir>/scripts/upload/upload-content.py "报告内容" "报告.md" --project-id 10001 --confirm YES
+python3 -B <skill-dir>/scripts/upload/upload-content.py --content "报告内容" --file-name "报告.md" --project-id 10001 --confirm YES
 ```
 
 **AI 输出**：
@@ -327,7 +327,7 @@ keywords=["政策文件"]
 needs_project_list=false
 
 # 3. 直接在指定空间搜索（必须带 --project-id）
-python3 -B <skill-dir>/scripts/query/search.py "政策文件" --project-id 10001
+python3 -B <skill-dir>/scripts/query/search.py --name-key "政策文件" --project-id 10001
 ```
 
 ## 代码集成示例
@@ -345,10 +345,10 @@ python3 -B <skill-dir>/scripts/query/search.py "政策文件" --project-id 10001
 示例：
 
 ```bash
-python3 -B <skill-dir>/scripts/parameter-extractor.py "保存到康哲知识库"
+python3 -B <skill-dir>/scripts/parameter-extractor.py --user-input "保存到康哲知识库"
 python3 -B <skill-dir>/scripts/browse/get-uploadable-list.py
 python3 -B <skill-dir>/scripts/project-matcher.py --candidates "康哲知识库" --project-list '<json>'
-python3 -B <skill-dir>/scripts/upload/upload-content.py "正文" "报告.md" --project-id 10001 --confirm YES
+python3 -B <skill-dir>/scripts/upload/upload-content.py --content "正文" --file-name "报告.md" --project-id 10001 --confirm YES
 ```
 
 ## 注意事项

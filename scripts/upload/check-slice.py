@@ -5,6 +5,7 @@ upload / check-slice 脚本
 用途：大文件分片上传前的 MD5 预检，支持秒传判定
 
 使用方式：
+  python3 -B <skill-dir>/scripts/upload/check-slice.py --md5 "md5hex" --confirm YES
 
 """
 
@@ -70,10 +71,10 @@ def process_result(result):
 def main():
     import argparse
     parser = DocdbArgumentParser(description="大文件分片预检（支持秒传判定）",
-        hint="""check-slice.py 必须提供 md5；真实写入还需 --confirm YES。
-示例: python3 -B <skill-dir>/scripts/upload/check-slice.py "md5hex" --confirm YES；缺参补齐后用同一 python 命令重试
+        hint="""check-slice.py 必须提供 --md5；真实写入还需 --confirm YES。
+示例: python3 -B <skill-dir>/scripts/upload/check-slice.py --md5 "md5hex" --confirm YES；缺参补齐后用同一 python 命令重试
 """)
-    parser.add_argument("md5", type=str, help="文件/分片的 MD5（hex 字符串）")
+    parser.add_argument("--md5", dest="md5", required=True, type=str, help="文件/分片的 MD5（hex 字符串）")
     parser.add_argument("--size", type=int, help="文件总大小（字节）")
     parser.add_argument("--suffix", type=str, help="文件后缀")
     add_safety_args(parser)

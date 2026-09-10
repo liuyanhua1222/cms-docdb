@@ -28,11 +28,11 @@ API_PATH = "/document-database/fileGrant/getGrants"
 def main():
     parser = DocdbArgumentParser(
         description="查询目录授权列表",
-        hint="""get-file-grants.py 必须提供 file_id。
-示例: python3 -B <skill-dir>/scripts/grant/get-file-grants.py 12345；缺参补齐后用同一 python 命令重试
+        hint="""get-file-grants.py 必须提供 --file-id。
+示例: python3 -B <skill-dir>/scripts/grant/get-file-grants.py --file-id 12345；缺参补齐后用同一 python 命令重试
 """,
     )
-    parser.add_argument("file_id", type=int, help="文件/文件夹 ID")
+    parser.add_argument("--file-id", dest="file_id", required=True, type=int, help="文件/文件夹 ID")
     args = parser.parse_args()
 
     url = f"{API_PATH}?{urllib.parse.urlencode([('fileId', str(args.file_id))])}"

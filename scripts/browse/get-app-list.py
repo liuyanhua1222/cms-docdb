@@ -6,6 +6,7 @@ browse / listAllApps 脚本
 用于意图不明时先按企业收敛选项，再决定 project/list 的 appCode。
 
 使用方式：
+  python3 -B <skill-dir>/scripts/browse/get-app-list.py
 
 """
 

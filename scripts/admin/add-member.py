@@ -26,12 +26,12 @@ API_PATH = "/document-database/admin/addMember"
 
 
 def main():
-    p = DocdbArgumentParser(hint="""add-member.py 必须提供 project_id 与 --employee-id。
+    p = DocdbArgumentParser(hint="""add-member.py 必须提供 --project-id 与 --employee-id。
 真实写入还需 --confirm YES，且必须 --ack-space-expand YES（确认权限面扩大到整个空间）。
 个人知识库禁止加人；非成员目录访问请优先: upsert-file-share-grants.py（默认查看列表+在线预览）。
-示例: python3 -B <skill-dir>/scripts/admin/add-member.py 10001 --employee-id 1 --ack-space-expand YES --confirm YES
+示例: python3 -B <skill-dir>/scripts/admin/add-member.py --project-id 10001 --employee-id 1 --ack-space-expand YES --confirm YES
 """)
-    p.add_argument("project_id", type=int)
+    p.add_argument("--project-id", dest="project_id", required=True, type=int)
     p.add_argument("--employee-id", type=int, required=True)
     p.add_argument(
         "--ack-space-expand",

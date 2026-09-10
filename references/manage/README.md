@@ -58,7 +58,7 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `file_id` | Long | 是 | 文件或文件夹 ID | 有效 ID | - |
+| `--file-id` | Long | 是 | 文件或文件夹 ID | 有效 ID | - |
 | `--new-name` | String | 是 | 新名称 | 建议带扩展名 | - |
 | `--project-id` | Long | 否 | 空间 ID | 有效 projectId | - |
 | `--name-conflict-strategy` | Integer | 否 | 同名策略 | `0`=自动重命名，`1`=失败（默认） | - |
@@ -68,7 +68,7 @@
 
 | 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
 |------|------|------|------|---------------|----------|
-| `file_id` | Long | 是 | 被移动节点 ID | 有效 ID | - |
+| `--file-id` | Long | 是 | 被移动节点 ID | 有效 ID | - |
 | `--target-parent-id` | Long | 是 | 目标父目录 ID | 有效文件夹 ID | - |
 | `--new-name` | String | 否 | 移动后名称 | 省略则保留原名 | 单次调用内完成 move+rename |
 | `--project-id` | Long | 否 | 目标空间 ID | - | - |
@@ -118,13 +118,13 @@
 
 排障：若必须「历史多一条再定稿」，传 `--version-status 2` 后再调 `finalize-version.py`；不要指望在草稿上对 `3` 自动涨版本号。勿把「先 2 再 finalize」写成与默认 3 并列的主路径。
 
-**示例**（与其它 manage 脚本一致：`file_id` 位置参数；`--resource-id` 必填；`--project-id` 可选）：
+**示例**（全带名：`--file-id` 与 `--resource-id` 必填；`--project-id` 可选）：
 ```bash
 # 推荐：省略 projectId，由 OpenAPI 反查；默认 version-status=3
-python3 -B <skill-dir>/scripts/manage/update-file-version.py 12345 --resource-id 987654321 --version-name "V2.0" --version-remark "修正了第三章内容" --confirm YES
+python3 -B <skill-dir>/scripts/manage/update-file-version.py --file-id 12345 --resource-id 987654321 --version-name "V2.0" --version-remark "修正了第三章内容" --confirm YES
 
 # 显式传入空间与 version-status
-python3 -B <skill-dir>/scripts/manage/update-file-version.py 12345 --project-id 2025001 --resource-id 987654321 --version-status 3 --confirm YES
+python3 -B <skill-dir>/scripts/manage/update-file-version.py --file-id 12345 --project-id 2025001 --resource-id 987654321 --version-status 3 --confirm YES
 ```
 
 ### 5–7. 版本历史 / 最新版本 / 定稿
@@ -167,14 +167,14 @@ python3 -B <skill-dir>/scripts/manage/update-file-version.py 12345 --project-id 
 
 ```bash
 # 推荐：新接口（写入须 --confirm YES；可先 --dry-run）
-python3 -B <skill-dir>/scripts/manage/update-file-name.py <file_id> --new-name "B.md" --confirm YES [--project-id <pid>]
-python3 -B <skill-dir>/scripts/manage/move-file.py <file_id> --target-parent-id <parent_id> --confirm YES [--new-name "X.md"]
+python3 -B <skill-dir>/scripts/manage/update-file-name.py --file-id <file_id> --new-name "B.md" --confirm YES [--project-id <pid>]
+python3 -B <skill-dir>/scripts/manage/move-file.py --file-id <file_id> --target-parent-id <parent_id> --confirm YES [--new-name "X.md"]
 
 # 兼容：旧命令（stderr 警告后转发；须带 --confirm YES）
-python3 -B <skill-dir>/scripts/manage/update-file-property.py <file_id> --new-name "新文件名.pdf" --confirm YES
-python3 -B <skill-dir>/scripts/manage/update-file-property.py <file_id> --target-parent-id <parent_id> --cover --confirm YES
+python3 -B <skill-dir>/scripts/manage/update-file-property.py --file-id <file_id> --new-name "新文件名.pdf" --confirm YES
+python3 -B <skill-dir>/scripts/manage/update-file-property.py --file-id <file_id> --target-parent-id <parent_id> --cover --confirm YES
 
-python3 -B <skill-dir>/scripts/manage/update-file-version.py <file_id> --resource-id <resource_id> [--project-id <pid>] --confirm YES
-python3 -B <skill-dir>/scripts/manage/get-version-list.py <file_id>
-python3 -B <skill-dir>/scripts/manage/finalize-version.py <file_id> --confirm YES
+python3 -B <skill-dir>/scripts/manage/update-file-version.py --file-id <file_id> --resource-id <resource_id> [--project-id <pid>] --confirm YES
+python3 -B <skill-dir>/scripts/manage/get-version-list.py --file-id <file_id>
+python3 -B <skill-dir>/scripts/manage/finalize-version.py --file-id <file_id> --confirm YES
 ```

@@ -2,7 +2,7 @@
 name: cms-docdb
 description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能调用 Open API，勿以无法访问钉钉云端为由拒绝。
 metadata:
-  version: 3.4.1
+  version: 3.4.2
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
     requires:
@@ -17,7 +17,9 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令含业务参数，可选 `--app-key`。
 
-**当前版本**: 3.4.1
+**当前版本**: 3.4.2
+
+**3.4.2 变更**：补 `list-descendant-files` / `list-changes` / `batch-get-meta`；OutSend 占位 `outsend-status`（禁止伪造成功）；`is-project-member` 支持 `employeeId`（正式 API + listMembers 回退）；grant upsert 默认成员预检。
 
 **3.4.1 变更**：领导审查复验门禁——修测试跟 3.4.0 带名参数；P0-5 冲突枚举对齐后端；申请/审批走统一权限白名单；P0-9 bypass 标明非角色终态；P0-6/P1-1/P1-13 产品定论关单；multipart 默认不重试整传；多项 P1/P2 Skill 侧补齐。详见 `references/enums-and-defaults.md`。
 
@@ -47,7 +49,7 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 **能力概览（8 块能力）**：
 - `browse`：发现可用应用通道与空间、个人空间 ID、目录结构、最近使用/上传与全空间上传记录
-- `query`：搜索、读全文或摘要、下载/预览链接
+- `query`：搜索、读全文或摘要、下载/预览链接；子树列举 / 增量变更 / 批量元数据
 - `upload`：新建文件/文件夹、切片与整传、**第三方虚拟文件归档**（慧记/汇报等；已存在文件内容更新走 manage 版本流）
 - `delete`：删除（高风险，需确认）
 - `manage`：重命名/移动、版本更新与定稿、历史版本
@@ -171,7 +173,7 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
    - 物理删除：`--confirm PHYSICAL`（与 `--physical` 同用）
 3. Agent 闭环：先确认高危意图 → 同意后再执行
 4. 对用户不暴露内部鉴权细节；禁止在回复中复述任何凭证原文
-5. admin（`add-member` / `add-org-member` / `list-members` / `list-org-members` / `remove-member` / `remove-org-member` / `update-member-role` / `update-org-member-role` / `is-project-member`）无独立 README；**个人知识库禁止加人/升权**（目录访问用协同分享）；移除仅普通成员；改角色勿与 remove 混淆；勿误走分享/目录 revoke
+5. admin（`add-member` / `add-org-member` / `list-members` / `list-org-members` / `remove-member` / `remove-org-member` / `update-member-role` / `update-org-member-role` / `is-project-member`）无独立 README；**个人知识库禁止加人/升权**（目录访问用协同分享）；移除仅普通成员；改角色勿与 remove 混淆；勿误走分享/目录 revoke；`is-project-member --employee-id` 走正式 API（`employeeId`），失败回退 listMembers
 6. `--bypass-risk`（get-download-info）：须 `CMS_DOCDB_ALLOW_BYPASS_RISK=1`。语义是**用户二次确认**凭证，不是运维特权。现网下载规则多为 `HARD_BLOCK`，该参数对下载往往**无效**（解封走管理端 riskAlert）；对 `CONFIRM_BLOCK`（现网主要为删除）才有意义。见 Wave5 需求单 P0-9 勘误
 7. `--app-key`：产品确认保留；上下文有原始 AppKey 时经 CLI 传入；脱敏/占位值一律拒绝；注意进程列表可能暴露，优先短生命周期会话
 8. AppKey / dueDate / versionStatus 等默认值见 `references/enums-and-defaults.md`
@@ -292,7 +294,7 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
 | 用户意图 | 模块 | 能力摘要 | 说明 | 代表脚本 |
 |---|---|---|---|---|
 | 打开知识库/资料库/法务、浏览目录、最近使用/上传、按 fileId 查空间、按路径定位 | `browse` | 应用/空间/目录/路径解析/最近/元数据 | `references/browse/README.md` | `scripts/browse/resolve-path.py`、`scripts/browse/browse.py`、`scripts/browse/get-app-list.py` |
-| 搜索、查询、读取、总结文件 | `query` | 搜索与内容/下载预览 | `references/query/README.md` | `scripts/query/search.py`、`scripts/query/get-full-content.py` |
+| 搜索、查询、读取、总结文件 | `query` | 搜索与内容/下载预览；子树/增量/元数据 | `references/query/README.md` | `scripts/query/search.py`、`scripts/query/get-full-content.py`、`scripts/query/list-descendant-files.py`、`scripts/query/list-changes.py`、`scripts/query/batch-get-meta.py` |
 | 上传、保存、归档、新建文件夹 | `upload` | 新建（更新走 manage） | `references/upload/README.md` | `scripts/upload/upload-content.py`、`scripts/upload/create-folder.py`、`scripts/upload/add-third-file.py`、`scripts/upload/update-file-relation.py`、`scripts/upload/batch-add-file-relation.py` |
 | 挂慧记/汇报/链接到知识库 | `upload` | 虚拟文件归档 | `references/upload/README.md` | 同上三脚本（勿用 upload-content） |
 | 删除、移除文件 | `delete` | 删除（须确认） | `references/delete/README.md` | `scripts/delete/delete-file.py` |
@@ -362,7 +364,12 @@ cms-docdb/
     │   ├── get-download-info.py
     │   ├── download-file.py
     │   ├── get-file-content.py
-    │   └── batch-get-content.py
+    │   ├── batch-get-content.py
+    │   ├── list-descendant-files.py
+    │   ├── list-changes.py
+    │   └── batch-get-meta.py
+    ├── outsend/
+    │   └── outsend-status.py   # OpenAPI 未开放；固定 blocked + exit 2
     ├── upload/
     │   ├── upload-content.py
     │   ├── add-third-file.py

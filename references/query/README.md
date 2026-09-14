@@ -36,6 +36,10 @@
 | `scripts/query/download-file.py` | `GET /open-api/document-database/file/getDownloadInfo` + 本地下载 | 下载文件到本地，解决内网 URL 无法被 AI 工具访问的问题 |
 | `scripts/query/get-file-content.py` | `GET /open-api/document-database/file/getFileContent` | 分页获取文件文本内容 |
 | `scripts/query/batch-get-content.py` | `POST /open-api/document-database/ai/batchGetContent` | 批量获取多个文件全文，建议≤10个 |
+| `scripts/query/list-descendant-files.py` | `GET /open-api/document-database/file/listDescendantFiles` | 子树扁平列举（冷启动同步） |
+| `scripts/query/list-changes.py` | `GET /open-api/document-database/file/listChanges` | 增量变更列表（since/cursor） |
+| `scripts/query/batch-get-meta.py` | `POST /open-api/document-database/file/batchGetMeta` | 按 fileId 批量查元数据（无正文） |
+| `scripts/query/batch-download-files.py` | `getDownloadInfo` + 本地下载 | 受控批量下载（默认并发 2，B-03） |
 
 
 ## 输入要求
@@ -48,6 +52,9 @@
 | 下载文件到本地 | fileId | output |
 | 分页读取文件内容 | fileId | pageNumber |
 | 批量获取文件全文 | files（fileId 列表） | maxChars, maxCharsPerFile |
+| 子树扁平列举 | rootFileId | projectId, suffix, cursor, limit, includePath, includeFolders |
+| 增量变更列表 | （无强制必填；建议 projectId+since/cursor） | projectId, rootFileId, since, cursor, limit, includePath, includeMoveHint |
+| 批量查元数据 | fileIds（`--file-ids` 或 `--files-json`） | — |
 
 ## 参数详细说明
 
@@ -109,6 +116,37 @@
 | `--max-chars` | Integer | 否 | 内容字段总字符上限 | 默认 `0`，表示不限制；面向 LLM 消费时建议按上下文预算显式设置 | - |
 | `--max-chars-per-file` | Integer | 否 | 单个内容字段字符上限 | 默认 `0`，表示不限制；面向 LLM 消费时建议按上下文预算显式设置 | - |
 
+### list-descendant-files.py — 子树扁平列举
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `--root-file-id` | Long | 是 | 映射根目录 | `0`=空间根；`>0` 为某文件夹 | rootFileId=0 时建议传 `--project-id` |
+| `--project-id` | Long | 否 | 项目/空间 ID | 有效项目 ID | - |
+| `--suffix` | String | 否 | 后缀过滤 | 默认 `md` | - |
+| `--cursor` | String | 否 | 分页游标 | 上次响应 nextCursor | - |
+| `--limit` | Integer | 否 | 每页条数 | 正整数 | - |
+| `--include-path` | Boolean | 否 | 返回 relativePath | 标志位 | - |
+| `--include-folders` | Boolean | 否 | 一并返回文件夹 | 标志位 | - |
+
+### list-changes.py — 增量变更列表
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `--project-id` | Long | 否 | 项目/空间 ID | 有效项目 ID | 强烈建议传 |
+| `--root-file-id` | Long | 否 | 限定子树 | `0`=空间根 | - |
+| `--since` | Long | 否 | 水位时间戳（毫秒） | Unix ms | 可与 `--cursor` 配合 |
+| `--cursor` | String | 否 | 分页游标 | 上次 nextCursor | - |
+| `--limit` | Integer | 否 | 每页条数 | 正整数 | - |
+| `--include-path` | Boolean | 否 | 返回 relativePath | 标志位 | - |
+| `--include-move-hint` | Boolean | 否 | 返回移动提示 | 标志位 | - |
+
+### batch-get-meta.py — 批量查元数据
+
+| 参数 | 类型 | 必填 | 用途 | 取值范围/枚举 | 依赖关系 |
+|------|------|------|------|---------------|----------|
+| `--file-ids` | String | 二选一 | 逗号分隔 fileId | 如 `123,456` | 与 `--files-json` 互斥 |
+| `--files-json` | JSON String | 二选一 | fileId 列表 JSON | `[123,456]` / `[{"fileId":123}]` / `{"fileIds":[123]}` | 与 `--file-ids` 互斥 |
+
 ## 动作列表
 
 ### 1. 搜索文件
@@ -145,6 +183,21 @@
 - **用途**: 批量获取多个文件的全文内容，减少往返次数，提升 RAG 效率
 - **注意**: 建议单次不超过 10 个文件；默认不截断内容。若结果将直接进入 LLM 上下文，应显式设置 `--max-chars` 和 `--max-chars-per-file`
 - **输出**: 返回每个文件的 `{ fileId, content, status, message }`
+
+### 7. 子树扁平列举（冷启动）
+- **脚本**: `list-descendant-files.py`
+- **用途**: 在映射根下分页拉取后代文件元数据（可选文件夹与 relativePath）
+- **输出**: 分页列表 + nextCursor（以接口契约为准）
+
+### 8. 增量变更列表
+- **脚本**: `list-changes.py`
+- **用途**: 按 since/cursor 拉取变更事件，更新本地水位
+- **输出**: items + serverTime / nextCursor（以接口契约为准）
+
+### 9. 批量查元数据（对账）
+- **脚本**: `batch-get-meta.py`
+- **用途**: 无需拉全文即可核对元数据是否变更
+- **输出**: 文件元数据列表（无正文）
 
 ## 输出说明
 
@@ -195,4 +248,8 @@ python3 -B <skill-dir>/scripts/query/get-download-info.py --file-id <file_id> --
 python3 -B <skill-dir>/scripts/query/download-file.py --file-id <file_id> [--output /path/to/save.pdf]
 python3 -B <skill-dir>/scripts/query/get-file-content.py --file-id <file_id> [--page-number 1]
 python3 -B <skill-dir>/scripts/query/batch-get-content.py --files-json '[{"fileId":123},{"fileId":456}]' [--max-chars 60000] [--max-chars-per-file 20000]
+python3 -B <skill-dir>/scripts/query/list-descendant-files.py --root-file-id <root_id> [--project-id <pid>] [--suffix md] [--include-path] [--include-folders]
+python3 -B <skill-dir>/scripts/query/list-changes.py [--project-id <pid>] [--root-file-id <root_id>] [--since <ms>] [--cursor <c>] [--include-path] [--include-move-hint]
+python3 -B <skill-dir>/scripts/query/batch-get-meta.py --file-ids 123,456
+python3 -B <skill-dir>/scripts/query/batch-get-meta.py --files-json '[123,456]'
 ```

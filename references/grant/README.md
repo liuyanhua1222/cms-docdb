@@ -9,6 +9,20 @@
 
 权限 UI 用语与 `share` 相同：查看列表 / 在线预览 / 下载 / 删除 / 上传/编辑 / 分享 / 权限管理 / 管理员。脚本拒绝授予 `admin`、`permmanage`。
 
+## 成员预检（P1-06）
+
+| 能力 | 说明 |
+|---|---|
+| `upsert-file-grants.py` **默认预检** | 写入前走 `project_member_check.ensure_project_member`；非成员 exit 2 |
+| `--skip-member-check` | 跳过预检（仅排障）；无法解析 `projectId` 时可传 `--project-id` |
+| `is-project-member.py` | 正式 API；`--employee-id` 查他人 |
+| **可信判定** | 查他人时仅当 `data.employeeId` 与目标一致且含 `isMember` 才采信；**裸 Boolean 视为旧网关不可信** |
+| listMembers 回退 | 不可信/失败时扫描人员列表；**不含仅组织加入成员**；正式关单以结构化 API 为准 |
+
+协同分享 upsert **不**做空间成员预检（分享对象常非成员）。
+
+**发布顺序**：document-database → open-api → Skill。
+
 ## 权限策略
 
 | 阶段 | 规则 |
@@ -52,8 +66,10 @@ python3 -B <skill-dir>/scripts/grant/update-inherit-permission.py --file-id 1234
 
 ```bash
 python3 -B <skill-dir>/scripts/admin/is-project-member.py --project-id 888
+python3 -B <skill-dir>/scripts/admin/is-project-member.py --project-id 888 --employee-id 10002
 python3 -B <skill-dir>/scripts/grant/upsert-file-grants.py --file-id 123456 --emp-id 10002 --permissions "read,preview,download" --dry-run
 python3 -B <skill-dir>/scripts/grant/upsert-file-grants.py --file-id 123456 --emp-id 10002 --permissions "download" --confirm YES
+python3 -B <skill-dir>/scripts/grant/upsert-file-grants.py --file-id 123456 --emp-id 10002 --permissions "read,preview" --skip-member-check --confirm YES
 python3 -B <skill-dir>/scripts/grant/get-file-grants.py --file-id 123456
 python3 -B <skill-dir>/scripts/grant/strip-grant-permissions.py --file-id 123456 --emp-id 10002 --remove download --confirm YES
 python3 -B <skill-dir>/scripts/grant/revoke-file-grants.py --file-id 123456 --emp-ids 10002 --confirm YES

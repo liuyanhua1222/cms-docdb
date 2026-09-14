@@ -34,6 +34,9 @@ if sys.stderr.encoding != 'utf-8':
 
 API_PATH = "/document-database/file/uploadContent"
 
+# B-04：长正文预检（正式上限待服务端契约；默认 7500 字符为应急阈值，可用环境变量覆盖）
+DEFAULT_CONTENT_SOFT_LIMIT = int(os.environ.get("CMS_DOCDB_CONTENT_SOFT_LIMIT", "7500"))
+
 
 def normalize_file_name(file_name: str, file_suffix: str = None) -> tuple:
     """返回 (fileName, fileSuffix)；避免 .md.md。"""
@@ -90,8 +93,30 @@ def main():
         default=None,
         help="同名冲突策略（若 OpenAPI 支持则下发）；见 references/enums-and-defaults.md",
     )
+    parser.add_argument(
+        "--skip-content-limit-check",
+        action="store_true",
+        help="跳过长正文软上限预检（不推荐；正式上限待契约）",
+    )
+    parser.add_argument(
+        "--content-soft-limit",
+        type=int,
+        default=None,
+        help=f"正文软上限字符数，默认 {DEFAULT_CONTENT_SOFT_LIMIT}（或 CMS_DOCDB_CONTENT_SOFT_LIMIT）",
+    )
     add_safety_args(parser)
     args = parser.parse_args()
+
+    soft_limit = args.content_soft_limit if args.content_soft_limit is not None else DEFAULT_CONTENT_SOFT_LIMIT
+    content_len = len(args.content or "")
+    if not args.skip_content_limit_check and soft_limit > 0 and content_len > soft_limit:
+        print(
+            f"错误: 正文长度 {content_len} 超过软上限 {soft_limit} 字符（B-04 预检）。"
+            "请拆篇或提高 --content-soft-limit / CMS_DOCDB_CONTENT_SOFT_LIMIT；"
+            "确认服务端允许后可用 --skip-content-limit-check。正式上限以契约为准。",
+            file=sys.stderr,
+        )
+        sys.exit(2)
 
     file_name, file_suffix = normalize_file_name(args.file_name, args.file_suffix)
     body = {

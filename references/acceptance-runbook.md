@@ -27,4 +27,17 @@
 
 ## 5. OutSend
 
-当前 **未封装** 外部协作 OutSend 路由；产品未定前 Agent 不得伪造成功。见挂账 P1-16。
+当前 **未封装** 外部协作 OutSend 路由；产品未定前 Agent 不得伪造成功。
+
+- 说明与待确认能力清单：[`outsend/README.md`](./outsend/README.md)
+- 探测脚本：`scripts/outsend/outsend-status.py`（固定 blocked JSON + **exit 2**）
+- 挂账：P1-16
+
+## 6. 待产品确认（跟踪入口）
+
+完整清单见 [`product-decisions-pending.md`](./product-decisions-pending.md)，至少包括：
+
+- grant 是否默认「查看列表+在线预览」话术（脚本已要求显式 `--permissions`）
+- P1-09 有效权限矩阵（见 `effective-permission-matrix.md`）
+- P1-16 OutSend OpenAPI 范围
+- BP §六 四项业务关单

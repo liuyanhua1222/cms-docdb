@@ -677,9 +677,71 @@ class TestP0SkillFixes(AuthTestCase):
             self.assertIn("skipped: auth failed earlier", text)
             self.assertNotIn("except SystemExit:\n            raise", text)
 
-    def test_version_is_3_4_1(self):
+    def test_version_is_3_4_2(self):
         version = (SKILL_ROOT / "version.json").read_text(encoding="utf-8")
-        self.assertIn('"3.4.1"', version)
+        self.assertIn('"3.4.2"', version)
+
+    def test_upsert_grant_member_precheck_flags(self):
+        text = (SCRIPTS / "grant" / "upsert-file-grants.py").read_text(encoding="utf-8")
+        self.assertIn("--skip-member-check", text)
+        self.assertIn("isProjectMember", text)
+        self.assertIn("employeeId", text)
+
+    def test_is_project_member_supports_employee_id(self):
+        text = (SCRIPTS / "admin" / "is-project-member.py").read_text(encoding="utf-8")
+        self.assertIn("--employee-id", text)
+        self.assertIn("check_other_member", text)
+        helper = (SCRIPTS / "common" / "project_member_check.py").read_text(encoding="utf-8")
+        self.assertIn("listMembers_fallback", helper)
+        self.assertIn("裸 Boolean", helper)
+        self.assertIn("仅组织加入", helper)
+
+    def test_trusted_target_rejects_bare_bool(self):
+        sys.path.insert(0, str(SCRIPTS / "common"))
+        from project_member_check import _trusted_target_payload
+
+        self.assertIsNone(_trusted_target_payload(True, 1, 2))
+        self.assertIsNone(_trusted_target_payload({"isMember": True}, 1, 2))
+        self.assertIsNone(_trusted_target_payload({"employeeId": 9, "isMember": True}, 1, 2))
+        ok = _trusted_target_payload({"employeeId": 2, "isMember": False, "projectId": 1}, 1, 2)
+        self.assertEqual(ok["isMember"], False)
+        self.assertEqual(ok["employeeId"], 2)
+
+    def test_sync_query_scripts_exist_and_help(self):
+        for rel in (
+            "query/list-descendant-files.py",
+            "query/list-changes.py",
+            "query/batch-get-meta.py",
+            "query/batch-download-files.py",
+        ):
+            path = SCRIPTS / rel
+            self.assertTrue(path.is_file(), rel)
+            proc = subprocess.run(
+                [sys.executable, "-B", str(path), "--help"],
+                capture_output=True,
+                text=True,
+                cwd=str(SKILL_ROOT),
+            )
+            self.assertEqual(proc.returncode, 0, rel)
+            self.assertIn("--app-key", (proc.stdout or "") + (proc.stderr or ""))
+
+    def test_upload_content_soft_limit_flag(self):
+        text = (SCRIPTS / "upload" / "upload-content.py").read_text(encoding="utf-8")
+        self.assertIn("--skip-content-limit-check", text)
+        self.assertIn("CMS_DOCDB_CONTENT_SOFT_LIMIT", text)
+
+    def test_outsend_status_blocked_exit_2(self):
+        path = SCRIPTS / "outsend" / "outsend-status.py"
+        self.assertTrue(path.is_file())
+        proc = subprocess.run(
+            [sys.executable, "-B", str(path)],
+            capture_output=True,
+            text=True,
+            cwd=str(SKILL_ROOT),
+        )
+        self.assertEqual(proc.returncode, 2)
+        payload = json.loads(proc.stdout)
+        self.assertEqual(payload.get("data", {}).get("status"), "blocked_pending_product")
 
     def test_temp_member_lifecycle_script_exists(self):
         path = SCRIPTS / "admin" / "temp-member-lifecycle.py"

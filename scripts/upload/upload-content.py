@@ -89,9 +89,9 @@ def main():
     parser.add_argument(
         "--name-conflict-strategy",
         type=int,
-        choices=[0, 1, 2, 3],
-        default=None,
-        help="同名冲突策略（若 OpenAPI 支持则下发）；见 references/enums-and-defaults.md",
+        choices=[0, 1, 2],
+        default=2,
+        help="同名冲突：0改名 1覆盖 2失败（默认）；正文上传不支持3跳过",
     )
     parser.add_argument(
         "--skip-content-limit-check",

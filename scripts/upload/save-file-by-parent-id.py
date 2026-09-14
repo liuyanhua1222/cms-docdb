@@ -97,12 +97,16 @@ def main():
     parser.add_argument(
         "--name-conflict-strategy",
         type=int,
-        choices=[0, 1, 2, 3],
+        choices=[0, 1, 2],
         default=2,
-        help="同名冲突：0改名 1覆盖 2失败(默认) 3跳过",
+        help="同名冲突：0改名 1覆盖 2失败（默认）；物理入库不支持3跳过",
     )
     add_safety_args(parser)
     args = parser.parse_args()
+
+    if args.parent_id == 0 and args.project_id is None:
+        print("错误: --parent-id 0（空间根）必须提供 --project-id", file=sys.stderr)
+        sys.exit(2)
 
     body_preview = {
         "projectId": args.project_id,

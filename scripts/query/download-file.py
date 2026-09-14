@@ -73,6 +73,17 @@ def _is_under_jail(path: str, roots: list) -> bool:
     return False
 
 
+def _reject_existing_symlink(path: str) -> None:
+    """拒绝最终输出文件为符号链接，避免 open(..., wb) 跟随链接越界写入。"""
+    try:
+        if os.path.lexists(path) and os.path.islink(path):
+            print("错误: 输出文件为符号链接，拒绝覆盖", file=sys.stderr)
+            sys.exit(2)
+    except OSError as e:
+        print(f"错误: 无法检查输出文件: {e}", file=sys.stderr)
+        sys.exit(2)
+
+
 def sanitize_download_basename(name: str) -> str:
     base = os.path.basename((name or "").replace("\\", "/").strip()) or "download.bin"
     base = base.replace("\x00", "")
@@ -100,6 +111,7 @@ def resolve_output_path(output: str, file_name: str) -> str:
             parent = os.path.dirname(out) or default_root
             path = os.path.join(os.path.abspath(parent), sanitize_download_basename(os.path.basename(out)))
     path = os.path.abspath(path)
+    _reject_existing_symlink(path)
     if not _is_under_jail(path, roots):
         print(
             "错误: 输出路径越出下载沙箱；默认仅允许系统临时目录。"
@@ -107,6 +119,7 @@ def resolve_output_path(output: str, file_name: str) -> str:
             file=sys.stderr,
         )
         sys.exit(2)
+    _reject_existing_symlink(path)
     parent = os.path.dirname(path)
     if parent and not os.path.isdir(parent):
         try:

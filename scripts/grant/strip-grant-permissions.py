@@ -108,6 +108,16 @@ def main():
         print("错误: --remove 不能为空", file=sys.stderr)
         sys.exit(1)
 
+    # dry-run 必须是离线预览：不得为了计算 before/after 发起远程查询。
+    if getattr(args, "dry_run", False):
+        body = {
+            "fileId": args.file_id,
+            "items": [{"empId": args.emp_id, "removePermissions": sorted(to_remove),
+                       "expectedPermissions": None}],
+        }
+        enforce_or_dry_run(args, method="POST", url=URL_STRIP, body=body)
+        return
+
     before, grants_resp = fetch_before(args.file_id, args.emp_id)
     if before is None:
         print(json.dumps(grants_resp, ensure_ascii=False))

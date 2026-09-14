@@ -93,13 +93,16 @@ def main():
     if args.bypass_risk:
         if os.environ.get("CMS_DOCDB_ALLOW_BYPASS_RISK") != "1":
             print(
-                "错误: --bypass-risk 已禁用；运维场景须设置 CMS_DOCDB_ALLOW_BYPASS_RISK=1",
+                "错误: --bypass-risk 已禁用；须设置 CMS_DOCDB_ALLOW_BYPASS_RISK=1。"
+                "注意：此参数表示用户二次确认，不是运维特权；"
+                "现网下载多为 HARD_BLOCK 时传 true 仍会被拦。",
                 file=sys.stderr,
             )
             sys.exit(2)
         print(
-            "警告: 已启用 bypassRisk（CMS_DOCDB_ALLOW_BYPASS_RISK=1）。"
-            "此为短期环境门禁，不是独立运维角色/审批/审计，不可当作生产终态。",
+            "警告: 已启用 bypassRisk（用户二次确认凭证，非运维特权）。"
+            "现网下载规则多为 HARD_BLOCK，本参数对下载往往无效；"
+            "HARD_BLOCK 解封请走管理端 riskAlert，勿反复重试 bypass。",
             file=sys.stderr,
         )
         bypass_risk = True

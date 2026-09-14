@@ -172,7 +172,7 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
 3. Agent 闭环：先确认高危意图 → 同意后再执行
 4. 对用户不暴露内部鉴权细节；禁止在回复中复述任何凭证原文
 5. admin（`add-member` / `add-org-member` / `list-members` / `list-org-members` / `remove-member` / `remove-org-member` / `update-member-role` / `update-org-member-role` / `is-project-member`）无独立 README；**个人知识库禁止加人/升权**（目录访问用协同分享）；移除仅普通成员；改角色勿与 remove 混淆；勿误走分享/目录 revoke
-6. `--bypass-risk`（get-download-info）：须 `CMS_DOCDB_ALLOW_BYPASS_RISK=1`。**短期环境门禁，不是独立运维角色/审批/审计，不可当作生产终态**（P0-9 中期见后端需求单）
+6. `--bypass-risk`（get-download-info）：须 `CMS_DOCDB_ALLOW_BYPASS_RISK=1`。语义是**用户二次确认**凭证，不是运维特权。现网下载规则多为 `HARD_BLOCK`，该参数对下载往往**无效**（解封走管理端 riskAlert）；对 `CONFIRM_BLOCK`（现网主要为删除）才有意义。见 Wave5 需求单 P0-9 勘误
 7. `--app-key`：产品确认保留；上下文有原始 AppKey 时经 CLI 传入；脱敏/占位值一律拒绝；注意进程列表可能暴露，优先短生命周期会话
 8. AppKey / dueDate / versionStatus 等默认值见 `references/enums-and-defaults.md`
 

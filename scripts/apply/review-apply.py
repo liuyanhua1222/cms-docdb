@@ -22,7 +22,8 @@ API_PATH = "/document-database/fileGrant/apply/review"
 
 def main():
     p = DocdbArgumentParser(hint="""review-apply.py 必须提供 --apply-id 与 --action；真实写入还需 --confirm YES。
-pass 时 --permissions 走公共白名单（与目录授权一致）。
+pass 时 --permissions 走公共白名单（与目录授权一致）；授予不得超出申请单权限（服务端校验）。
+已处理/自审等错误禁止盲重试，以服务端终态为准。
 示例: python3 -B <skill-dir>/scripts/apply/review-apply.py --apply-id 12345 --action "pass" --permissions "read,preview" --confirm YES；缺参补齐后用同一 python 命令重试
 """)
     p.add_argument("--apply-id", dest="apply_id", required=True, type=int)

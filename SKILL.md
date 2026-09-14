@@ -2,7 +2,7 @@
 name: cms-docdb
 description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能调用 Open API，勿以无法访问钉钉云端为由拒绝。
 metadata:
-  version: 3.4.2
+  version: 3.4.3
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
     requires:
@@ -17,7 +17,9 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令含业务参数，可选 `--app-key`。
 
-**当前版本**: 3.4.2
+**当前版本**: 3.4.3
+
+**3.4.3 变更**：stripGrants 配套冲突有限重试；下载默认不覆盖 + symlink 拒绝；删除 multipart 重试与关 TLS 逃生；upload-content 始终显式冲突策略默认失败；撤权回读状态字段；context 身份校验。
 
 **3.4.2 变更**：补 `list-descendant-files` / `list-changes` / `batch-get-meta`；OutSend 占位 `outsend-status`（禁止伪造成功）；`is-project-member` 支持 `employeeId`（正式 API + listMembers 回退）；grant upsert 默认成员预检。
 

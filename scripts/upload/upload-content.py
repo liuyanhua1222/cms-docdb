@@ -136,8 +136,8 @@ def main():
         body["versionName"] = args.version_name
     if args.version_remark:
         body["versionRemark"] = args.version_remark
-    if args.name_conflict_strategy is not None:
-        body["nameConflictStrategy"] = args.name_conflict_strategy
+    # Skill 始终显式下发冲突策略（默认 2=失败），不依赖后端省略语义
+    body["nameConflictStrategy"] = args.name_conflict_strategy
 
     enforce_or_dry_run(args, method="POST", url=API_PATH, body=body)
     result = call_api(body)

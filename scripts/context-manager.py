@@ -5,6 +5,7 @@ import json
 import os
 import re
 import datetime
+import tempfile
 
 # 上下文改到用户态目录，禁止写在 skill 仓库内
 def _context_root():
@@ -23,12 +24,10 @@ CONTEXT_DIR = _context_root()
 
 def sanitize_user_id(user_id: str) -> str:
     raw = (user_id or "default").strip() or "default"
-    safe = re.sub(r"[^A-Za-z0-9._-]", "_", raw)
-    if ".." in safe or "/" in safe or "\\" in safe or safe in (".", ""):
+    # 拒绝而不是替换非法字符，避免 user/a 与 user_a 等不同身份映射到同一上下文文件。
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", raw):
         raise ValueError("非法 user_id")
-    if len(safe) > 64:
-        safe = safe[:64]
-    return safe
+    return raw
 
 
 def get_context_file(user_id="default"):
@@ -41,21 +40,56 @@ def get_context_file(user_id="default"):
 
 def load_context(user_id="default"):
     """加载上下文"""
+    safe = sanitize_user_id(user_id)
     context_file = get_context_file(user_id)
     if os.path.exists(context_file):
         try:
             with open(context_file, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except:
+                data = json.load(f)
+            owner = data.get("owner_user_id") if isinstance(data, dict) else None
+            if owner is not None and owner != safe:
+                raise ValueError("上下文身份不匹配，拒绝加载")
+            if isinstance(data, dict):
+                data.setdefault("owner_user_id", safe)
+                return data
+        except ValueError:
+            raise
+        except Exception:
             pass
-    return {"history": [], "current_folder": None, "last_file": None, "current_project": None, "current_app_code": None}
+    return {
+        "owner_user_id": safe,
+        "history": [],
+        "current_folder": None,
+        "last_file": None,
+        "current_project": None,
+        "current_app_code": None,
+    }
 
 
 def save_context(context, user_id="default"):
     """保存上下文"""
+    safe = sanitize_user_id(user_id)
+    if not isinstance(context, dict):
+        raise ValueError("context 必须为 dict")
+    context = dict(context)
+    context["owner_user_id"] = safe
     context_file = get_context_file(user_id)
-    with open(context_file, "w", encoding="utf-8") as f:
-        json.dump(context, f, ensure_ascii=False, indent=2)
+    parent = os.path.dirname(context_file)
+    fd, tmp = tempfile.mkstemp(prefix=".context-", suffix=".tmp", dir=parent, text=True)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(context, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, context_file)
+        os.chmod(context_file, 0o600)
+    finally:
+        try:
+            if os.path.exists(tmp):
+                os.unlink(tmp)
+        except OSError:
+            pass
 
 
 def update_context(user_input, action, result, user_id="default"):
@@ -63,6 +97,13 @@ def update_context(user_input, action, result, user_id="default"):
     context = load_context(user_id)
 
     # 添加新的对话记录
+    # 上下文只保存摘要，避免把整篇正文、下载回执或敏感字段无限写入本地。
+    if isinstance(result, str) and len(result) > 4000:
+        result = result[:4000] + "…(truncated)"
+    elif isinstance(result, (dict, list)):
+        encoded = json.dumps(result, ensure_ascii=False)
+        if len(encoded) > 8000:
+            result = encoded[:8000] + "…(truncated)"
     context["history"].append({
         "user_input": user_input,
         "action": action,

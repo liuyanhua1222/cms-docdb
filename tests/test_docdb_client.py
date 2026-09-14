@@ -605,15 +605,15 @@ class TestP0SkillFixes(AuthTestCase):
 
     def test_multipart_retries_clamped_in_source(self):
         text = (COMMON / "docdb_open_api.py").read_text(encoding="utf-8")
-        self.assertIn("CMS_DOCDB_MULTIPART_RETRY", text)
+        self.assertNotIn("CMS_DOCDB_MULTIPART_RETRY", text)
         self.assertIn("effective_retries = 1", text)
-        self.assertIn('"max_retries": effective_retries', text)
-        self.assertIn('"retry": False', text)
+        self.assertIn("不自动整文件重试", text)
 
     def test_insecure_ssl_legacy_rejected(self):
         text = (COMMON / "docdb_open_api.py").read_text(encoding="utf-8")
         self.assertIn("CMS_DOCDB_ALLOW_INSECURE_SSL", text)
-        self.assertIn("CMS_DOCDB_NONPROD", text)
+        self.assertIn("已禁止关闭 TLS 校验", text)
+        self.assertNotIn("CERT_NONE", text)
 
     def test_request_open_api_fatal_false_raises(self):
         class BoomClient:
@@ -679,7 +679,7 @@ class TestP0SkillFixes(AuthTestCase):
 
     def test_version_is_3_4_2(self):
         version = (SKILL_ROOT / "version.json").read_text(encoding="utf-8")
-        self.assertIn('"3.4.2"', version)
+        self.assertIn('"3.4.3"', version)
 
     def test_upsert_grant_member_precheck_flags(self):
         text = (SCRIPTS / "grant" / "upsert-file-grants.py").read_text(encoding="utf-8")

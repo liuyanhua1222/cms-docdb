@@ -141,25 +141,56 @@ def get_download_url(file_id: int) -> dict:
 
     return request_open_api(url, method="GET")
 
-def download_file(download_url: str, output_path: str) -> str:
-    """下载已签发的 URL（无需 OpenAPI 鉴权头）。读路径可重试；与写接口盲重试无关。"""
+def download_file(download_url: str, output_path: str, *, force_overwrite: bool = False) -> str:
+    """下载已签发 URL。每次重试写入独立临时文件，成功后原子替换目标。"""
     import urllib.request
+    import uuid
+    _reject_existing_symlink(output_path)
+    if os.path.lexists(output_path) and not force_overwrite:
+        print("错误: 输出文件已存在；默认不覆盖。若确认覆盖请传 --force-overwrite", file=sys.stderr)
+        sys.exit(2)
+    parent = os.path.dirname(output_path) or tempfile.gettempdir()
+    if os.path.islink(parent):
+        print("错误: 输出父目录为符号链接，拒绝写入", file=sys.stderr)
+        sys.exit(2)
     for attempt in range(MAX_RETRIES):
+        partial = os.path.join(parent, f".{os.path.basename(output_path)}.{uuid.uuid4().hex}.part")
         try:
             req = urllib.request.Request(download_url, method="GET")
             written = 0
-            with urllib.request.urlopen(req, timeout=120) as resp, open(output_path, "wb") as f:
-                while True:
-                    chunk = resp.read(CHUNK_SIZE)
-                    if not chunk:
-                        break
-                    written += len(chunk)
-                    if written > MAX_DOWNLOAD_BYTES:
-                        raise RuntimeError(f"下载超过大小上限 {MAX_DOWNLOAD_BYTES} 字节")
-                    f.write(chunk)
+            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+            if hasattr(os, "O_NOFOLLOW"):
+                flags |= os.O_NOFOLLOW
+            fd = os.open(partial, flags, 0o600)
+            try:
+                with urllib.request.urlopen(req, timeout=120) as resp, os.fdopen(fd, "wb") as f:
+                    fd = -1  # fdopen 接管
+                    while True:
+                        chunk = resp.read(CHUNK_SIZE)
+                        if not chunk:
+                            break
+                        written += len(chunk)
+                        if written > MAX_DOWNLOAD_BYTES:
+                            raise RuntimeError(f"下载超过大小上限 {MAX_DOWNLOAD_BYTES} 字节")
+                        f.write(chunk)
+            finally:
+                if fd >= 0:
+                    try:
+                        os.close(fd)
+                    except OSError:
+                        pass
+            _reject_existing_symlink(output_path)
+            if os.path.lexists(output_path) and not force_overwrite:
+                raise RuntimeError("目标文件在下载期间已出现，拒绝覆盖")
+            os.replace(partial, output_path)
             return output_path
         except Exception as e:
-            if attempt < MAX_RETRIES - 1:
+            try:
+                if os.path.lexists(partial):
+                    os.unlink(partial)
+            except OSError:
+                pass
+            if attempt < MAX_RETRIES - 1 and "超过大小上限" not in str(e) and "拒绝覆盖" not in str(e):
                 time.sleep(RETRY_BACKOFF_SECONDS[min(attempt, len(RETRY_BACKOFF_SECONDS) - 1)])
             else:
                 print(f"错误: 下载失败 - {e}", file=sys.stderr)
@@ -176,6 +207,11 @@ def main():
         "--output",
         type=str,
         help="输出路径（相对路径相对临时目录；绝对路径须在临时目录或 CMS_DOCDB_DOWNLOAD_DIR 下）",
+    )
+    parser.add_argument(
+        "--force-overwrite",
+        action="store_true",
+        help="允许覆盖已存在的普通文件（仍拒绝符号链接）",
     )
     args = parser.parse_args()
 
@@ -206,7 +242,7 @@ def main():
     output_path = resolve_output_path(args.output, file_name)
     
     # 3. 下载文件
-    saved_path = download_file(download_url, output_path)
+    saved_path = download_file(download_url, output_path, force_overwrite=args.force_overwrite)
     
     # 4. 返回结果
     print(json.dumps({

@@ -81,7 +81,11 @@ def main():
 
     expand = args.ack_space_expand or "YES"
     shrink = args.ack_space_shrink or "YES"
+    # 编排器的 dry-run 必须全链路离线；否则 list-members 会先发真实 GET，
+    # 与脚本帮助所承诺的“不发业务 HTTP”相矛盾。
     list_args = ["--project-id", str(args.project_id), *app_key_args]
+    if args.dry_run:
+        list_args.append("--dry-run")
     steps = []
 
     before = _run("list-members.py", list_args)

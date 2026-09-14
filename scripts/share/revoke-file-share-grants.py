@@ -30,6 +30,19 @@ if sys.stderr.encoding != "utf-8":
     sys.stderr = open(sys.stderr.fileno(), mode="w", encoding="utf-8", buffering=1)
 
 API_PATH = "/document-database/share/revokeFileShareGrants"
+VERIFY_PATH = "/document-database/share/getFileShares"
+
+
+def _target_still_present(payload: dict, emp_id: int) -> bool:
+    data = payload.get("data") if isinstance(payload, dict) else None
+    rows = data if isinstance(data, list) else (data.get("records", []) if isinstance(data, dict) else [])
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        target = row.get("empId", row.get("employeeId", row.get("objectId")))
+        if str(target) == str(emp_id) and row.get("status", 1) in (1, "1", None):
+            return True
+    return False
 
 
 def parse_emp_ids(raw: str) -> list:
@@ -81,7 +94,30 @@ def main():
             continue
         code = result.get("resultCode") if isinstance(result, dict) else None
         ok = code == 1
-        results.append({"empId": eid, "ok": ok, "result": result})
+        direct_grant_status = "未确认"
+        effective_status = "未验证"
+        if ok:
+            try:
+                verify = request_open_api(
+                    f"{VERIFY_PATH}?fileId={args.file_id}", method="GET", fatal=False
+                )
+                if _target_still_present(verify, eid):
+                    ok = False
+                    direct_grant_status = "仍存在"
+                    result = {"revoke": result, "verify": verify, "verifyError": "撤销后仍存在有效分享"}
+                else:
+                    direct_grant_status = "直接授权已移除"
+            except Exception as e:
+                ok = False
+                direct_grant_status = "未确认"
+                result = {"revoke": result, "verifyError": f"撤销后复查失败: {e}"}
+        results.append({
+            "empId": eid,
+            "ok": ok,
+            "directGrantStatus": direct_grant_status,
+            "effectivePermissionStatus": effective_status,
+            "result": result,
+        })
         if not ok:
             failed.append(eid)
 

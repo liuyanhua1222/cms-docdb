@@ -553,57 +553,52 @@ def upload_multipart_file(
     上传本地文件（multipart）。优先客户端 upload/post_multipart；
     否则由公共层用选定 AppKey 发请求（业务脚本不得手写鉴权头）。
 
-    幂等策略：默认 max_retries=1（失败即停，禁止响应用尽后自动再传整文件）。
-    若传入更大值会被钳制为 1，除非显式 CMS_DOCDB_MULTIPART_RETRY=1（仍仅网络错误重试，最多 2 次）。
-    客户端捷径（upload_file / post_multipart）同样钳制，并尽量传入 max_retries=1。
+    幂等策略：恒定至多发送 1 次整文件；忽略更大的 max_retries；已删除 multipart 环境变量重试逃生开关。
     """
     client = get_openapi_client(timeout=timeout)
     api_path = normalize_open_api_path(path)
+    if max_retries and max_retries > 1:
+        print(
+            "警告: multipart 上传不自动整文件重试（已钳制为 1 次）",
+            file=sys.stderr,
+        )
+    effective_retries = 1
 
-    if os.environ.get("CMS_DOCDB_MULTIPART_RETRY") == "1":
-        effective_retries = max(1, min(int(max_retries or 1), 2))
-    else:
-        if max_retries and max_retries > 1:
-            print(
-                "警告: multipart 上传不自动整文件重试（已钳制 max_retries=1）；"
-                "仅排障可设 CMS_DOCDB_MULTIPART_RETRY=1",
-                file=sys.stderr,
-            )
-        effective_retries = 1
-
-    if hasattr(client, "upload_file"):
-        # 尽量关闭客户端内部重试；不识别的参数则回退
-        for kwargs in (
-            {"field_name": field_name, "max_retries": effective_retries},
-            {"field_name": field_name, "retries": 0, "max_retries": effective_retries},
-            {"field_name": field_name, "retry": False},
-            {"field_name": field_name},
-        ):
+    def _call_upload_once():
+        if hasattr(client, "upload_file"):
             try:
+                import inspect
+                sig = inspect.signature(client.upload_file)
+                kwargs = {"field_name": field_name}
+                if "max_retries" in sig.parameters:
+                    kwargs["max_retries"] = effective_retries
+                elif "retries" in sig.parameters:
+                    kwargs["retries"] = 0
                 return client.upload_file(api_path, file_path, **kwargs)
             except TypeError:
-                continue
-        return client.upload_file(api_path, file_path, field_name=field_name)
-    if hasattr(client, "post_multipart"):
-        with open(file_path, "rb") as fh:
-            files = {field_name: fh}
-            for kwargs in (
-                {"files": files, "max_retries": effective_retries},
-                {"files": files, "retries": 0},
-                {"files": files, "retry": False},
-                {"files": files},
-            ):
+                return client.upload_file(api_path, file_path, field_name=field_name)
+        if hasattr(client, "post_multipart"):
+            with open(file_path, "rb") as fh:
+                files = {field_name: fh}
                 try:
-                    fh.seek(0)
+                    import inspect
+                    sig = inspect.signature(client.post_multipart)
+                    kwargs = {"files": files}
+                    if "max_retries" in sig.parameters:
+                        kwargs["max_retries"] = effective_retries
                     return client.post_multipart(api_path, **kwargs)
                 except TypeError:
-                    continue
-            fh.seek(0)
-            return client.post_multipart(api_path, files=files)
+                    fh.seek(0)
+                    return client.post_multipart(api_path, files=files)
+        return None
+
+    shortcut = _call_upload_once()
+    if shortcut is not None:
+        return shortcut
 
     import http.client
 
-    max_retries = effective_retries
+    max_retries = 1
 
     app_key = _runtime_app_key_for_multipart(client)
     base = _runtime_base_url(client)
@@ -625,27 +620,15 @@ def upload_multipart_file(
     footer = f"\r\n--{boundary}--\r\n".encode("utf-8")
     content_length = len(header) + file_size + len(footer)
     chunk_size = 5 * 1024 * 1024
-    backoff = (1, 2, 4)
 
     ctx = ssl.create_default_context()
-    # 生产路径禁止关闭证书校验；仅非生产显式双开关
     if (
         os.environ.get("CMS_DOCDB_ALLOW_INSECURE_SSL") == "1"
-        and os.environ.get("CMS_DOCDB_NONPROD") == "1"
+        or os.environ.get("CMS_DOCDB_INSECURE_SSL") == "1"
     ):
-        print(
-            "警告: 已关闭 TLS 校验（CMS_DOCDB_ALLOW_INSECURE_SSL=1 + CMS_DOCDB_NONPROD=1），禁止用于生产",
-            file=sys.stderr,
+        raise RuntimeError(
+            "已禁止关闭 TLS 校验；请使用系统/私有 CA 信任链，勿设置 CMS_DOCDB_ALLOW_INSECURE_SSL / CMS_DOCDB_INSECURE_SSL"
         )
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-    elif os.environ.get("CMS_DOCDB_INSECURE_SSL") == "1":
-        print(
-            "错误: CMS_DOCDB_INSECURE_SSL 已移除；非生产须同时设置 "
-            "CMS_DOCDB_ALLOW_INSECURE_SSL=1 与 CMS_DOCDB_NONPROD=1",
-            file=sys.stderr,
-        )
-        sys.exit(2)
 
     last_error: Optional[BaseException] = None
     for attempt in range(max_retries):
@@ -708,10 +691,8 @@ def upload_multipart_file(
             if _is_auth_error(e):
                 print(f"错误: {e}", file=sys.stderr)
                 sys.exit(1)
-            if attempt < max_retries - 1:
-                time.sleep(backoff[min(attempt, len(backoff) - 1)])
-                continue
-            print(f"错误: {e}", file=sys.stderr)
+            # 结果未知：已可能落地，禁止自动再传
+            print(f"错误: 上传结果未知或失败（未自动重试）: {e}", file=sys.stderr)
             sys.exit(1)
     print(f"错误: {last_error}", file=sys.stderr)
     sys.exit(1)

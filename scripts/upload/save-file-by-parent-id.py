@@ -40,7 +40,8 @@ API_PATH = "/document-database/file/saveFileByParentId"
 
 
 def call_api(project_id: int, parent_id: int, resource_id: int, name: str,
-             suffix: str = None, size: int = None, is_sensitive: int = None) -> dict:
+             suffix: str = None, size: int = None, is_sensitive: int = None,
+             file_type: str = "file", name_conflict_strategy: int = 2) -> dict:
     """调用按父ID保存文件接口，返回原始 JSON 响应"""
     
     body = {
@@ -48,7 +49,8 @@ def call_api(project_id: int, parent_id: int, resource_id: int, name: str,
         "parentId": parent_id,
         "resourceId": resource_id,
         "name": name,
-        "fileType": "file"
+        "fileType": file_type,
+        "nameConflictStrategy": name_conflict_strategy,
     }
     if suffix:
         body["suffix"] = suffix
@@ -91,6 +93,14 @@ def main():
     parser.add_argument("--suffix", type=str, help="文件后缀")
     parser.add_argument("--size", type=int, help="文件大小（字节）")
     parser.add_argument("--is-sensitive", type=int, choices=[0, 1], help="是否敏感文件（0 否，1 是）")
+    parser.add_argument("--file-type", type=str, default="file", help="入库 fileType，默认 file")
+    parser.add_argument(
+        "--name-conflict-strategy",
+        type=int,
+        choices=[0, 1, 2, 3],
+        default=2,
+        help="同名冲突：0改名 1覆盖 2失败(默认) 3跳过",
+    )
     add_safety_args(parser)
     args = parser.parse_args()
 
@@ -99,7 +109,8 @@ def main():
         "parentId": args.parent_id,
         "resourceId": args.resource_id,
         "name": args.name,
-        "fileType": "file",
+        "fileType": args.file_type,
+        "nameConflictStrategy": args.name_conflict_strategy,
     }
     if args.suffix:
         body_preview["suffix"] = args.suffix
@@ -130,7 +141,9 @@ def main():
         name=args.name,
         suffix=args.suffix,
         size=args.size,
-        is_sensitive=args.is_sensitive
+        is_sensitive=args.is_sensitive,
+        file_type=args.file_type,
+        name_conflict_strategy=args.name_conflict_strategy,
     )
 
     processed_result = process_result(result)

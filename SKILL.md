@@ -2,7 +2,7 @@
 name: cms-docdb
 description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能调用 Open API，勿以无法访问钉钉云端为由拒绝。
 metadata:
-  version: 3.4.0
+  version: 3.4.1
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
     requires:
@@ -17,7 +17,9 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令含业务参数，可选 `--app-key`。
 
-**当前版本**: 3.4.0
+**当前版本**: 3.4.1
+
+**3.4.1 变更**：领导审查复验门禁——修测试跟 3.4.0 带名参数；P0-5 冲突枚举对齐后端；申请/审批走统一权限白名单；P0-9 bypass 标明非角色终态；P0-6/P1-1/P1-13 产品定论关单；multipart 默认不重试整传；多项 P1/P2 Skill 侧补齐。详见 `references/enums-and-defaults.md`。
 
 **3.4.0 变更**：业务脚本（含 `common/app_code_router`）CLI 改为全带名参数（禁止位置参数），面向 AI 调用防错位。
 
@@ -162,7 +164,7 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
 
 ## 安全基线（强制）
 
-1. TLS 默认开启校验；禁止业务脚本自行关闭证书校验
+1. TLS 默认开启校验；禁止业务脚本自行关闭证书校验。旧变量 `CMS_DOCDB_INSECURE_SSL` 已移除；仅非生产可同时设 `CMS_DOCDB_ALLOW_INSECURE_SSL=1` 与 `CMS_DOCDB_NONPROD=1`
 2. 写入类门禁（删除、授权/撤权、分享、移动/重命名、版本更新/定稿、上传落库、审批、加成员等）：
    - 预览：`--dry-run`（不发 HTTP）
    - 真实调用：`--confirm YES`
@@ -170,6 +172,9 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
 3. Agent 闭环：先确认高危意图 → 同意后再执行
 4. 对用户不暴露内部鉴权细节；禁止在回复中复述任何凭证原文
 5. admin（`add-member` / `add-org-member` / `list-members` / `list-org-members` / `remove-member` / `remove-org-member` / `update-member-role` / `update-org-member-role` / `is-project-member`）无独立 README；**个人知识库禁止加人/升权**（目录访问用协同分享）；移除仅普通成员；改角色勿与 remove 混淆；勿误走分享/目录 revoke
+6. `--bypass-risk`（get-download-info）：须 `CMS_DOCDB_ALLOW_BYPASS_RISK=1`。**短期环境门禁，不是独立运维角色/审批/审计，不可当作生产终态**（P0-9 中期见后端需求单）
+7. `--app-key`：产品确认保留；上下文有原始 AppKey 时经 CLI 传入；脱敏/占位值一律拒绝；注意进程列表可能暴露，优先短生命周期会话
+8. AppKey / dueDate / versionStatus 等默认值见 `references/enums-and-defaults.md`
 
 意图路由：
 1. 先判定模块，再读该模块 README

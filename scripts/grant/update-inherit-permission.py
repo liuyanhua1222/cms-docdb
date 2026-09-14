@@ -24,9 +24,8 @@ def main():
     p = DocdbArgumentParser(
         hint="""update-inherit-permission.py 必须提供 --file-id、--cancel-inherit；真实写入还需 --confirm YES。
 预检优先用 preview-inherit-change.py；本脚本 --dry-run 只打印拟发请求。
-本级无管理员时可加 --promote-caller-as-admin；也可 --server-dry-run 走接口 dryRun=true。
+升权调试：须同时 --promote-caller-as-admin、--confirm PROMOTE、CMS_DOCDB_NONPROD=1（生产不可用）。
 示例: python3 -B <skill-dir>/scripts/grant/update-inherit-permission.py --file-id 12345 --cancel-inherit true --dry-run
-示例: python3 -B <skill-dir>/scripts/grant/update-inherit-permission.py --file-id 12345 --cancel-inherit true --promote-caller-as-admin --confirm YES
 """
     )
     p.add_argument("--file-id", dest="file_id", required=True, type=int)
@@ -39,7 +38,7 @@ def main():
     p.add_argument(
         "--promote-caller-as-admin",
         action="store_true",
-        help="关闭继承且本级无 admin 时，将调用方写为本级 admin",
+        help="高危：关闭继承且本级无 admin 时将调用方写为本级 admin（须非生产+--confirm PROMOTE）",
     )
     p.add_argument(
         "--server-dry-run",
@@ -48,12 +47,36 @@ def main():
     )
     add_safety_args(p)
     args = p.parse_args()
+
+    promote = bool(args.promote_caller_as_admin)
+    if promote:
+        if os.environ.get("CMS_DOCDB_NONPROD") != "1":
+            print(
+                "错误: --promote-caller-as-admin 仅允许非生产（须 CMS_DOCDB_NONPROD=1）；"
+                "生产请走正式管理员授权流程",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+        if not args.dry_run and args.confirm != "PROMOTE":
+            print(
+                "错误: 升权调试须 --confirm PROMOTE（不可用 YES）",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+
     body = {
         "fileId": args.file_id,
         "cancelInherit": args.cancel_inherit == "true",
-        "promoteCallerAsAdmin": bool(args.promote_caller_as_admin),
+        "promoteCallerAsAdmin": promote,
         "dryRun": bool(args.server_dry_run),
     }
+    # promote 场景 confirm 已是 PROMOTE；safety 层对非 YES 会拦，故 promote 时绕过 enforce 的 confirm 检查
+    if promote and not args.dry_run:
+        # 直接调用，已做过双重门禁
+        result = request_open_api(API_PATH, method="POST", body=body)
+        print(json.dumps(result, ensure_ascii=False))
+        return
+
     enforce_or_dry_run(args, method="POST", url=API_PATH, body=body)
     result = request_open_api(API_PATH, method="POST", body=body)
     print(json.dumps(result, ensure_ascii=False))

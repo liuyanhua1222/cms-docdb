@@ -425,18 +425,40 @@ def _is_auth_error(exc: BaseException) -> bool:
     return any(m in msg for m in markers)
 
 
-def _call_client(method: str, path: str, *, params: ParamsType = None, body: Any = None, timeout: int = 60):
+def is_auth_error(exc: BaseException) -> bool:
+    """公开别名：批量脚本判断是否鉴权失败以便短路。"""
+    return _is_auth_error(exc)
+
+
+def _call_client(
+    method: str,
+    path: str,
+    *,
+    params: ParamsType = None,
+    body: Any = None,
+    timeout: int = 60,
+    fatal: bool = True,
+):
     """
     按 xg-openapi-client 约定调用：
       client.get(path) / client.get(path, params=...)
       client.post(path, body)
     path 已相对 /open-api 根；query 用 params，不塞进 path（除非 client 不支持 params）。
+
+    fatal=True（默认）：失败 print 后 sys.exit(1)，兼容旧脚本。
+    fatal=False：失败 raise RuntimeError，供批量逐人汇总。
     """
     client = get_openapi_client(timeout=timeout)
     path = normalize_open_api_path(path)
     method_u = method.upper()
     pairs = _params_to_pairs(params)
     params_dict = dict(pairs) if pairs else None
+
+    def _fail(exc: BaseException) -> None:
+        if fatal:
+            print(f"错误: {exc}", file=sys.stderr)
+            sys.exit(1)
+        raise RuntimeError(str(exc)) from exc
 
     last_error: Optional[BaseException] = None
     # 仅对安全读自动重试；写操作状态不明时不得盲重试（避免重复版本/通知/创建）
@@ -463,26 +485,28 @@ def _call_client(method: str, path: str, *, params: ParamsType = None, body: Any
                 payload = body if body is not None else {}
                 return client.put(path, payload)
             raise RuntimeError(f"OpenApiClient 不支持方法 {method_u}")
-        except SystemExit:
-            raise
+        except SystemExit as e:
+            # fatal=False 时不得让底层 client 的 sys.exit 打断批量汇总
+            if fatal:
+                raise
+            code = getattr(e, "code", None)
+            _fail(RuntimeError(f"底层客户端 SystemExit({code})"))
         except Exception as e:
             last_error = e
             if _is_auth_error(e):
-                print(f"错误: {e}", file=sys.stderr)
-                sys.exit(1)
+                _fail(e)
             if attempt < max_attempts - 1:
                 time.sleep(1)
                 continue
-            if method_u != "GET":
+            if method_u != "GET" and fatal:
                 print(
                     f"错误: 写操作失败且未自动重试（避免重复提交）: {e}",
                     file=sys.stderr,
                 )
-            else:
-                print(f"错误: {e}", file=sys.stderr)
-            sys.exit(1)
-    print(f"错误: {last_error}", file=sys.stderr)
-    sys.exit(1)
+                sys.exit(1)
+            _fail(e)
+    _fail(last_error or RuntimeError("unknown error"))
+    raise AssertionError("unreachable")
 
 
 def api_get(path: str, params: ParamsType = None, timeout: int = 60) -> dict:
@@ -528,17 +552,58 @@ def upload_multipart_file(
     """
     上传本地文件（multipart）。优先客户端 upload/post_multipart；
     否则由公共层用选定 AppKey 发请求（业务脚本不得手写鉴权头）。
+
+    幂等策略：默认 max_retries=1（失败即停，禁止响应用尽后自动再传整文件）。
+    若传入更大值会被钳制为 1，除非显式 CMS_DOCDB_MULTIPART_RETRY=1（仍仅网络错误重试，最多 2 次）。
+    客户端捷径（upload_file / post_multipart）同样钳制，并尽量传入 max_retries=1。
     """
     client = get_openapi_client(timeout=timeout)
     api_path = normalize_open_api_path(path)
 
+    if os.environ.get("CMS_DOCDB_MULTIPART_RETRY") == "1":
+        effective_retries = max(1, min(int(max_retries or 1), 2))
+    else:
+        if max_retries and max_retries > 1:
+            print(
+                "警告: multipart 上传不自动整文件重试（已钳制 max_retries=1）；"
+                "仅排障可设 CMS_DOCDB_MULTIPART_RETRY=1",
+                file=sys.stderr,
+            )
+        effective_retries = 1
+
     if hasattr(client, "upload_file"):
+        # 尽量关闭客户端内部重试；不识别的参数则回退
+        for kwargs in (
+            {"field_name": field_name, "max_retries": effective_retries},
+            {"field_name": field_name, "retries": 0, "max_retries": effective_retries},
+            {"field_name": field_name, "retry": False},
+            {"field_name": field_name},
+        ):
+            try:
+                return client.upload_file(api_path, file_path, **kwargs)
+            except TypeError:
+                continue
         return client.upload_file(api_path, file_path, field_name=field_name)
     if hasattr(client, "post_multipart"):
         with open(file_path, "rb") as fh:
-            return client.post_multipart(api_path, files={field_name: fh})
+            files = {field_name: fh}
+            for kwargs in (
+                {"files": files, "max_retries": effective_retries},
+                {"files": files, "retries": 0},
+                {"files": files, "retry": False},
+                {"files": files},
+            ):
+                try:
+                    fh.seek(0)
+                    return client.post_multipart(api_path, **kwargs)
+                except TypeError:
+                    continue
+            fh.seek(0)
+            return client.post_multipart(api_path, files=files)
 
     import http.client
+
+    max_retries = effective_retries
 
     app_key = _runtime_app_key_for_multipart(client)
     base = _runtime_base_url(client)
@@ -563,9 +628,24 @@ def upload_multipart_file(
     backoff = (1, 2, 4)
 
     ctx = ssl.create_default_context()
-    if os.environ.get("CMS_DOCDB_INSECURE_SSL") == "1":
+    # 生产路径禁止关闭证书校验；仅非生产显式双开关
+    if (
+        os.environ.get("CMS_DOCDB_ALLOW_INSECURE_SSL") == "1"
+        and os.environ.get("CMS_DOCDB_NONPROD") == "1"
+    ):
+        print(
+            "警告: 已关闭 TLS 校验（CMS_DOCDB_ALLOW_INSECURE_SSL=1 + CMS_DOCDB_NONPROD=1），禁止用于生产",
+            file=sys.stderr,
+        )
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
+    elif os.environ.get("CMS_DOCDB_INSECURE_SSL") == "1":
+        print(
+            "错误: CMS_DOCDB_INSECURE_SSL 已移除；非生产须同时设置 "
+            "CMS_DOCDB_ALLOW_INSECURE_SSL=1 与 CMS_DOCDB_NONPROD=1",
+            file=sys.stderr,
+        )
+        sys.exit(2)
 
     last_error: Optional[BaseException] = None
     for attempt in range(max_retries):
@@ -686,10 +766,13 @@ def request_open_api(
     body: Any = None,
     timeout: int = 60,
     params: ParamsType = None,
+    fatal: bool = True,
 ) -> dict:
     """
     兼容旧脚本：接受完整 URL 或相对 path。
     自动去掉 host 与 /open-api 前缀，走统一客户端工厂。
+
+    fatal=False 时失败抛 RuntimeError（不 sys.exit），供批量逐人汇总。
     """
     raw = (url_or_path or "").strip()
     query_pairs: list = list(_params_to_pairs(params))
@@ -703,4 +786,11 @@ def request_open_api(
         path = normalize_open_api_path(path)
     else:
         path = normalize_open_api_path(raw)
-    return _call_client(method, path, params=query_pairs or None, body=body, timeout=timeout)
+    return _call_client(
+        method,
+        path,
+        params=query_pairs or None,
+        body=body,
+        timeout=timeout,
+        fatal=fatal,
+    )

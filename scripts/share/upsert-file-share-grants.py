@@ -6,7 +6,7 @@ share / upsertFileShareGrants 脚本
 
 默认行为（当用户未说明时）：
   - permissions 默认：read（查看列表）+ preview（在线预览）；不含 fileshare（分享）
-  - dueDate 默认：20991231（长期有效；产品确认前保留）
+  - dueDate 默认：20991231（长期有效；产品已确认默认永久）
   - isSendNotice 默认：true（默认发送钉钉分享通知）
 
 使用方式：
@@ -105,7 +105,7 @@ def main():
         type=str,
         help="权限逗号分隔；默认 read,preview（查看列表+在线预览）。显式需要分享时再加 fileshare",
     )
-    parser.add_argument("--due-date", type=int, help="到期日期（yyyyMMdd）；不传默认 20991231（长期有效）")
+    parser.add_argument("--due-date", type=int, help="到期日期（yyyyMMdd）；不传默认 20991231（长期有效，产品已确认默认永久）")
     parser.add_argument("--name", type=str, help="被分享人姓名（可选，用于展示/通知）")
     parser.add_argument("--no-notice", action="store_true", help="不发送钉钉分享通知（默认发送）")
     parser.add_argument("--source", type=str, help="生成短链的 source（可选，配合 --print-share-url）")

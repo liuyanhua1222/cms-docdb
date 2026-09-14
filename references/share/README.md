@@ -70,7 +70,7 @@ open-api / skill 的 **`upsertFileShareGrants` 只写 `t_file_share`**，与「�
 2. **自定义授权权限**：若用户明确说明要授予的权限，则 **按用户指定的 `permissions`** 发起分享；未说明时才走默认权限。
 3. **默认权限（新建）**：用户未指定时脚本传 `read+preview`（查看列表 + 在线预览），**不含** `fileshare`（分享）。仅当用户显式要求可再分享时才追加 `fileshare`。
 4. **编辑减权**：去掉 `fileshare`/`preview`/`download` 等用 `strip-share-permissions.py`；`read`（查看列表）必须保留；完全取消协同才用 revoke。
-5. **有效期默认永久**：默认需要传 `dueDate=20991231` 表示长期有效（待产品确认是否改为强制询问）；如用户指定有效期，按用户提供的 `dueDate（yyyyMMdd）` 传入。
+5. **有效期默认永久**：默认 `dueDate=20991231` 表示长期有效（**2026-09-14 产品已确认默认永久**）；如用户指定有效期，按用户提供的 `dueDate（yyyyMMdd）` 传入。
 6. **默认通知**：默认 `isSendNotice=true`（发送钉钉分享通知）。除非用户明确要求不通知，才设置为 false。
 7. **分享对象**：仅支持内部员工 empId（不支持 cpUserId / 其他第三方用户 ID）。
 8. **重复授权**：使用 `upsert-file-share-grants.py`（对接 `upsertFileShareGrants`），对已授权对象会更新权限，不会出现“返回成功但未生效”。

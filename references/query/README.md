@@ -88,7 +88,11 @@
 | `--file-id` | Long | 是 | 文件 ID | 有效文件 ID | - |
 | `--output` | String | 否 | 本地保存路径 | 有效本地路径；不传则保存到系统临时目录 | - |
 
-下载采用 5MB 分块写入，下载阶段最多重试 3 次，退避间隔为 1 秒、2 秒、4 秒。
+下载采用 1MB 分块写入（与 `download-file.py` 的 CHUNK_SIZE 一致），下载阶段最多重试 3 次，退避间隔为 1 秒、2 秒、4 秒。
+
+输出路径默认在系统临时目录；绝对路径必须落在临时目录或环境变量 `CMS_DOCDB_DOWNLOAD_DIR` 指定根下（防路径穿越）。
+
+**预览推荐路径**：优先 `get-download-info.py`（不带 `--force-download`）取预览凭据/`previewUrl`；不要混用未文档化的 ticket 旁路。
 
 ### get-file-content.py — 分页读取文件内容
 

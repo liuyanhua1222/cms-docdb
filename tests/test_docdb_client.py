@@ -149,7 +149,7 @@ class TestSourcePriority(AuthTestCase):
         env = os.environ.copy()
         env.pop(RUNTIME_ENV, None)
         proc = subprocess.run(
-            [sys.executable, "-B", str(script), "12345", "--dry-run"],
+            [sys.executable, "-B", str(script), "--file-id", "12345", "--dry-run"],
             capture_output=True,
             text=True,
             env=env,
@@ -408,7 +408,7 @@ class TestP0SkillFixes(AuthTestCase):
         )
         help_text = (proc.stdout or "") + (proc.stderr or "")
         self.assertEqual(proc.returncode, 0)
-        self.assertIn("file_id", help_text)
+        self.assertIn("--file-id", help_text)
         self.assertIn("--emp-id", help_text)
         self.assertIn("--permissions", help_text)
 
@@ -474,7 +474,8 @@ class TestP0SkillFixes(AuthTestCase):
         self.assertIn("个人知识库禁止升权", upd_text)
         upd_org_text = upd_org.read_text(encoding="utf-8")
         self.assertIn("个人知识库禁止升权", upd_org_text)
-        self.assertIn('"3.3.7"', (SKILL_ROOT / "version.json").read_text(encoding="utf-8"))
+        version = (SKILL_ROOT / "version.json").read_text(encoding="utf-8")
+        self.assertRegex(version, r'"version"\s*:\s*"3\.(3\.[7-9]|4\.\d+)"')
 
     def test_resolve_path_script_and_navigator_confirm(self):
         resolve_path = SCRIPTS / "browse" / "resolve-path.py"
@@ -512,7 +513,7 @@ class TestP0SkillFixes(AuthTestCase):
         self.assertIn("--app-code", nav_text)
 
         version = (SKILL_ROOT / "version.json").read_text(encoding="utf-8")
-        self.assertIn('"3.3.7"', version)
+        self.assertRegex(version, r'"version"\s*:\s*"3\.(3\.[6-9]|4\.\d+)"')
 
         self.assertRegex(
             nav_text,
@@ -535,7 +536,7 @@ class TestP0SkillFixes(AuthTestCase):
         path = SCRIPTS / "share" / "upsert-file-share-grants.py"
         env = {k: v for k, v in os.environ.items() if k != RUNTIME_ENV}
         proc = subprocess.run(
-            [sys.executable, "-B", str(path), "1", "--emp-id", "2", "--dry-run"],
+            [sys.executable, "-B", str(path), "--file-id", "1", "--emp-id", "2", "--dry-run"],
             capture_output=True,
             text=True,
             cwd=str(SKILL_ROOT),
@@ -579,6 +580,148 @@ class TestP0SkillFixes(AuthTestCase):
         help_text = (proc.stdout or "") + (proc.stderr or "")
         self.assertEqual(proc.returncode, 0)
         self.assertNotIn("--bypass-risk", help_text)
+
+    def test_apply_scripts_use_permission_whitelist(self):
+        for rel in ("apply/submit-apply.py", "apply/review-apply.py"):
+            text = (SCRIPTS / rel).read_text(encoding="utf-8")
+            self.assertIn("validate_grant_permissions", text)
+
+    def test_upload_content_empty_folder_name_and_suffix(self):
+        text = (SCRIPTS / "upload" / "upload-content.py").read_text(encoding="utf-8")
+        self.assertIn("if args.folder_name is not None:", text)
+        self.assertIn("def normalize_file_name", text)
+
+    def test_move_conflict_help_aligned(self):
+        proc = subprocess.run(
+            [sys.executable, "-B", str(SCRIPTS / "manage" / "move-file.py"), "--help"],
+            capture_output=True,
+            text=True,
+            cwd=str(SKILL_ROOT),
+        )
+        help_text = (proc.stdout or "") + (proc.stderr or "")
+        self.assertEqual(proc.returncode, 0)
+        self.assertIn("MoveConflictStrategy", help_text)
+        self.assertIn("2=失败(默认)", help_text)
+
+    def test_multipart_retries_clamped_in_source(self):
+        text = (COMMON / "docdb_open_api.py").read_text(encoding="utf-8")
+        self.assertIn("CMS_DOCDB_MULTIPART_RETRY", text)
+        self.assertIn("effective_retries = 1", text)
+        self.assertIn('"max_retries": effective_retries', text)
+        self.assertIn('"retry": False', text)
+
+    def test_insecure_ssl_legacy_rejected(self):
+        text = (COMMON / "docdb_open_api.py").read_text(encoding="utf-8")
+        self.assertIn("CMS_DOCDB_ALLOW_INSECURE_SSL", text)
+        self.assertIn("CMS_DOCDB_NONPROD", text)
+
+    def test_request_open_api_fatal_false_raises(self):
+        class BoomClient:
+            def post(self, path, body):
+                raise RuntimeError("OPENAPI_HTTP_ERROR: HTTP 500")
+
+        with patch.object(api, "get_openapi_client", return_value=BoomClient()):
+            with self.assertRaises(RuntimeError):
+                api.request_open_api("/document-database/x", method="POST", body={}, fatal=False)
+
+    def test_request_open_api_fatal_false_converts_systemexit(self):
+        class ExitClient:
+            def post(self, path, body):
+                raise SystemExit(99)
+
+        with patch.object(api, "get_openapi_client", return_value=ExitClient()):
+            with self.assertRaises(RuntimeError) as ctx:
+                api.request_open_api("/document-database/x", method="POST", body={}, fatal=False)
+            self.assertIn("SystemExit", str(ctx.exception))
+
+    def test_download_path_jail_rejects_outside(self):
+        import importlib.util
+
+        path = SCRIPTS / "query" / "download-file.py"
+        spec = importlib.util.spec_from_file_location("dl_mod", path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        with self.assertRaises(SystemExit) as ctx:
+            mod.resolve_output_path("/etc/passwd_copy", "a.bin")
+        self.assertEqual(ctx.exception.code, 2)
+        ok = mod.resolve_output_path(None, "report.md")
+        self.assertTrue(
+            os.path.commonpath([os.path.realpath(ok), os.path.realpath(tempfile.gettempdir())])
+            == os.path.realpath(tempfile.gettempdir())
+        )
+
+    def test_download_path_jail_rejects_symlink_escape(self):
+        import importlib.util
+
+        path = SCRIPTS / "query" / "download-file.py"
+        spec = importlib.util.spec_from_file_location("dl_mod_symlink", path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        td = tempfile.mkdtemp()
+        self.addCleanup(lambda: __import__("shutil").rmtree(td, ignore_errors=True))
+        link = os.path.join(td, "escape_link")
+        try:
+            os.symlink("/etc", link)
+        except OSError:
+            self.skipTest("symlink not permitted")
+        with patch.dict(os.environ, {"CMS_DOCDB_DOWNLOAD_DIR": td}, clear=False):
+            with self.assertRaises(SystemExit) as ctx:
+                mod.resolve_output_path(os.path.join(link, "passwd"), "x.bin")
+            self.assertEqual(ctx.exception.code, 2)
+
+    def test_revoke_scripts_use_fatal_false(self):
+        for rel in ("share/revoke-file-share-grants.py", "grant/revoke-file-grants.py"):
+            text = (SCRIPTS / rel).read_text(encoding="utf-8")
+            self.assertIn("fatal=False", text)
+            self.assertIn("is_auth_error", text)
+            self.assertIn("skipped: auth failed earlier", text)
+            self.assertNotIn("except SystemExit:\n            raise", text)
+
+    def test_version_is_3_4_1(self):
+        version = (SKILL_ROOT / "version.json").read_text(encoding="utf-8")
+        self.assertIn('"3.4.1"', version)
+
+    def test_temp_member_lifecycle_script_exists(self):
+        path = SCRIPTS / "admin" / "temp-member-lifecycle.py"
+        self.assertTrue(path.is_file())
+        text = path.read_text(encoding="utf-8")
+        self.assertIn("list-members.py", text)
+        self.assertIn("remove-member.py", text)
+
+    def test_promote_requires_nonprod_gate(self):
+        text = (SCRIPTS / "grant" / "update-inherit-permission.py").read_text(encoding="utf-8")
+        self.assertIn("CMS_DOCDB_NONPROD", text)
+        self.assertIn("PROMOTE", text)
+
+    def test_dry_run_scan_write_scripts_have_enforce(self):
+        """写脚本应使用 enforce_or_dry_run（抽样 + 扫描缺少则失败）。"""
+        missing = []
+        for path in SCRIPTS.rglob("*.py"):
+            if path.name in {"__init__.py", "context-manager.py", "folder-navigator.py", "intent-matcher.py"}:
+                continue
+            if path.parent.name == "common":
+                continue
+            text = path.read_text(encoding="utf-8")
+            writeish = any(
+                k in text
+                for k in (
+                    "add_safety_args",
+                    "--confirm",
+                    "upsert",
+                    "revoke",
+                    "uploadContent",
+                    "saveFile",
+                    "moveFile",
+                    "addMember",
+                    "removeMember",
+                )
+            )
+            if writeish and "enforce_or_dry_run" not in text and path.name not in {
+                "update-file-property.py",  # 转发层
+                "temp-member-lifecycle.py",  # 编排层，子脚本 enforce
+            }:
+                missing.append(str(path.relative_to(SCRIPTS)))
+        self.assertEqual(missing, [], msg=f"缺少 enforce_or_dry_run: {missing}")
 
 
 if __name__ == "__main__":

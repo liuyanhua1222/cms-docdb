@@ -48,8 +48,13 @@ def main():
     parser.add_argument("--target-parent-id", type=int, required=True, help="目标父目录 ID")
     parser.add_argument("--new-name", type=str, help="移动后名称，省略则保留原名")
     parser.add_argument("--project-id", type=int, help="目标空间 ID")
-    parser.add_argument("--name-conflict-strategy", type=int, default=2,
-                        help="0=重命名，1=覆盖，2=失败（默认），3=跳过")
+    parser.add_argument(
+        "--name-conflict-strategy",
+        type=int,
+        default=2,
+        choices=[0, 1, 2, 3],
+        help="同名冲突：0=重命名 1=覆盖 2=失败(默认) 3=跳过；对齐后端 MoveConflictStrategy（见 references/enums-and-defaults.md）",
+    )
     parser.add_argument("--root-file-id", type=int, help="映射根，用于返回 relativePath")
     add_safety_args(parser)
     args = parser.parse_args()

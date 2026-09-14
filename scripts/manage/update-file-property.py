@@ -81,7 +81,7 @@ def main():
 
     if args.target_parent_id is not None:
         move_args = [
-            str(args.file_id),
+            "--file-id", str(args.file_id),
             "--target-parent-id", str(args.target_parent_id),
             "--name-conflict-strategy", move_strategy,
         ]
@@ -91,7 +91,7 @@ def main():
         last = run_script("move-file.py", move_args)
     elif args.new_name:
         rename_args = [
-            str(args.file_id),
+            "--file-id", str(args.file_id),
             "--new-name", args.new_name,
             "--name-conflict-strategy", rename_strategy,
         ]

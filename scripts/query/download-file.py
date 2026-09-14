@@ -40,6 +40,85 @@ API_PATH = "/document-database/file/getDownloadInfo"
 CHUNK_SIZE = 1024 * 1024
 MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = (1, 2, 4)
+MAX_DOWNLOAD_BYTES = 512 * 1024 * 1024  # 512MB 软上限
+
+
+def _download_jail_roots() -> list:
+    """返回 realpath 后的沙箱根，避免 /tmp 与 /private/tmp 等符号链接不一致。"""
+    raw_roots = [tempfile.gettempdir()]
+    extra = (os.environ.get("CMS_DOCDB_DOWNLOAD_DIR") or "").strip()
+    if extra:
+        raw_roots.append(extra)
+    roots = []
+    for r in raw_roots:
+        roots.append(os.path.realpath(os.path.abspath(r)))
+    return roots
+
+
+def _is_under_jail(path: str, roots: list) -> bool:
+    """用父目录 realpath 防「临时目录内 symlink 指到沙箱外」。"""
+    abs_path = os.path.abspath(path)
+    parent = os.path.dirname(abs_path) or abs_path
+    try:
+        real_parent = os.path.realpath(parent)
+    except OSError:
+        real_parent = os.path.abspath(parent)
+    candidate = os.path.join(real_parent, os.path.basename(abs_path))
+    for root in roots:
+        try:
+            if os.path.commonpath([candidate, root]) == root:
+                return True
+        except ValueError:
+            continue
+    return False
+
+
+def sanitize_download_basename(name: str) -> str:
+    base = os.path.basename((name or "").replace("\\", "/").strip()) or "download.bin"
+    base = base.replace("\x00", "")
+    if base in (".", "..") or "/" in base or "\\" in base:
+        base = "download.bin"
+    base = "".join(ch for ch in base if ord(ch) >= 32)
+    return base[:180] or "download.bin"
+
+
+def resolve_output_path(output: str, file_name: str) -> str:
+    """输出必须落在系统临时目录，或 CMS_DOCDB_DOWNLOAD_DIR 指定根下。"""
+    safe_name = sanitize_download_basename(file_name)
+    roots = _download_jail_roots()
+    default_root = roots[0]
+    if not output:
+        path = os.path.join(default_root, safe_name)
+    else:
+        out = output
+        if not os.path.isabs(out):
+            out = os.path.join(default_root, out)
+        out = os.path.abspath(out)
+        if out.endswith(os.sep) or os.path.isdir(out):
+            path = os.path.join(out, safe_name)
+        else:
+            parent = os.path.dirname(out) or default_root
+            path = os.path.join(os.path.abspath(parent), sanitize_download_basename(os.path.basename(out)))
+    path = os.path.abspath(path)
+    if not _is_under_jail(path, roots):
+        print(
+            "错误: 输出路径越出下载沙箱；默认仅允许系统临时目录。"
+            "若需其它目录请设置 CMS_DOCDB_DOWNLOAD_DIR 为允许根路径。",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+    parent = os.path.dirname(path)
+    if parent and not os.path.isdir(parent):
+        try:
+            os.makedirs(parent, exist_ok=True)
+        except OSError as e:
+            print(f"错误: 无法创建输出目录 - {e}", file=sys.stderr)
+            sys.exit(2)
+    # 创建目录后再用 realpath 复核，防止 mkdir 过程中被换成 symlink
+    if not _is_under_jail(path, roots):
+        print("错误: 输出目录 realpath 越出下载沙箱", file=sys.stderr)
+        sys.exit(2)
+    return path
 
 
 def get_download_url(file_id: int) -> dict:
@@ -55,11 +134,15 @@ def download_file(download_url: str, output_path: str) -> str:
     for attempt in range(MAX_RETRIES):
         try:
             req = urllib.request.Request(download_url, method="GET")
+            written = 0
             with urllib.request.urlopen(req, timeout=120) as resp, open(output_path, "wb") as f:
                 while True:
                     chunk = resp.read(CHUNK_SIZE)
                     if not chunk:
                         break
+                    written += len(chunk)
+                    if written > MAX_DOWNLOAD_BYTES:
+                        raise RuntimeError(f"下载超过大小上限 {MAX_DOWNLOAD_BYTES} 字节")
                     f.write(chunk)
             return output_path
         except Exception as e:
@@ -76,7 +159,11 @@ def main():
 """,
     )
     parser.add_argument("--file-id", dest="file_id", required=True, type=int, help="文件 ID")
-    parser.add_argument("--output", type=str, help="输出文件路径（可选，默认保存到临时目录）")
+    parser.add_argument(
+        "--output",
+        type=str,
+        help="输出路径（相对路径相对临时目录；绝对路径须在临时目录或 CMS_DOCDB_DOWNLOAD_DIR 下）",
+    )
     args = parser.parse_args()
 
     # 1. 获取下载链接
@@ -92,7 +179,7 @@ def main():
     
     data = result.get('data', {})
     download_url = data.get('downloadUrl') or data.get('url')
-    file_name = data.get('fileName', f'file_{args.file_id}')
+    file_name = sanitize_download_basename(data.get('fileName', f'file_{args.file_id}'))
     
     if not download_url:
         print(json.dumps({
@@ -102,13 +189,8 @@ def main():
         }, ensure_ascii=False))
         sys.exit(1)
     
-    # 2. 确定输出路径
-    if args.output:
-        output_path = args.output
-    else:
-        # 使用临时目录
-        temp_dir = tempfile.gettempdir()
-        output_path = os.path.join(temp_dir, file_name)
+    # 2. 确定输出路径（净化 basename + 目录边界）
+    output_path = resolve_output_path(args.output, file_name)
     
     # 3. 下载文件
     saved_path = download_file(download_url, output_path)

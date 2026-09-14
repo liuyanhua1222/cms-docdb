@@ -98,7 +98,8 @@ def main():
             )
             sys.exit(2)
         print(
-            "警告: 已启用 bypassRisk（CMS_DOCDB_ALLOW_BYPASS_RISK=1），请确认具备运维授权",
+            "警告: 已启用 bypassRisk（CMS_DOCDB_ALLOW_BYPASS_RISK=1）。"
+            "此为短期环境门禁，不是独立运维角色/审批/审计，不可当作生产终态。",
             file=sys.stderr,
         )
         bypass_risk = True

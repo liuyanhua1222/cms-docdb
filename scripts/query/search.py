@@ -84,11 +84,11 @@ def process_result(result):
     return result
 
 def main():
-    parser = DocdbArgumentParser(description="按关键词搜索文件", hint="""search.py 必须提供 --name-key，且必须带 --project-id。
+    parser = DocdbArgumentParser(description="按关键词搜索文件", hint="""search.py 必须提供 --name-key；--project-id 可选（与 OpenAPI searchFile 一致，强烈建议传入以限定空间）。
 示例: python3 -B <skill-dir>/scripts/query/search.py --name-key "合同" --project-id 10001；缺参补齐后用同一 python 命令重试
 """)
     parser.add_argument("--name-key", dest="name_key", required=True, type=str, help="搜索关键词（必填）")
-    parser.add_argument("--project-id", type=int, required=True, help="项目/空间 ID（必填，用于限定搜索范围）")
+    parser.add_argument("--project-id", type=int, default=None, help="项目/空间 ID（可选，建议传）")
     parser.add_argument("--root-file-id", type=int, help="指定根目录 ID（可选）")
     parser.add_argument("--start-time", type=int, help="开始时间戳（毫秒，可选）")
     parser.add_argument("--end-time", type=int, help="结束时间戳（毫秒，可选）")

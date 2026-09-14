@@ -3,15 +3,41 @@
 import sys
 import json
 import os
+import re
 import datetime
 
-# 上下文文件存储路径
-CONTEXT_DIR = os.path.join(os.path.dirname(__file__), ".context")
-os.makedirs(CONTEXT_DIR, exist_ok=True)
+# 上下文改到用户态目录，禁止写在 skill 仓库内
+def _context_root():
+    override = os.environ.get("CMS_DOCDB_CONTEXT_DIR")
+    if override:
+        root = os.path.abspath(override)
+    else:
+        xdg = os.environ.get("XDG_STATE_HOME") or os.path.join(os.path.expanduser("~"), ".local", "state")
+        root = os.path.join(xdg, "cms-docdb", "context")
+    os.makedirs(root, exist_ok=True)
+    return root
+
+
+CONTEXT_DIR = _context_root()
+
+
+def sanitize_user_id(user_id: str) -> str:
+    raw = (user_id or "default").strip() or "default"
+    safe = re.sub(r"[^A-Za-z0-9._-]", "_", raw)
+    if ".." in safe or "/" in safe or "\\" in safe or safe in (".", ""):
+        raise ValueError("非法 user_id")
+    if len(safe) > 64:
+        safe = safe[:64]
+    return safe
+
 
 def get_context_file(user_id="default"):
-    """获取上下文文件路径"""
-    return os.path.join(CONTEXT_DIR, f"{user_id}.json")
+    """获取上下文文件路径（经 sanitize，限制在 CONTEXT_DIR 内）"""
+    safe = sanitize_user_id(user_id)
+    path = os.path.abspath(os.path.join(CONTEXT_DIR, f"{safe}.json"))
+    if not path.startswith(os.path.abspath(CONTEXT_DIR) + os.sep) and path != os.path.abspath(CONTEXT_DIR):
+        raise ValueError("上下文路径越界")
+    return path
 
 def load_context(user_id="default"):
     """加载上下文"""

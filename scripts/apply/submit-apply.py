@@ -15,30 +15,40 @@ from docdb_open_api import ensure_common_on_path, request_open_api
 ensure_common_on_path(__file__)
 from cli_args import DocdbArgumentParser
 from safety import add_safety_args, enforce_or_dry_run
+from permissions import labels_for, parse_permission_csv, validate_grant_permissions
 
 API_PATH = "/document-database/fileGrant/apply/submit"
 
 
 def main():
     p = DocdbArgumentParser(hint="""submit-apply.py 必须提供 --file-id、--permissions、--reason、--approver-ids；真实写入还需 --confirm YES。
+权限走公共白名单（与目录授权一致）；禁止 admin/permmanage。
 示例: python3 -B <skill-dir>/scripts/apply/submit-apply.py --file-id 12345 --permissions "read,preview" --reason "需要查阅" --approver-ids 1 --confirm YES；缺参补齐后用同一 python 命令重试
 """)
     p.add_argument("--file-id", dest="file_id", required=True, type=int)
     p.add_argument("--permissions", required=True, help="逗号分隔，如 read,preview,download")
     p.add_argument("--reason", required=True)
     p.add_argument("--approver-ids", required=True, help="逗号分隔的 employeeId")
-    p.add_argument("--due-date", type=int, default=20991231)
+    p.add_argument("--due-date", type=int, default=20991231, help="到期日 yyyyMMdd；默认永久（产品确认）")
     add_safety_args(p)
     args = p.parse_args()
+    try:
+        perms = validate_grant_permissions(parse_permission_csv(args.permissions))
+    except ValueError as e:
+        print(f"错误: {e}", file=sys.stderr)
+        sys.exit(2)
     body = {
         "fileId": args.file_id,
-        "permissions": [x.strip() for x in args.permissions.split(",") if x.strip()],
+        "permissions": perms,
         "reason": args.reason,
         "approverIds": [int(x.strip()) for x in args.approver_ids.split(",") if x.strip()],
         "dueDate": args.due_date,
     }
     enforce_or_dry_run(args, method="POST", url=API_PATH, body=body)
     result = request_open_api(API_PATH, method="POST", body=body)
+    if isinstance(result, dict):
+        result = dict(result)
+        result["requestedLabels"] = labels_for(perms)
     print(json.dumps(result, ensure_ascii=False))
 if __name__ == "__main__":
     main()

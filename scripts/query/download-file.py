@@ -77,11 +77,11 @@ def _reject_existing_symlink(path: str) -> None:
     """拒绝最终输出文件为符号链接，避免 open(..., wb) 跟随链接越界写入。"""
     try:
         if os.path.lexists(path) and os.path.islink(path):
-            print("错误: 输出文件为符号链接，拒绝覆盖", file=sys.stderr)
-            sys.exit(2)
-    except OSError as e:
-        print(f"错误: 无法检查输出文件: {e}", file=sys.stderr)
-        sys.exit(2)
+            raise OSError("输出文件为符号链接，拒绝覆盖")
+    except OSError:
+        raise
+    except Exception as e:
+        raise OSError(f"无法检查输出文件: {e}") from e
 
 
 def sanitize_download_basename(name: str) -> str:
@@ -94,7 +94,7 @@ def sanitize_download_basename(name: str) -> str:
 
 
 def resolve_output_path(output: str, file_name: str) -> str:
-    """输出必须落在系统临时目录，或 CMS_DOCDB_DOWNLOAD_DIR 指定根下。"""
+    """输出必须落在系统临时目录，或 CMS_DOCDB_DOWNLOAD_DIR 指定根下。失败抛异常。"""
     safe_name = sanitize_download_basename(file_name)
     roots = _download_jail_roots()
     default_root = roots[0]
@@ -113,24 +113,20 @@ def resolve_output_path(output: str, file_name: str) -> str:
     path = os.path.abspath(path)
     _reject_existing_symlink(path)
     if not _is_under_jail(path, roots):
-        print(
-            "错误: 输出路径越出下载沙箱；默认仅允许系统临时目录。"
-            "若需其它目录请设置 CMS_DOCDB_DOWNLOAD_DIR 为允许根路径。",
-            file=sys.stderr,
+        raise OSError(
+            "输出路径越出下载沙箱；默认仅允许系统临时目录。"
+            "若需其它目录请设置 CMS_DOCDB_DOWNLOAD_DIR 为允许根路径。"
         )
-        sys.exit(2)
     _reject_existing_symlink(path)
     parent = os.path.dirname(path)
     if parent and not os.path.isdir(parent):
         try:
             os.makedirs(parent, exist_ok=True)
         except OSError as e:
-            print(f"错误: 无法创建输出目录 - {e}", file=sys.stderr)
-            sys.exit(2)
+            raise OSError(f"无法创建输出目录 - {e}") from e
     # 创建目录后再用 realpath 复核，防止 mkdir 过程中被换成 symlink
     if not _is_under_jail(path, roots):
-        print("错误: 输出目录 realpath 越出下载沙箱", file=sys.stderr)
-        sys.exit(2)
+        raise OSError("输出目录 realpath 越出下载沙箱")
     return path
 
 
@@ -141,18 +137,18 @@ def get_download_url(file_id: int) -> dict:
 
     return request_open_api(url, method="GET")
 
-def download_file(download_url: str, output_path: str, *, force_overwrite: bool = False) -> str:
-    """下载已签发 URL。每次重试写入独立临时文件，成功后原子替换目标。"""
+
+def download_file_to_path(download_url: str, output_path: str, *, force_overwrite: bool = False) -> str:
+    """下载已签发 URL。每次重试写入独立临时文件，成功后原子替换目标。失败抛异常（供批量复用）。"""
     import urllib.request
     import uuid
     _reject_existing_symlink(output_path)
     if os.path.lexists(output_path) and not force_overwrite:
-        print("错误: 输出文件已存在；默认不覆盖。若确认覆盖请传 --force-overwrite", file=sys.stderr)
-        sys.exit(2)
+        raise FileExistsError("输出文件已存在；默认不覆盖。若确认覆盖请传 --force-overwrite")
     parent = os.path.dirname(output_path) or tempfile.gettempdir()
     if os.path.islink(parent):
-        print("错误: 输出父目录为符号链接，拒绝写入", file=sys.stderr)
-        sys.exit(2)
+        raise OSError("输出父目录为符号链接，拒绝写入")
+    last_error = None
     for attempt in range(MAX_RETRIES):
         partial = os.path.join(parent, f".{os.path.basename(output_path)}.{uuid.uuid4().hex}.part")
         try:
@@ -185,6 +181,7 @@ def download_file(download_url: str, output_path: str, *, force_overwrite: bool 
             os.replace(partial, output_path)
             return output_path
         except Exception as e:
+            last_error = e
             try:
                 if os.path.lexists(partial):
                     os.unlink(partial)
@@ -193,8 +190,26 @@ def download_file(download_url: str, output_path: str, *, force_overwrite: bool 
             if attempt < MAX_RETRIES - 1 and "超过大小上限" not in str(e) and "拒绝覆盖" not in str(e):
                 time.sleep(RETRY_BACKOFF_SECONDS[min(attempt, len(RETRY_BACKOFF_SECONDS) - 1)])
             else:
-                print(f"错误: 下载失败 - {e}", file=sys.stderr)
-                sys.exit(1)
+                break
+    raise RuntimeError(f"下载失败 - {last_error}") from last_error
+
+
+def download_file(download_url: str, output_path: str, *, force_overwrite: bool = False) -> str:
+    """CLI 包装：失败时打印并 exit。"""
+    try:
+        return download_file_to_path(download_url, output_path, force_overwrite=force_overwrite)
+    except FileExistsError as e:
+        print(f"错误: {e}", file=sys.stderr)
+        sys.exit(2)
+    except OSError as e:
+        if "符号链接" in str(e) or "沙箱" in str(e):
+            print(f"错误: {e}", file=sys.stderr)
+            sys.exit(2)
+        print(f"错误: 下载失败 - {e}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"错误: 下载失败 - {e}", file=sys.stderr)
+        sys.exit(1)
 
 def main():
     parser = DocdbArgumentParser(description="下载文件到本地", hint="""download-file.py 必须提供 --file-id。
@@ -239,7 +254,11 @@ def main():
         sys.exit(1)
     
     # 2. 确定输出路径（净化 basename + 目录边界）
-    output_path = resolve_output_path(args.output, file_name)
+    try:
+        output_path = resolve_output_path(args.output, file_name)
+    except OSError as e:
+        print(f"错误: {e}", file=sys.stderr)
+        sys.exit(2)
     
     # 3. 下载文件
     saved_path = download_file(download_url, output_path, force_overwrite=args.force_overwrite)

@@ -641,9 +641,9 @@ class TestP0SkillFixes(AuthTestCase):
         spec = importlib.util.spec_from_file_location("dl_mod", path)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
-        with self.assertRaises(SystemExit) as ctx:
+        with self.assertRaises(OSError) as ctx:
             mod.resolve_output_path("/etc/passwd_copy", "a.bin")
-        self.assertEqual(ctx.exception.code, 2)
+        self.assertIn("沙箱", str(ctx.exception))
         ok = mod.resolve_output_path(None, "report.md")
         self.assertTrue(
             os.path.commonpath([os.path.realpath(ok), os.path.realpath(tempfile.gettempdir())])
@@ -665,9 +665,54 @@ class TestP0SkillFixes(AuthTestCase):
         except OSError:
             self.skipTest("symlink not permitted")
         with patch.dict(os.environ, {"CMS_DOCDB_DOWNLOAD_DIR": td}, clear=False):
-            with self.assertRaises(SystemExit) as ctx:
+            with self.assertRaises(OSError) as ctx:
                 mod.resolve_output_path(os.path.join(link, "passwd"), "x.bin")
-            self.assertEqual(ctx.exception.code, 2)
+            self.assertTrue(
+                "沙箱" in str(ctx.exception) or "符号链接" in str(ctx.exception),
+                str(ctx.exception),
+            )
+
+    def test_batch_download_rejects_symlink_outdir_and_reuses_secure_write(self):
+        import importlib.util
+
+        path = SCRIPTS / "query" / "batch-download-files.py"
+        text = path.read_text(encoding="utf-8")
+        self.assertIn("download_file_to_path", text)
+        self.assertIn("resolve_output_path", text)
+        self.assertNotIn('open(path, "wb")', text)
+        self.assertIn("先拒 symlink", text)
+
+        spec = importlib.util.spec_from_file_location("batch_dl_mod", path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        td = tempfile.mkdtemp()
+        self.addCleanup(lambda: __import__("shutil").rmtree(td, ignore_errors=True))
+        link = os.path.join(td, "out_as_link")
+        try:
+            os.symlink("/etc", link)
+        except OSError:
+            self.skipTest("symlink not permitted")
+        with self.assertRaises(RuntimeError) as ctx:
+            mod._ensure_out_dir_in_jail(link)
+        self.assertIn("符号链接", str(ctx.exception))
+
+    def test_download_file_to_path_rejects_existing_symlink_target(self):
+        import importlib.util
+
+        path = SCRIPTS / "query" / "download-file.py"
+        spec = importlib.util.spec_from_file_location("dl_mod_exist_link", path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        td = tempfile.mkdtemp(dir=tempfile.gettempdir())
+        self.addCleanup(lambda: __import__("shutil").rmtree(td, ignore_errors=True))
+        target = os.path.join(td, "exist.bin")
+        try:
+            os.symlink("/etc/hosts", target)
+        except OSError:
+            self.skipTest("symlink not permitted")
+        with self.assertRaises(OSError) as ctx:
+            mod.download_file_to_path("https://example.invalid/x", target)
+        self.assertIn("符号链接", str(ctx.exception))
 
     def test_revoke_scripts_use_fatal_false(self):
         for rel in ("share/revoke-file-share-grants.py", "grant/revoke-file-grants.py"):

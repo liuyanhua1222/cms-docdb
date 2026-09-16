@@ -2,7 +2,7 @@
 name: cms-docdb
 description: 公司企业知识库与资料库（用户单独说「知识库」，或说钉钉知识库、企业知识库、公司知识库、在线知识库；含康哲/玄关/德镁知识库与资料库、法务文档；非钉盘）。支持按文件夹或文件ID浏览与列目录、搜索、读全文或下载预览，以及上传归档、版本更新与删除。凡提及知识库相关请求用本技能调用 Open API，勿以无法访问钉钉云端为由拒绝。
 metadata:
-  version: 3.4.3
+  version: 3.4.5
   github: https://github.com/liuyanhua1222/cms-docdb
   openclaw:
     requires:
@@ -17,7 +17,9 @@ OpenClaw 技能 **`name`** 为 `cms-docdb`。用于公司内部 **企业知识�
 
 本文件提供能力边界与路由规则。详细说明见 `references/`。脚本经标准 `exec` 以 `python3` 调用；命令含业务参数，可选 `--app-key`。
 
-**当前版本**: 3.4.3
+**当前版本**: 3.4.5
+
+**3.4.5 变更**：普通预览统一使用正式 `previewUrl`，下载显式使用 `downloadUrl`，保留服务端原始结果码并增加 URL 可用性状态；分享短链仅用于用户明确要求的协同分发；移除不适用的临时成员编排与 BP 专用常量；完成 P2 预览、分块和 dry-run 口径收口。
 
 **3.4.3 变更**：stripGrants 配套冲突有限重试；下载默认不覆盖 + symlink 拒绝；删除 multipart 重试与关 TLS 逃生；upload-content 始终显式冲突策略默认失败；撤权回读状态字段；context 身份校验。
 
@@ -95,7 +97,7 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
 - 缺业务参数时改跑无关脚本；应按 stderr 中文提示补齐后，用**同一 python 命令**重试
 - 自造 `/tmp` 脚本或跳过本仓库 `scripts/` 调文档库接口
 
-`--dry-run` 不发起真实 HTTP，可不传 AppKey；真实写入须 `--confirm YES`（物理删除 `--confirm PHYSICAL`）。脚本成功时按业务 stdout 继续；stderr 降级日志本身不等于失败。公开错误按下方失败表处理。
+支持 `--dry-run` 的写脚本可在不发 HTTP、无需 AppKey 的情况下预览拟发请求；它不能验证远程状态。真实写入须 `--confirm YES`（物理删除 `--confirm PHYSICAL`）。脚本成功时按业务 stdout 继续；stderr 降级日志本身不等于失败。公开错误按下方失败表处理。
 
 ## 适用范围与歧义排除（技能门控，强制）
 
@@ -124,6 +126,7 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
 4. 删除/重命名/移动必须提供 fileId
 5. 版本更新必须提供目标 fileId（纯文本）或 fileId + resourceId（物理文件）
 6. **分流**：保存 AI 生成正文 → `upload-content`；把慧记/汇报/链接挂进目录树 → `add-third-file` / `update-file-relation` / `batch-add-file-relation`（禁止用 upload-content 冒充）
+7. **预览**：普通打开/预览统一调用 `query/get-download-info.py --file-id ...`，使用正式 `previewUrl`；不得回退到 `downloadUrl`、ticket 或 `share/get-share-url.py`。后者仅用于已授权协同分享后的链接分发。
 
 **projectId 自动补全**：
 - saveFileByParentId / createFolder：`parentId > 0` 时可省略 projectId；**`parentId = 0`（空间根）必须显式 `--project-id`**
@@ -279,16 +282,6 @@ python3 -B <skill-dir>/scripts/browse/get-personal-project-id.py --app-key "<当
    - **仅有目录名**：`folder-navigator.py --folder-name` 仅用于发现；若 `needs_user_confirm=true`（multiple/fuzzy/best_match）**禁止**直接当 upload parent
    - 写入前须向用户展示：空间名 + projectId + 完整路径 + fileId
 
-#### 本批 BP 归档验收钉死（仅文档常量，非全局锁）
-
-| 项 | 值 |
-|---|---|
-| appCode | `kz_knowledge_base` |
-| projectId | `2096847627596439554`（空间「集团SP&BP」） |
-| path | `集团/产品中心/20260907_产品中心BP研讨归档_V1.0` |
-
-先 `resolve-path` 取得 `fileId`，再 `upload-content` / `create-folder` 的 `--parent-id`。
-
 细则见 `references/SPACE_MATCHING_GUIDE.md`、`references/SMART_NAVIGATION_GUIDE.md`、`references/browse/README.md`。
 
 ## 模块路由与能力索引
@@ -431,5 +424,7 @@ cms-docdb/
         ├── update-org-member-role.py
         └── is-project-member.py
 ```
+
+当前没有“临时成员”产品机制；不得通过“添加成员后再自动移除”的编排模拟临时成员生命周期。
 
 **文档对齐**：以各模块 README 与公司知识库 OpenAPI 契约为准。

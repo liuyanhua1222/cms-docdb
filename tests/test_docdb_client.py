@@ -722,9 +722,9 @@ class TestP0SkillFixes(AuthTestCase):
             self.assertIn("skipped: auth failed earlier", text)
             self.assertNotIn("except SystemExit:\n            raise", text)
 
-    def test_version_is_3_4_2(self):
+    def test_version_is_3_4_5(self):
         version = (SKILL_ROOT / "version.json").read_text(encoding="utf-8")
-        self.assertIn('"3.4.3"', version)
+        self.assertIn('"3.4.5"', version)
 
     def test_upsert_grant_member_precheck_flags(self):
         text = (SCRIPTS / "grant" / "upsert-file-grants.py").read_text(encoding="utf-8")
@@ -788,12 +788,52 @@ class TestP0SkillFixes(AuthTestCase):
         payload = json.loads(proc.stdout)
         self.assertEqual(payload.get("data", {}).get("status"), "blocked_pending_product")
 
-    def test_temp_member_lifecycle_script_exists(self):
-        path = SCRIPTS / "admin" / "temp-member-lifecycle.py"
-        self.assertTrue(path.is_file())
-        text = path.read_text(encoding="utf-8")
-        self.assertIn("list-members.py", text)
-        self.assertIn("remove-member.py", text)
+    def test_temp_member_lifecycle_is_not_exposed(self):
+        self.assertFalse((SCRIPTS / "admin" / "temp-member-lifecycle.py").exists())
+
+    def test_preview_result_requires_official_preview_url(self):
+        import importlib.util
+
+        path = SCRIPTS / "query" / "get-download-info.py"
+        spec = importlib.util.spec_from_file_location("get_download_info_mod", path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        ok = mod.process_result({"resultCode": 1, "data": {"previewUrl": "https://example/p/1"}})
+        self.assertEqual(ok["data"]["selectedUrl"], "https://example/p/1")
+        self.assertEqual(ok["data"]["urlMode"], "previewUrl")
+        self.assertTrue(ok["data"]["urlAvailable"])
+        self.assertTrue(mod.is_result_usable(ok))
+        missing = mod.process_result({"resultCode": 1, "data": {"downloadUrl": "https://example/d/1"}})
+        self.assertEqual(missing["resultCode"], 1)
+        self.assertFalse(missing["data"]["urlAvailable"])
+        self.assertIn("previewUrl", missing["data"]["urlError"])
+        self.assertFalse(mod.is_result_usable(missing))
+
+        download = mod.process_result(
+            {"resultCode": 1, "data": {"downloadUrl": "https://example/d/1"}},
+            force_download=True,
+        )
+        self.assertEqual(download["data"]["selectedUrl"], "https://example/d/1")
+        self.assertEqual(download["data"]["urlMode"], "download")
+        self.assertTrue(mod.is_result_usable(download))
+        missing_download = mod.process_result(
+            {"resultCode": 1, "data": {"previewUrl": "https://example/p/1"}},
+            force_download=True,
+        )
+        self.assertEqual(missing_download["resultCode"], 1)
+        self.assertFalse(missing_download["data"]["urlAvailable"])
+        self.assertIn("downloadUrl", missing_download["data"]["urlError"])
+        self.assertFalse(mod.is_result_usable(missing_download))
+
+        server_error = mod.process_result({"resultCode": -1, "resultMsg": "denied", "data": None})
+        self.assertEqual(server_error["resultCode"], -1)
+        self.assertFalse(mod.is_result_usable(server_error))
+
+    def test_download_and_upload_chunk_contracts_are_distinct(self):
+        download = (SCRIPTS / "query" / "download-file.py").read_text(encoding="utf-8")
+        upload = (SCRIPTS / "common" / "docdb_open_api.py").read_text(encoding="utf-8")
+        self.assertIn("CHUNK_SIZE = 1024 * 1024", download)
+        self.assertIn("chunk_size = 5 * 1024 * 1024", upload)
 
     def test_promote_requires_nonprod_gate(self):
         text = (SCRIPTS / "grant" / "update-inherit-permission.py").read_text(encoding="utf-8")
@@ -825,7 +865,6 @@ class TestP0SkillFixes(AuthTestCase):
             )
             if writeish and "enforce_or_dry_run" not in text and path.name not in {
                 "update-file-property.py",  # 转发层
-                "temp-member-lifecycle.py",  # 编排层，子脚本 enforce
             }:
                 missing.append(str(path.relative_to(SCRIPTS)))
         self.assertEqual(missing, [], msg=f"缺少 enforce_or_dry_run: {missing}")

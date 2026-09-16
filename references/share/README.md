@@ -8,7 +8,7 @@
 - 用户要把某个知识库文件/文件夹 **分享给某个人**（协同分享/授权）
 - 用户要“给某人开权限”，并且希望 **默认发送钉钉分享通知**
 - 用户未明确权限，要求默认给到：**查看列表 + 在线预览**（不含「分享」）
-- 用户在授权后还需要：**分享预览短链** 或 **查看分享记录**
+- 用户在授权后还需要：**协同分享分发短链** 或 **查看分享记录**。普通打开/预览必须使用 query 模块返回的正式 `previewUrl`。
 
 ## 鉴权模式
 
@@ -34,7 +34,7 @@
 | `scripts/share/upsert-file-share-grants.py` | `POST /open-api/document-database/share/upsertFileShareGrants` | **推荐**：授权分享（存在则更新、不存在则新增；不删他人；默认发钉钉通知；默认权限为查看列表+在线预览） |
 | `scripts/share/strip-share-permissions.py` | 同上 upsert | **单项减权**：去掉 preview/fileshare/download 等，**保留 read**；**勿用于整单撤销** |
 | `scripts/share/get-file-shares.py` | `GET /open-api/document-database/share/getFileShares` | 获取文件/文件夹的协同分享记录列表（人员/部门等） |
-| `scripts/share/get-share-url.py` | `GET /open-api/document-database/share/getShareUrl` | 生成文件/文件夹的“可转发预览短链”（授权后用于链接分发） |
+| `scripts/share/get-share-url.py` | `GET /open-api/document-database/share/getShareUrl` | 生成协同分享后的可转发分发短链；不是普通预览入口 |
 | `scripts/share/revoke-file-share-grants.py` | `POST /open-api/document-database/share/revokeFileShareGrants` | **整单撤销**协同分享（人从列表消失；幂等；不发送钉钉通知）。**勿用于仅去掉 fileshare 等权限位** |
 | `scripts/share/list-shared-to-me.py` | `GET /open-api/document-database/share/sharedToMe` | 分享给我的文件列表（分页；`fileName`/`sharerId` 筛选） |
 | `scripts/share/list-my-shares.py` | `GET /open-api/document-database/share/myShares` | 我的分享列表（分页；`fileName` 筛选） |
@@ -99,7 +99,7 @@ open-api / skill 的 **`upsertFileShareGrants` 只写 `t_file_share`**，与「�
 
 ### B. 分享完成后的反馈（推荐）
 
-分享成功后建议输出（面向用户的“结果卡片”文本）。必须先调用 `get-share-url.py` 拿到 `{shareUrl}`，并在卡片中**只回显原始 URL 字符串**（不要使用 Markdown 超链如 `[打开链接](url)`，混排时易被错误解析为链接，反而无法打开）：
+仅当用户明确需要把已授权内容继续以链接分发时，才调用 `get-share-url.py` 获取 `{shareUrl}`。普通“打开/预览文件”不得调用该脚本，统一走 query 模块的正式 `previewUrl`。
 
 ```text
 已完成分享 ✅
@@ -118,7 +118,7 @@ open-api / skill 的 **`upsertFileShareGrants` 只写 `t_file_share`**，与「�
 
 ### C. 生成短链与分享记录的建议编排
 
-- 生成短链：分享成功后立即调用 `get-share-url.py` 获取 `{shareUrl}`，在分享反馈中原样输出 URL（纯文本，不做超链）
+- 生成短链：仅当用户明确要求链接分发时，分享成功后调用 `get-share-url.py` 获取 `{shareUrl}`，在分享反馈中原样输出 URL（纯文本，不做超链）
 - 分享记录：分享成功后可继续调用 `get-file-shares.py` 回显“分享给谁/权限/有效期”
 
 ## 权限枚举（permissions）——对齐产品「权限设置」UI
@@ -203,7 +203,7 @@ python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py --file-id 20290
 # 5) 不发送钉钉通知（用户明确要求时才用）
 python3 -B <skill-dir>/scripts/share/upsert-file-share-grants.py --file-id 2029019008342265857 --emp-id 10001 --no-notice --confirm YES
 
-# 6) 授权后生成可转发的预览短链接（用于分发给他人打开）
+# 6) 用户明确要求链接分发时，生成协同分享分发短链
 python3 -B <skill-dir>/scripts/share/get-share-url.py --file-id 2029019008342265857 --source "external"
 
 # 7) 查看该文件/文件夹当前协同分享列表（谁被授权了哪些权限、有效期等）

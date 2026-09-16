@@ -1,18 +1,15 @@
-# P2-02～08 对账关闭清单
+# P2 一致性核对结论
 
 日期：2026-09-14 · Wave7  
 对照：审计 v1.1 / 挂账第三批
 
 原则：每条「现状 → 关闭证据」；全部勾选后挂账改「已关」。
 
-| ID | 主题 | 现状（Skill 3.4.2） | 关闭证据 |
+| ID | 主题 | 现状（Skill 3.4.5） | 关闭证据 |
 |---|---|---|---|
-| P2-02 | search projectId 可选 | `scripts/query/search.py` 支持可选 projectId；README 已写 | □ --help + dry 文档一致 |
-| P2-03 | browse / 根目录规则 | `browse.py` / `get-level1-folders.py`；SKILL 禁 browse parentId=0 | □ |
-| P2-04 | preview 路径说明 | references 已说明自渲染/KB 预览 | □ |
-| P2-05 | 分页参数 | 各 list 脚本 pageIndex/pageSize | □ |
-| P2-06 | 枚举单一来源 | `references/enums-and-defaults.md` | □ |
-| P2-07 | dry-run 扫描 | 写脚本 + safety；pytest help/dry 覆盖 | □ pytest 全绿 |
-| P2-08 | 下载分块/文档 | `download-file.py` 1MB chunk；batch-download 受控并发 | □ |
+| P2-04 | preview 路径 | 默认只用 `getDownloadInfo.previewUrl`；分享短链不再作为普通预览入口 | 代码+文档+单测已对齐；真实打开待带 AppKey 验证 |
+| P2-05 | OpenAPI/Skill/CLI/README 漂移 | 以契约快照、CLI help 和行为测试持续核对 | 本轮发现并修正 preview 语义漂移；其余未发现确定性漂移 |
+| P2-06 | 下载分块规则 | 下载读取块 1MB；multipart 上传发送块 5MB；属于不同链路 | 代码与模块文档一致，关闭 |
+| P2-07 | dry-run | 保留：写操作的零 HTTP 请求预览和本地校验不能由普通只读接口替代；不宣称验证远程状态 | 测试覆盖所有支持项，关闭“是否需要”判断 |
 
-P2-01（listDescendant/listChanges/batchGetMeta）：**本波已补脚本**，关单条件改为带 AppKey 联调一次即可。
+P2-1 不作为缺陷：OpenAPI 按业务需要逐步补齐；外部人员不能继续分享是业务规则，不是能力缺失。

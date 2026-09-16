@@ -32,7 +32,7 @@
 |---|---|---|
 | `scripts/query/search.py` | `GET /open-api/document-database/file/searchFile` | 搜索文件或目录 |
 | `scripts/query/get-full-content.py` | `GET /open-api/document-database/file/getFullFileContent` | 获取文件全局提纯文本（Markdown），RAG 入口 |
-| `scripts/query/get-download-info.py` | `GET /open-api/document-database/file/getDownloadInfo` | 获取文件下载/预览凭据 |
+| `scripts/query/get-download-info.py` | `GET /open-api/document-database/file/getDownloadInfo` | 默认获取正式 `previewUrl`；显式 `--force-download` 才选择下载链接 |
 | `scripts/query/download-file.py` | `GET /open-api/document-database/file/getDownloadInfo` + 本地下载 | 下载文件到本地，解决内网 URL 无法被 AI 工具访问的问题 |
 | `scripts/query/get-file-content.py` | `GET /open-api/document-database/file/getFileContent` | 分页获取文件文本内容 |
 | `scripts/query/batch-get-content.py` | `POST /open-api/document-database/ai/batchGetContent` | 批量获取多个文件全文，建议≤10个 |
@@ -99,7 +99,9 @@
 
 输出路径默认在系统临时目录；绝对路径必须落在临时目录或环境变量 `CMS_DOCDB_DOWNLOAD_DIR` 指定根下（防路径穿越）。
 
-**预览推荐路径**：优先 `get-download-info.py`（不带 `--force-download`）取预览凭据/`previewUrl`；不要混用未文档化的 ticket 旁路。
+**唯一默认预览路径**：调用 `get-download-info.py` 且不带 `--force-download`，使用返回的 `data.selectedUrl`（其来源固定为正式字段 `previewUrl`）。成功响应缺少 `previewUrl` 时，脚本保留服务端原始 `resultCode`，同时返回 `urlAvailable=false`、`urlError` 并以非零状态退出；不回退到 `downloadUrl`、`getShareUrl` 或 ticket 旁路。显式 `--force-download` 时对正式 `downloadUrl` 执行同样校验。`getShareUrl` 只属于已授权协同分享后的链接分发，不是普通打开/预览入口。
+
+下载与上传的分块规则是两个独立链路：本地下载读取块为 **1MB**；multipart 整文件上传发送块为 **5MB**。两者均与当前实现一致，不应互相套用。
 
 ### get-file-content.py — 分页读取文件内容
 

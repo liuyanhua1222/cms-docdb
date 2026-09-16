@@ -2,7 +2,8 @@
 """
 share / getShareUrl 脚本
 
-用途：生成文件/文件夹的“可转发预览短链接”（授权分享后用于链接分发）
+用途：生成文件/文件夹的协同分享分发短链（仅在授权分享后按需使用）。
+普通打开/预览不得调用本脚本，应使用 query/get-download-info.py 返回的 previewUrl。
 
 使用方式：
   python3 -B <skill-dir>/scripts/share/get-share-url.py --file-id 12345
@@ -53,7 +54,7 @@ def process_result(result):
     return result
 
 def main():
-    parser = DocdbArgumentParser(description="获取分享短链", hint="""get-share-url.py 必须提供 --file-id。
+    parser = DocdbArgumentParser(description="获取协同分享分发短链（非普通预览入口）", hint="""get-share-url.py 必须提供 --file-id。
 示例: python3 -B <skill-dir>/scripts/share/get-share-url.py --file-id 12345；缺参补齐后用同一 python 命令重试
 """,
     )
@@ -67,4 +68,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

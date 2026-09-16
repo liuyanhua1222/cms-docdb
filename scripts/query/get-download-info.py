@@ -56,8 +56,8 @@ def call_api(file_id: int, force_download: bool = False, see_original: bool = No
 
     return request_open_api(url, method="GET")
 
-def process_result(result):
-    """处理 API 响应结果，优先按 resultCode、resultMsg、data 读取"""
+def process_result(result, *, force_download=False):
+    """保留服务端结果码，并标注当前模式下的正式 URL 是否可用。"""
     if isinstance(result, dict):
         # 优先读取 resultCode、resultMsg、data
         result_code = result.get('resultCode')
@@ -70,8 +70,31 @@ def process_result(result):
             'resultMsg': result_msg,
             'data': data
         }
+        if result_code == 1 and isinstance(data, dict):
+            selected_field = 'downloadUrl' if force_download else 'previewUrl'
+            selected_url = data.get(selected_field)
+            mode = 'download' if force_download else 'previewUrl'
+            normalized_data = dict(
+                data,
+                selectedUrl=selected_url,
+                urlMode=mode,
+                urlAvailable=bool(selected_url),
+            )
+            if not selected_url:
+                normalized_data['urlError'] = (
+                    f'接口成功但未返回正式 {selected_field}，拒绝回退到其他链路'
+                )
+            processed['data'] = normalized_data
         return processed
     return result
+
+
+def is_result_usable(result):
+    """服务端成功且当前模式的正式 URL 存在时，CLI 才以成功退出。"""
+    if not isinstance(result, dict) or result.get('resultCode') != 1:
+        return False
+    data = result.get('data')
+    return isinstance(data, dict) and data.get('urlAvailable') is True
 
 def main():
     parser = DocdbArgumentParser(description="获取下载或预览凭据", hint="""get-download-info.py 必须提供 --file-id。
@@ -116,8 +139,10 @@ def main():
         bypass_risk=bypass_risk,
     )
 
-    processed_result = process_result(result)
+    processed_result = process_result(result, force_download=args.force_download)
     print(json.dumps(processed_result, ensure_ascii=False))
+    if not is_result_usable(processed_result):
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
